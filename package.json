@@ -1,0 +1,29 @@
+{
+    "name": "ghostai-x-bot",
+    "version": "1.0.0",
+    "description": "Autonomous X/Twitter posting bot for GhostAI Systems",
+    "main": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node src/index.js",
+        "post": "node scripts/post-now.js",
+        "linkedin:auth": "node scripts/linkedin-auth.js",
+        "test": "node --test tests/",
+        "test:connection": "node scripts/test-connection.js"
+    },
+    "keywords": [
+        "twitter",
+        "x",
+        "bot",
+        "automation",
+        "ghostai"
+    ],
+    "author": "GhostAI Systems",
+    "license": "MIT",
+    "dependencies": {
+        "dotenv": "^17.2.3",
+        "node-cron": "^4.2.1",
+        "openai": "^6.17.0",
+        "twitter-api-v2": "^1.29.0"
+    }
+}
