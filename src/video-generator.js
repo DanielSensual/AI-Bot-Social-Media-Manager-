@@ -52,14 +52,14 @@ export async function generateVideo(prompt, options = {}) {
             // Step 1: Start video generation
             console.log(`\n⏳ Starting generation (attempt ${attempt}/${maxRetries})...`);
 
-            const generateResponse = await fetch(`${XAI_BASE_URL}/video/generations`, {
+            const generateResponse = await fetch(`${XAI_BASE_URL}/videos/generations`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${XAI_API_KEY}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'grok-2-video',
+                    model: 'grok-imagine-video',
                     prompt: prompt,
                     aspect_ratio: aspectRatio,
                     duration: duration,
@@ -72,7 +72,7 @@ export async function generateVideo(prompt, options = {}) {
             }
 
             const generateData = await generateResponse.json();
-            const generationId = generateData.id;
+            const generationId = generateData.request_id || generateData.id;
 
             console.log(`   Generation ID: ${generationId}`);
 
@@ -138,14 +138,14 @@ export async function generateVideoFromImage(imagePath, prompt, options = {}) {
         try {
             console.log(`\n⏳ Starting generation (attempt ${attempt}/${maxRetries})...`);
 
-            const generateResponse = await fetch(`${XAI_BASE_URL}/video/generations`, {
+            const generateResponse = await fetch(`${XAI_BASE_URL}/videos/generations`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${XAI_API_KEY}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'grok-2-video',
+                    model: 'grok-imagine-video',
                     prompt: prompt,
                     image: `data:${mimeType};base64,${base64Image}`,
                     duration: duration,
@@ -158,7 +158,7 @@ export async function generateVideoFromImage(imagePath, prompt, options = {}) {
             }
 
             const generateData = await generateResponse.json();
-            const generationId = generateData.id;
+            const generationId = generateData.request_id || generateData.id;
 
             console.log(`   Generation ID: ${generationId}`);
 
@@ -193,7 +193,7 @@ async function pollForCompletion(generationId, maxWaitMs = 120000) {
     let dots = 0;
 
     while (Date.now() - startTime < maxWaitMs) {
-        const response = await fetch(`${XAI_BASE_URL}/video/generations/${generationId}`, {
+        const response = await fetch(`${XAI_BASE_URL}/videos/${generationId}`, {
             headers: {
                 'Authorization': `Bearer ${XAI_API_KEY}`,
             },
@@ -204,11 +204,19 @@ async function pollForCompletion(generationId, maxWaitMs = 120000) {
         }
 
         const data = await response.json();
-        const status = data.status;
 
         // Progress indicator
         dots = (dots + 1) % 4;
         const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+        // Check if video is ready (API returns video.url when complete)
+        if (data.video?.url) {
+            process.stdout.write(`\r   Status: completed ${'.'.repeat(4)} (${elapsed}s)\n`);
+            return data.video.url;
+        }
+
+        // Also check legacy response formats
+        const status = data.status || 'processing';
         process.stdout.write(`\r   Status: ${status} ${'.'.repeat(dots + 1).padEnd(4)} (${elapsed}s)`);
 
         if (status === 'completed' || status === 'succeeded') {
