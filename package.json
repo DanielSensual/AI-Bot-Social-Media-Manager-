@@ -7,8 +7,10 @@
     "scripts": {
         "start": "node src/index.js",
         "post": "node scripts/post-now.js",
+        "post:all": "node scripts/post-all.js",
+        "post:video": "node scripts/post-all.js --generate --video",
         "linkedin:auth": "node scripts/linkedin-auth.js",
-        "test": "node --test tests/",
+        "test": "node --test \"tests/**/*.test.js\"",
         "test:connection": "node scripts/test-connection.js"
     },
     "keywords": [

@@ -7,9 +7,15 @@ node_modules/
 .env
 .env.local
 
+# Auth tokens
+.linkedin-token.json
+
 # Logs
 *.log
 logs/
 
 # OS
 .DS_Store
+
+# Video cache
+.video-cache/

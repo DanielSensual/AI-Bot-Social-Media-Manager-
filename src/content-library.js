@@ -102,6 +102,117 @@ They need:
 ];
 
 /**
+ * HOT TAKES - Controversial/Provocative opinions that drive engagement
+ */
+export const hotTakeTemplates = [
+    () => `Unpopular opinion: 90% of web agencies are scamming you.
+
+They charge $15k for a WordPress template.
+Take 6 weeks to deliver.
+Then hit you with "maintenance fees."
+
+We ship custom sites in 72 hours.
+No templates. No BS.
+
+The industry hates us for this. 👻`,
+
+    () => `Your web developer is lying to you.
+
+"It'll be ready in 2 weeks" = 2 months
+"It just needs a few tweaks" = Complete rebuild
+"The design is almost done" = Haven't started
+
+We don't play those games.
+72 hours. Done. Period.`,
+
+    () => `Hot take: AI will replace 80% of web developers by 2027.
+
+The survivors will be:
+→ Those who use AI as a force multiplier
+→ Those who automate the boring stuff
+→ Those who ship faster than humanly possible
+
+We're already there. Are you?`,
+
+    () => `Controversial: Your $50k website is worse than my $5k website.
+
+Yours:
+- Loads in 4 seconds
+- No tracking
+- Can't answer a phone
+
+Mine:
+- Sub-2s load
+- Full analytics
+- AI handles calls 24/7
+
+Agencies are in panic mode. 🔥`,
+
+    () => `The uncomfortable truth about Webflow, Wix, and Squarespace:
+
+You're paying for the illusion of ownership.
+You're locked into their ecosystem.
+You have zero competitive advantage.
+
+Custom code > drag-and-drop.
+Fight me. 👻`,
+
+    () => `Why most startups fail isn't product-market fit.
+
+It's that their website:
+- Converts at 0.5%
+- Loses 60% of mobile users
+- Can't capture leads at 2am
+
+Your site is your silent killer.
+Most founders just don't know it yet.`,
+
+    () => `"We need a redesign."
+
+No. You need a CONVERSION SYSTEM.
+
+Redesigns = $30k and 4 months
+Conversion systems = $5k and 72 hours
+
+One makes designers happy.
+One makes you money.
+
+Choose wisely.`,
+
+    () => `Agencies charging by the hour is the biggest scam in tech.
+
+Slow = More money for them
+Fast = Less money for them
+
+We charge fixed price. 
+We're incentivized to be FAST.
+Funny how that works. 👻`,
+
+    () => `The AI website future nobody's talking about:
+
+Your site will:
+→ Rewrite copy based on who's visiting
+→ Adjust pricing based on behavior
+→ Close deals without you
+
+Static websites are dead.
+Dynamic, AI-powered systems are the future.
+
+We're already building them.`,
+
+    () => `"But AI can't replace real creativity!"
+
+Tell that to our AI that:
+- Writes converting copy
+- Answers calls in 4 languages
+- Books appointments 24/7
+- Never calls in sick
+
+Your "creativity" can stay home.
+Results don't need egos.`,
+];
+
+/**
  * PORTFOLIO - Client work showcases
  */
 export const portfolioTemplates = [
@@ -280,6 +391,7 @@ DM "AUDIT" - limited spots this week.`,
 export function getTweetByPillar(pillar) {
     const templates = {
         value: valueTemplates,
+        hotTakes: hotTakeTemplates,
         portfolio: portfolioTemplates,
         bts: btsTemplates,
         cta: ctaTemplates,

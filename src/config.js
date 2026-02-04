@@ -13,9 +13,10 @@ export const config = {
 
     // Content Pillars with weights (must sum to 100)
     pillars: {
-        value: 40,      // Educational content, tips, insights
-        portfolio: 25,  // Client work showcases
-        bts: 20,        // Behind the scenes, AI agent stories
+        value: 30,      // Educational content, tips, insights
+        hotTakes: 20,   // Controversial/provocative content for engagement
+        portfolio: 20,  // Client work showcases
+        bts: 15,        // Behind the scenes, AI agent stories
         cta: 15,        // Direct calls to action
     },
 
