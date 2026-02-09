@@ -4,15 +4,10 @@
  */
 
 import { config } from './config.js';
-import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import { generateText } from './llm-client.js';
 
 dotenv.config();
-
-// Initialize OpenAI for AI-powered generation
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Helper to get random item from array
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -491,15 +486,16 @@ RULES:
 
 Generate ONE tweet. Output ONLY the tweet text, nothing else.`;
 
-    console.log('🧠 Generating AI content with GPT-5.2-thinking...');
+    console.log('🧠 Generating AI content...');
 
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-5.2',
-        messages: [{ role: 'user', content: prompt }],
-        max_completion_tokens: 300,
+    const { text } = await generateText({
+        prompt,
+        maxOutputTokens: 300,
+        openaiModel: 'gpt-5.2',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
     });
 
-    const tweet = completion.choices[0].message.content.trim();
+    const tweet = text.trim();
 
     // Ensure we're under the limit
     const finalTweet = tweet.length > maxLength

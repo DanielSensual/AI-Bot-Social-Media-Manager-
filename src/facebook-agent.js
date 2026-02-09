@@ -7,11 +7,11 @@ import dotenv from 'dotenv';
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
-import OpenAI from 'openai';
 import { fileURLToPath } from 'url';
 import { testFacebookConnection, postToFacebook, postToFacebookWithVideo } from './facebook-client.js';
 import { generateVideo, cleanupCache } from './video-generator.js';
 import { isDuplicate, record } from './post-history.js';
+import { hasLLMProvider, generateText } from './llm-client.js';
 
 dotenv.config();
 
@@ -85,10 +85,6 @@ Reply with a number and I will share the fastest implementation path.`,
         fallbackVideoPrompt: 'Vertical 9:16 social-first visual with bold kinetic typography-style motion and abstract AI interface backgrounds, optimized for immediate attention and a polling call-to-action feel.',
     },
 ];
-
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    : null;
 
 let cycleInProgress = false;
 
@@ -165,7 +161,7 @@ function safeJsonParse(content) {
 }
 
 async function generateAICreative(strategy, useReel) {
-    if (!openai) return null;
+    if (!hasLLMProvider()) return null;
 
     const prompt = `You create high-performing Facebook Page content for "Artificial Intelligence Knowledge".
 
@@ -193,13 +189,14 @@ RULES:
 
 useReel=${useReel ? 'true' : 'false'}`;
 
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-5.2',
-        messages: [{ role: 'user', content: prompt }],
-        max_completion_tokens: 600,
+    const { text } = await generateText({
+        prompt,
+        maxOutputTokens: 600,
+        openaiModel: 'gpt-5.2',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
     });
 
-    const parsed = safeJsonParse(completion.choices?.[0]?.message?.content || '');
+    const parsed = safeJsonParse(text || '');
     if (!parsed) return null;
 
     const caption = normalizeText(parsed.caption);
@@ -280,7 +277,7 @@ async function runScheduledCycle(options = {}) {
         }
 
         const useReel = shouldUse(config.reelRatio);
-        const useAI = shouldUse(config.aiRatio) && Boolean(openai);
+        const useAI = shouldUse(config.aiRatio) && hasLLMProvider();
         const strategy = pickStrategy();
 
         console.log(`Strategy: ${strategy.id} | ${useReel ? 'reel' : 'text'} | ${useAI ? 'ai' : 'template'}`);

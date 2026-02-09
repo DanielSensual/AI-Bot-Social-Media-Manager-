@@ -5,13 +5,9 @@
  */
 
 import dotenv from 'dotenv';
-import OpenAI from 'openai';
+import { hasLLMProvider, generateText } from './llm-client.js';
 
 dotenv.config();
-
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    : null;
 
 const PLATFORM_RULES = {
     x: {
@@ -50,7 +46,7 @@ export async function adaptContent(text, platform) {
     const rules = PLATFORM_RULES[platform];
     if (!rules) throw new Error(`Unknown platform: ${platform}`);
 
-    if (!openai) {
+    if (!hasLLMProvider()) {
         // Fallback: basic truncation if no AI available
         return text.length > rules.maxChars
             ? text.substring(0, rules.maxChars - 3) + '...'
@@ -76,13 +72,14 @@ IMPORTANT:
 
 Rewritten content:`;
 
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-5.2',
-        messages: [{ role: 'user', content: prompt }],
-        max_completion_tokens: 800,
+    const { text: adaptedText } = await generateText({
+        prompt,
+        maxOutputTokens: 800,
+        openaiModel: 'gpt-5.2',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
     });
 
-    const adapted = completion.choices?.[0]?.message?.content?.trim();
+    const adapted = adaptedText?.trim();
     if (!adapted) return text;
 
     // Enforce max chars for X
@@ -99,7 +96,7 @@ Rewritten content:`;
  * @returns {Promise<object>} { x, linkedin, facebook, instagram }
  */
 export async function adaptForAll(text) {
-    if (!openai) {
+    if (!hasLLMProvider()) {
         // Fallback: return original text for all platforms
         return {
             x: text.length > 280 ? text.substring(0, 277) + '...' : text,
@@ -137,13 +134,14 @@ OUTPUT FORMAT (strict JSON):
 }`;
 
     try {
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-5.2',
-            messages: [{ role: 'user', content: prompt }],
-            max_completion_tokens: 2000,
+        const { text: rawText } = await generateText({
+            prompt,
+            maxOutputTokens: 2000,
+            openaiModel: 'gpt-5.2',
+            geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
         });
 
-        const raw = completion.choices?.[0]?.message?.content?.trim() || '';
+        const raw = rawText?.trim() || '';
         let parsed;
 
         try {

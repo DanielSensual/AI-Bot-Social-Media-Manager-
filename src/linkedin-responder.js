@@ -8,8 +8,8 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import { hasLLMProvider, generateText } from './llm-client.js';
 
 dotenv.config();
 puppeteer.use(StealthPlugin());
@@ -22,11 +22,6 @@ const LOGS_DIR = path.join(__dirname, '..', 'logs', 'linkedin-responses');
 if (!fs.existsSync(LOGS_DIR)) {
     fs.mkdirSync(LOGS_DIR, { recursive: true });
 }
-
-// Initialize OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Response disclaimer
 const DISCLAIMER = `\n\n---\n📌 This account uses AI assistance. Your message has been forwarded to Daniel for personal review.`;
@@ -142,6 +137,10 @@ async function getConversationMessages(page, conversationUrl) {
  * Generate AI response using OpenAI
  */
 async function generateAIResponse(senderName, messages) {
+    if (!hasLLMProvider()) {
+        return 'Thanks for reaching out. I appreciate your message and will follow up shortly.';
+    }
+
     const conversationContext = messages
         .map(m => `${m.sender}: ${m.content}`)
         .join('\n');
@@ -166,13 +165,14 @@ DO NOT start with "Hey [Name]!" - vary your greetings.
 
 Response:`;
 
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-5.2-thinking',
-        messages: [{ role: 'user', content: prompt }],
-        max_completion_tokens: 500,
+    const { text } = await generateText({
+        prompt,
+        maxOutputTokens: 500,
+        openaiModel: 'gpt-5.2',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
     });
 
-    return completion.choices[0].message.content.trim();
+    return text.trim();
 }
 
 /**

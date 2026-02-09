@@ -6,8 +6,8 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import OpenAI from 'openai';
 import { fileURLToPath } from 'url';
+import { hasLLMProvider, generateText } from './llm-client.js';
 
 dotenv.config();
 
@@ -18,10 +18,6 @@ const LOGS_DIR = path.join(__dirname, '..', 'logs', 'facebook-comments');
 const REPLIED_FILE = path.join(__dirname, '..', '.fb-comment-replied.json');
 
 fs.mkdirSync(LOGS_DIR, { recursive: true });
-
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    : null;
 
 /**
  * Get page credentials
@@ -109,7 +105,7 @@ async function hasPageReplied(commentId, pageId, pageToken) {
  * Generate AI reply to a comment
  */
 async function generateCommentReply(comment, postMessage) {
-    if (!openai) return 'Thanks for your comment! 🙌';
+    if (!hasLLMProvider()) return 'Thanks for your comment! 🙌';
 
     const prompt = `You are replying to a Facebook comment on behalf of the page "Artificial Intelligence Knowledge" by Ghost AI Systems (an AI automation agency).
 
@@ -131,13 +127,14 @@ DO NOT be generic — reference something specific from their comment.
 
 Reply:`;
 
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-5.2',
-        messages: [{ role: 'user', content: prompt }],
-        max_completion_tokens: 200,
+    const { text } = await generateText({
+        prompt,
+        maxOutputTokens: 200,
+        openaiModel: 'gpt-5.2',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
     });
 
-    return completion.choices[0].message.content.trim();
+    return text.trim();
 }
 
 /**

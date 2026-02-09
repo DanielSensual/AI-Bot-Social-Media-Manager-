@@ -13,6 +13,7 @@ import { postTweet, postTweetWithMedia, postTweetWithVideo } from '../src/twitte
 import { postToLinkedIn, postToLinkedInWithImage, postToLinkedInWithVideo, testLinkedInConnection } from '../src/linkedin-client.js';
 import { postToFacebook, postToFacebookWithImage, postToFacebookWithVideo, testFacebookConnection } from '../src/facebook-client.js';
 import { generateTweet, generateAITweet } from '../src/content-library.js';
+import { adaptForAll } from '../src/content-adapter.js';
 import { generateVideo, cleanupCache } from '../src/video-generator.js';
 
 dotenv.config();
@@ -144,9 +145,23 @@ async function main() {
         console.log(`   Video prompt: "${videoPrompt.substring(0, 50)}..."`);
     }
 
+    // Smart adaptation per platform (optional)
+    let adapted = null;
+    if (flags.adapt) {
+        try {
+            console.log('🎯 Adapting content per platform...');
+            adapted = await adaptForAll(content);
+            console.log('   ✅ Adapted for X, LinkedIn, Facebook, Instagram');
+        } catch (error) {
+            console.warn(`   ⚠️ Adaptation failed, using original content: ${error.message}`);
+        }
+    }
+
+    const getText = (platform) => adapted?.[platform] || content;
+
     // Display content preview
     console.log('');
-    console.log('Content:');
+    console.log('Base Content:');
     console.log('─'.repeat(50));
     console.log(content);
     console.log('─'.repeat(50));
@@ -155,6 +170,13 @@ async function main() {
         console.log(`Media: 🎬 AI-Generated Video`);
     } else if (imagePath) {
         console.log(`Media: 🖼️ Image`);
+    }
+    if (adapted) {
+        console.log('\nAdapted Preview (X):');
+        console.log('─'.repeat(50));
+        console.log(getText('x'));
+        console.log('─'.repeat(50));
+        console.log(`Length: ${getText('x').length}/280`);
     }
     console.log('');
 
@@ -220,11 +242,11 @@ async function main() {
         try {
             console.log('\n📤 Posting to X...');
             if (videoPath) {
-                results.x = await postTweetWithVideo(content, videoPath);
+                results.x = await postTweetWithVideo(getText('x'), videoPath);
             } else if (imagePath) {
-                results.x = await postTweetWithMedia(content, imagePath);
+                results.x = await postTweetWithMedia(getText('x'), imagePath);
             } else {
-                results.x = await postTweet(content);
+                results.x = await postTweet(getText('x'));
             }
         } catch (error) {
             console.error(`❌ X failed: ${error.message}`);
@@ -240,11 +262,11 @@ async function main() {
             } else {
                 console.log('\n📤 Posting to LinkedIn...');
                 if (videoPath) {
-                    results.linkedin = await postToLinkedInWithVideo(content, videoPath);
+                    results.linkedin = await postToLinkedInWithVideo(getText('linkedin'), videoPath);
                 } else if (imagePath) {
-                    results.linkedin = await postToLinkedInWithImage(content, imagePath);
+                    results.linkedin = await postToLinkedInWithImage(getText('linkedin'), imagePath);
                 } else {
-                    results.linkedin = await postToLinkedIn(content);
+                    results.linkedin = await postToLinkedIn(getText('linkedin'));
                 }
             }
         } catch (error) {
@@ -261,11 +283,11 @@ async function main() {
             } else {
                 console.log('\n📤 Posting to Facebook...');
                 if (videoPath) {
-                    results.facebook = await postToFacebookWithVideo(content, videoPath);
+                    results.facebook = await postToFacebookWithVideo(getText('facebook'), videoPath);
                 } else if (imagePath) {
-                    results.facebook = await postToFacebookWithImage(content, imagePath);
+                    results.facebook = await postToFacebookWithImage(getText('facebook'), imagePath);
                 } else {
-                    results.facebook = await postToFacebook(content);
+                    results.facebook = await postToFacebook(getText('facebook'));
                 }
             }
         } catch (error) {
@@ -299,6 +321,9 @@ async function main() {
 
     if (videoPath) {
         console.log(`  🎬 Video: ${path.basename(videoPath)}`);
+    }
+    if (adapted) {
+        console.log('  🎯 Content: Adapted per platform');
     }
 
     console.log('');

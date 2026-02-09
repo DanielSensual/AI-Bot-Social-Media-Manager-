@@ -6,8 +6,8 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import OpenAI from 'openai';
 import { fileURLToPath } from 'url';
+import { hasLLMProvider, generateText } from './llm-client.js';
 
 dotenv.config();
 
@@ -18,10 +18,6 @@ const LOGS_DIR = path.join(__dirname, '..', 'logs', 'facebook-responses');
 const RESPONDED_FILE = path.join(__dirname, '..', '.fb-responded.json');
 
 fs.mkdirSync(LOGS_DIR, { recursive: true });
-
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    : null;
 
 const DISCLAIMER = `\n\n---\n📌 This account uses AI assistance. Your message has been forwarded to Daniel for personal review.`;
 
@@ -107,7 +103,7 @@ function needsReply(conversation, pageId) {
  * Generate AI response using OpenAI
  */
 async function generateAIResponse(senderName, messages) {
-    if (!openai) return 'Thanks for reaching out! We\'ll get back to you shortly.';
+    if (!hasLLMProvider()) return 'Thanks for reaching out! We\'ll get back to you shortly.';
 
     const conversationContext = messages
         .map(m => `${m.from?.name || 'Unknown'}: ${m.message}`)
@@ -134,13 +130,14 @@ DO NOT start with "Hey [Name]!" - vary your greetings.
 
 Response:`;
 
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-5.2',
-        messages: [{ role: 'user', content: prompt }],
-        max_completion_tokens: 500,
+    const { text } = await generateText({
+        prompt,
+        maxOutputTokens: 500,
+        openaiModel: 'gpt-5.2',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
     });
 
-    return completion.choices[0].message.content.trim();
+    return text.trim();
 }
 
 /**
