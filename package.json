@@ -1,0 +1,17 @@
+{
+    "name": "ghostai-lead-hunter",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "Automated lead gen engine — scrape, qualify, outreach, follow-up",
+    "scripts": {
+        "hunt": "node scripts/hunt.js",
+        "qualify": "node scripts/qualify.js",
+        "outreach": "node scripts/outreach.js",
+        "status": "node scripts/status.js",
+        "test": "node --test \"tests/**/*.test.js\""
+    },
+    "dependencies": {
+        "better-sqlite3": "^11.0.0",
+        "dotenv": "^16.4.0"
+    }
+}
