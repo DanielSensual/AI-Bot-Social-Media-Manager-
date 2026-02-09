@@ -50,5 +50,17 @@ module.exports = {
                 NODE_ENV: 'production',
             },
         },
+        {
+            // ═══ WEBHOOK SERVER: Always-on reply/open/click tracking ═══
+            name: 'lead-hunter-webhooks',
+            script: 'scripts/webhooks.js',
+            cwd: '/Users/danielcastillo/Projects/Websites/Bots/ghostai-lead-hunter',
+            autorestart: true, // Keep the server running
+            watch: false,
+            env: {
+                NODE_ENV: 'production',
+                WEBHOOK_PORT: 3847,
+            },
+        },
     ],
 };
