@@ -29,6 +29,7 @@
         "queue:pending": "node scripts/queue.js --pending",
         "queue:cleanup": "node scripts/queue.js --cleanup",
         "schedule": "node scripts/schedule-post.js",
+        "post:lead-wins": "node scripts/post-lead-wins.js",
         "linkedin:auth": "node scripts/linkedin-auth.js",
         "linkedin:respond": "node scripts/respond-messages.js",
         "linkedin:save-session": "node scripts/save-linkedin-session.js",
