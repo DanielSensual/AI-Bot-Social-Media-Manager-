@@ -8,6 +8,11 @@
         "qualify": "node scripts/qualify.js",
         "outreach": "node scripts/outreach.js",
         "status": "node scripts/status.js",
+        "pipeline": "node scripts/daily-pipeline.js",
+        "pipeline:dry": "node scripts/daily-pipeline.js --dry-run",
+        "pipeline:start": "pm2 start ecosystem.config.cjs",
+        "pipeline:stop": "pm2 stop all",
+        "pipeline:logs": "pm2 logs lead-hunter-daily",
         "test": "node --test \"tests/**/*.test.js\""
     },
     "dependencies": {
