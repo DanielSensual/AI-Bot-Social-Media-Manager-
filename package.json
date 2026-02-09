@@ -15,6 +15,9 @@
         "pipeline:start": "pm2 start ecosystem.config.cjs",
         "pipeline:stop": "pm2 stop all",
         "pipeline:logs": "pm2 logs lead-hunter-daily",
+        "blitz": "node scripts/blitz.js",
+        "blitz:enrich": "node scripts/blitz.js --enrich",
+        "sync": "node scripts/sync.js",
         "test": "node --test \"tests/**/*.test.js\""
     },
     "dependencies": {

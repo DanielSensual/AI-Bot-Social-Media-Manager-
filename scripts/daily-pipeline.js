@@ -18,6 +18,7 @@ import { sendBatch } from '../src/sender.js';
 import { runFollowUps } from '../src/sequencer.js';
 import { notifyDiscord } from '../src/alerts.js';
 import { getStats } from '../src/db.js';
+import { enrichEmails } from '../src/enricher.js';
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
@@ -56,6 +57,11 @@ async function run() {
     console.log('\n' + '═'.repeat(50));
     console.log('\n🧠 STEP 2: Qualifying unscored leads...\n');
     const qualifyResults = await qualifyBatch(30);
+
+    // ── Step 2.5: Enrich Emails ──
+    console.log('\n' + '═'.repeat(50));
+    console.log('\n📧 STEP 2.5: Finding emails for qualified leads...\n');
+    await enrichEmails({ limit: 50, aiSearch: false });
 
     // ── Step 3: Outreach to hot leads ──
     console.log('\n' + '═'.repeat(50));
