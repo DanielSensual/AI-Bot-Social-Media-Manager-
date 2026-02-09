@@ -77,17 +77,38 @@ Return ONLY the complete HTML file, no explanation.`;
     html = html.replace(/href="#"/g, `href="${calendarLink}"`);
     html = html.replace(/href=""/g, `href="${calendarLink}"`);
 
-    // Save the file
+    // Save the file locally
     const filename = `${slug}.html`;
     const filepath = path.join(OUTPUT_DIR, filename);
     fs.writeFileSync(filepath, html);
+
+    // Auto-deploy to ghostaisystems.com
+    const WEBSITE_URL = process.env.WEBSITE_URL || 'https://ghostaisystems.com';
+    const SYNC_TOKEN = process.env.LEAD_HUNTER_SECRET || process.env.DASHBOARD_SECRET || 'ghostai-dev-token';
+    let liveUrl = null;
+
+    try {
+        const deployRes = await fetch(`${WEBSITE_URL}/api/demo/${slug}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SYNC_TOKEN}`,
+            },
+            body: JSON.stringify({ html, leadName: lead.business_name }),
+        });
+        if (deployRes.ok) {
+            liveUrl = `${WEBSITE_URL}/demo/${slug}`;
+        }
+    } catch {
+        // Website may be offline — page is still saved locally
+    }
 
     // Update lead in DB
     const db = getDb();
     db.prepare('UPDATE leads SET updated_at = ? WHERE id = ?')
         .run(new Date().toISOString(), lead.id);
 
-    return { slug, filename, filepath, size: html.length };
+    return { slug, filename, filepath, size: html.length, liveUrl };
 }
 
 /**
@@ -111,7 +132,8 @@ export async function generateBatch(limit = 5) {
         try {
             process.stdout.write(`   🔨 ${lead.business_name}...`);
             const result = await generateLandingPage(lead);
-            console.log(` ✅ ${result.filename} (${(result.size / 1024).toFixed(1)}KB)`);
+            const urlSuffix = result.liveUrl ? ` → ${result.liveUrl}` : '';
+            console.log(` ✅ ${result.filename} (${(result.size / 1024).toFixed(1)}KB)${urlSuffix}`);
             results.push(result);
         } catch (err) {
             console.log(` ❌ ${err.message}`);
