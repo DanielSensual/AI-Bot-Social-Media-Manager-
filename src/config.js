@@ -55,6 +55,25 @@ export const config = {
         { keyword: 'ANNA', description: 'AI receptionist demo' },
         { keyword: 'GHOST', description: 'Discovery call booking' },
     ],
+
+    // Autonomy Settings - Controls how the scheduler generates content
+    autonomy: {
+        // Percentage of posts that use AI generation (vs templates)
+        aiRatio: 50,
+        // Percentage of posts that include AI-generated video
+        videoRatio: 25,
+        // Which platforms to post to
+        platforms: {
+            x: true,
+            linkedin: true,
+            facebook: true,
+            instagram: process.env.INSTAGRAM_ENABLED !== 'false',
+        },
+        // Health check before each post
+        healthCheck: true,
+        // Smart content adaptation per platform
+        contentAdapt: process.env.CONTENT_ADAPT_ENABLED === 'true',
+    },
 };
 
 export default config;

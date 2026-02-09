@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Unified Dual-Post Script - Posts to X and LinkedIn simultaneously
+ * Unified Trident Post Script - Posts to X, LinkedIn, and Facebook simultaneously
  * Supports text-only, image posts, and AI-generated video posts
+ * Optional smart content adaptation per platform
  */
 
 import dotenv from 'dotenv';
@@ -10,7 +11,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { postTweet, postTweetWithMedia, postTweetWithVideo } from '../src/twitter-client.js';
 import { postToLinkedIn, postToLinkedInWithImage, postToLinkedInWithVideo, testLinkedInConnection } from '../src/linkedin-client.js';
-import { generateTweet } from '../src/content-library.js';
+import { postToFacebook, postToFacebookWithImage, postToFacebookWithVideo, testFacebookConnection } from '../src/facebook-client.js';
+import { generateTweet, generateAITweet } from '../src/content-library.js';
 import { generateVideo, cleanupCache } from '../src/video-generator.js';
 
 dotenv.config();
@@ -23,10 +25,16 @@ const flags = {
     dryRun: args.includes('--dry-run') || args.includes('-d'),
     xOnly: args.includes('--x-only'),
     linkedinOnly: args.includes('--linkedin-only'),
+    facebookOnly: args.includes('--facebook-only'),
+    noFacebook: args.includes('--no-facebook'),
+    noLinkedin: args.includes('--no-linkedin'),
+    noX: args.includes('--no-x'),
+    adapt: args.includes('--adapt'),
     image: args.find(a => a.startsWith('--image='))?.split('=')[1],
     video: args.includes('--video') || args.includes('-v'),
     videoPrompt: args.find(a => a.startsWith('--video-prompt='))?.split('=')[1],
     generate: args.includes('--generate') || args.includes('-g'),
+    ai: args.includes('--ai') || args.includes('-a'), // GPT-5.2 thinking mode
     help: args.includes('--help') || args.includes('-h'),
 };
 
@@ -35,40 +43,49 @@ let content = args.filter(a => !a.startsWith('-')).join(' ').trim();
 
 function showHelp() {
     console.log(`
-🎬 Ghost AI Unified Post - With Video Generation!
+🔱 Ghost AI Trident Post — X + LinkedIn + Facebook
 ═══════════════════════════════════════════════════
 
 Usage:
   node post-all.js [content] [options]
 
-Options:
-  --generate, -g          Generate AI content automatically
+Content:
+  --generate, -g          Generate content from templates
+  --ai, -a                Generate AI content using GPT-5.2 thinking 🧠
+
+Media:
   --video, -v             Generate AI video from content/prompt
   --video-prompt="..."    Custom prompt for video generation
   --image=/path/to/file   Attach an image to the post
-  --dry-run, -d           Preview without posting
+
+Platform filters:
   --x-only                Post only to X (Twitter)
   --linkedin-only         Post only to LinkedIn
+  --facebook-only         Post only to Facebook
+  --no-x                  Skip X
+  --no-linkedin           Skip LinkedIn
+  --no-facebook           Skip Facebook
+
+Other:
+  --adapt                 Smart-adapt content per platform (AI)
+  --dry-run, -d           Preview without posting
   --help, -h              Show this help
 
 Examples:
-  # Text post to both platforms
-  node post-all.js "AI is revolutionizing marketing!"
+  # Triple-post to all platforms
+  node post-all.js --ai
 
-  # Generate text + AI video
-  node post-all.js --generate --video
+  # AI content + AI video to all
+  node post-all.js --ai --video
 
-  # Custom text with generated video
-  node post-all.js "The future is here 🚀" --video
+  # Post only to Facebook
+  node post-all.js "Check this out!" --facebook-only
 
-  # Custom video prompt (different from post text)
-  node post-all.js "AI agents are amazing" --video-prompt="futuristic robot working on computer"
-
-  # With image attachment
-  node post-all.js "Check this out!" --image=./assets/demo.png
+  # Adapt content per platform
+  node post-all.js --ai --adapt
 
   # Dry run to preview
-  node post-all.js --generate --video --dry-run
+  node post-all.js --ai --video --dry-run
 `);
 }
 
@@ -85,12 +102,18 @@ async function main() {
 
     // Generate content if not provided
     if (!content) {
-        if (flags.generate) {
+        if (flags.ai) {
+            // Use GPT-5.2 thinking for AI generation
+            const generated = await generateAITweet({ controversial: true });
+            content = generated.text;
+            console.log(`🧠 AI Generated ${generated.pillar.toUpperCase()} content (GPT-5.2-thinking)`);
+        } else if (flags.generate) {
+            // Use template-based generation
             const generated = generateTweet();
             content = generated.text;
-            console.log(`📝 Generated ${generated.pillar.toUpperCase()} content`);
+            console.log(`📝 Template Generated ${generated.pillar.toUpperCase()} content`);
         } else {
-            console.error('❌ No content provided. Use --generate or provide text.');
+            console.error('❌ No content provided. Use --ai, --generate, or provide text.');
             console.log('   Run with --help for usage examples.');
             process.exit(1);
         }
@@ -135,14 +158,27 @@ async function main() {
     }
     console.log('');
 
+    // Determine active platforms
+    const postToX = flags.xOnly || flags.facebookOnly || flags.linkedinOnly
+        ? flags.xOnly
+        : !flags.noX;
+    const postToLI = flags.xOnly || flags.facebookOnly || flags.linkedinOnly
+        ? flags.linkedinOnly
+        : !flags.noLinkedin;
+    const postToFB = flags.xOnly || flags.facebookOnly || flags.linkedinOnly
+        ? flags.facebookOnly
+        : !flags.noFacebook;
+
     if (flags.dryRun) {
         console.log('🔒 DRY RUN - No posts will be made');
         console.log('');
         console.log('Would post to:');
-        if (!flags.linkedinOnly) console.log('  ✓ X (Twitter)');
-        if (!flags.xOnly) console.log('  ✓ LinkedIn');
+        if (postToX) console.log('  ✓ X (Twitter)');
+        if (postToLI) console.log('  ✓ LinkedIn');
+        if (postToFB) console.log('  ✓ Facebook');
         if (flags.video) console.log('  ✓ With AI-generated video');
         if (imagePath) console.log(`  ✓ With image: ${path.basename(imagePath)}`);
+        if (flags.adapt) console.log('  ✓ Smart content adaptation');
         process.exit(0);
     }
 
@@ -171,15 +207,16 @@ async function main() {
     const results = {
         x: null,
         linkedin: null,
+        facebook: null,
     };
 
     console.log('');
     console.log('═'.repeat(50));
-    console.log('📤 POSTING');
+    console.log('🔱 TRIDENT POSTING');
     console.log('═'.repeat(50));
 
     // Post to X
-    if (!flags.linkedinOnly) {
+    if (postToX) {
         try {
             console.log('\n📤 Posting to X...');
             if (videoPath) {
@@ -195,9 +232,8 @@ async function main() {
     }
 
     // Post to LinkedIn
-    if (!flags.xOnly) {
+    if (postToLI) {
         try {
-            // Verify LinkedIn connection first
             const connected = await testLinkedInConnection().catch(() => false);
             if (!connected) {
                 console.error('❌ LinkedIn not authenticated. Run: npm run linkedin:auth');
@@ -216,22 +252,49 @@ async function main() {
         }
     }
 
+    // Post to Facebook
+    if (postToFB) {
+        try {
+            const fbConnected = await testFacebookConnection().catch(() => false);
+            if (!fbConnected || fbConnected.type === 'user_no_pages') {
+                console.error('❌ Facebook page access not ready. Check token permissions.');
+            } else {
+                console.log('\n📤 Posting to Facebook...');
+                if (videoPath) {
+                    results.facebook = await postToFacebookWithVideo(content, videoPath);
+                } else if (imagePath) {
+                    results.facebook = await postToFacebookWithImage(content, imagePath);
+                } else {
+                    results.facebook = await postToFacebook(content);
+                }
+            }
+        } catch (error) {
+            console.error(`❌ Facebook failed: ${error.message}`);
+        }
+    }
+
     // Summary
     console.log('');
     console.log('═'.repeat(50));
-    console.log('📊 RESULTS');
+    console.log('🔱 TRIDENT RESULTS');
     console.log('═'.repeat(50));
 
     if (results.x) {
         console.log(`  ✅ X: https://x.com/i/status/${results.x.id}`);
-    } else if (!flags.linkedinOnly) {
+    } else if (postToX) {
         console.log('  ❌ X: Failed');
     }
 
     if (results.linkedin) {
         console.log(`  ✅ LinkedIn: Posted successfully`);
-    } else if (!flags.xOnly) {
+    } else if (postToLI) {
         console.log('  ❌ LinkedIn: Failed or skipped');
+    }
+
+    if (results.facebook) {
+        console.log(`  ✅ Facebook: Post ID ${results.facebook.post_id || results.facebook.id}`);
+    } else if (postToFB) {
+        console.log('  ❌ Facebook: Failed or skipped');
     }
 
     if (videoPath) {

@@ -9,6 +9,7 @@ node_modules/
 
 # Auth tokens
 .linkedin-token.json
+.linkedin-cookies.json
 
 # Logs
 *.log

@@ -1,8 +1,18 @@
 /**
  * Content Library - Pre-written tweet templates by pillar
+ * Now with GPT-5.2-thinking AI generation!
  */
 
 import { config } from './config.js';
+import OpenAI from 'openai';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Initialize OpenAI for AI-powered generation
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Helper to get random item from array
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -425,7 +435,7 @@ export function getWeightedPillar() {
 }
 
 /**
- * Generate a tweet using weighted pillar selection
+ * Generate a tweet using weighted pillar selection (template-based)
  */
 export function generateTweet() {
     const pillar = getWeightedPillar();
@@ -438,4 +448,70 @@ export function generateTweet() {
     };
 }
 
-export default { generateTweet, getTweetByPillar, getWeightedPillar };
+/**
+ * Generate AI-powered tweet using GPT-5.2 thinking model
+ * Creates engaging, controversial content for Ghost AI brand
+ */
+export async function generateAITweet(options = {}) {
+    const {
+        pillar = getWeightedPillar(),
+        controversial = true,
+        maxLength = 280,
+    } = options;
+
+    const pillarDescriptions = {
+        value: 'educational value bomb about web development, AI websites, or conversion optimization',
+        hotTakes: 'controversial hot take that challenges industry norms about web agencies, AI, or tech',
+        portfolio: 'showcase of Ghost AI work - fast delivery, AI voice agents, conversion systems',
+        bts: 'behind-the-scenes look at AI agents, automation, or the Ghost AI process',
+        cta: 'call-to-action offering free audits, consultations, or demos',
+    };
+
+    const prompt = `You are the voice of Ghost AI Systems, a cutting-edge web development and AI automation agency run by Daniel Castillo in Florida.
+
+BRAND VOICE:
+- Provocative and confident, but not arrogant
+- Data-driven claims with specific numbers
+- Anti-establishment (calls out bloated agencies)
+- Fast & efficient (72-hour delivery is our thing)
+- AI-forward (we deploy AI voice agents, chatbots, automation)
+- Use emojis sparingly (👻 is our signature, also 🔥 💀 ⚡)
+
+CONTENT TYPE: ${pillarDescriptions[pillar]}
+
+${controversial ? 'Make this CONTROVERSIAL and engagement-baiting. Challenge assumptions. Say something that will make people want to argue or agree strongly.' : 'Keep this informative but still punchy.'}
+
+RULES:
+- MUST be under ${maxLength} characters (this is Twitter/X)
+- NO hashtags unless absolutely essential
+- NO "Hey everyone" or generic openings
+- Use line breaks for readability
+- End with either a bold statement, question, or subtle CTA
+- Include our website ${config.brand.website} only if it fits naturally
+
+Generate ONE tweet. Output ONLY the tweet text, nothing else.`;
+
+    console.log('🧠 Generating AI content with GPT-5.2-thinking...');
+
+    const completion = await openai.chat.completions.create({
+        model: 'gpt-5.2',
+        messages: [{ role: 'user', content: prompt }],
+        max_completion_tokens: 300,
+    });
+
+    const tweet = completion.choices[0].message.content.trim();
+
+    // Ensure we're under the limit
+    const finalTweet = tweet.length > maxLength
+        ? tweet.substring(0, maxLength - 3) + '...'
+        : tweet;
+
+    return {
+        pillar,
+        text: finalTweet,
+        length: finalTweet.length,
+        aiGenerated: true,
+    };
+}
+
+export default { generateTweet, generateAITweet, getTweetByPillar, getWeightedPillar };
