@@ -1,12 +1,14 @@
 /**
  * LinkedIn API Client
- * Uses OAuth 2.0 for authentication and the Share API for posting
+ * Uses OAuth 2.0 for authentication and the Share API for posting.
+ * Includes token refresh, expiry warnings, and alerting integration.
  */
 
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { alertTokenExpiry, alertPostFailure } from './alerting.js';
 
 dotenv.config();
 
@@ -14,6 +16,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TOKEN_FILE = path.join(__dirname, '..', '.linkedin-token.json');
 
 const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2';
+const TOKEN_WARN_DAYS = 7;  // Alert when token expires in fewer than this many days
+const TOKEN_REFRESH_DAYS = 10; // Attempt refresh when fewer than this many days remain
 
 /**
  * Load stored access token
@@ -37,7 +41,8 @@ function saveToken(token) {
 }
 
 /**
- * Get current access token or throw if not authenticated
+ * Get current access token or throw if not authenticated.
+ * Also checks for upcoming expiry and fires alerts.
  */
 function getAccessToken() {
     const token = loadToken();
@@ -50,7 +55,99 @@ function getAccessToken() {
         throw new Error('LinkedIn token expired. Run: npm run linkedin:auth');
     }
 
+    // Check for upcoming expiry and warn
+    if (token.expires_at) {
+        const daysLeft = Math.floor((token.expires_at - Date.now()) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= TOKEN_WARN_DAYS) {
+            console.warn(`⚠️ LinkedIn token expires in ${daysLeft} days!`);
+            alertTokenExpiry('LinkedIn', daysLeft).catch(() => { });
+        }
+    }
+
     return token.access_token;
+}
+
+/**
+ * Attempt to refresh the LinkedIn access token using the refresh_token.
+ * LinkedIn Community Management API tokens support refresh_token grants.
+ * @returns {Promise<boolean>} True if refresh succeeded
+ */
+export async function refreshToken() {
+    const token = loadToken();
+    if (!token?.refresh_token) {
+        console.log('ℹ️ No refresh_token available — manual re-auth required.');
+        return false;
+    }
+
+    const clientId = process.env.LINKEDIN_CLIENT_ID;
+    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+
+    try {
+        const params = new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: token.refresh_token,
+            client_id: clientId,
+            client_secret: clientSecret,
+        });
+
+        const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params,
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            console.error(`❌ Token refresh failed: ${response.status} - ${error}`);
+            return false;
+        }
+
+        const newToken = await response.json();
+        newToken.expires_at = Date.now() + (newToken.expires_in * 1000);
+
+        // Preserve refresh_token if not returned in the new response
+        if (!newToken.refresh_token && token.refresh_token) {
+            newToken.refresh_token = token.refresh_token;
+        }
+
+        saveToken(newToken);
+        const days = Math.round(newToken.expires_in / 86400);
+        console.log(`✅ LinkedIn token refreshed! Expires in ${days} days.`);
+        return true;
+    } catch (err) {
+        console.error(`❌ Token refresh error: ${err.message}`);
+        return false;
+    }
+}
+
+/**
+ * Check token health: refresh if close to expiry, alert if manual intervention needed.
+ * Call this from health checks or before posting.
+ */
+export async function ensureTokenHealth() {
+    const token = loadToken();
+    if (!token?.access_token) return false;
+
+    if (token.expires_at) {
+        const daysLeft = Math.floor((token.expires_at - Date.now()) / (1000 * 60 * 60 * 24));
+
+        if (daysLeft <= 0) {
+            console.error('❌ LinkedIn token has expired.');
+            // Try refresh as last resort
+            return await refreshToken();
+        }
+
+        if (daysLeft <= TOKEN_REFRESH_DAYS) {
+            console.log(`⏳ LinkedIn token expires in ${daysLeft} days — attempting refresh...`);
+            const refreshed = await refreshToken();
+            if (!refreshed && daysLeft <= TOKEN_WARN_DAYS) {
+                await alertTokenExpiry('LinkedIn', daysLeft).catch(() => { });
+            }
+            return refreshed || daysLeft > 0; // Still valid even if refresh failed
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -465,4 +562,6 @@ export default {
     getAuthUrl,
     exchangeCodeForToken,
     getProfile,
+    refreshToken,
+    ensureTokenHealth,
 };

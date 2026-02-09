@@ -24,12 +24,17 @@
         "facebook:comments": "node scripts/respond-comments.js",
         "analytics": "node scripts/analytics-report.js",
         "analytics:week": "node scripts/analytics-report.js --week",
+        "performance": "node scripts/performance-report.js",
+        "queue": "node scripts/queue.js",
+        "queue:pending": "node scripts/queue.js --pending",
+        "queue:cleanup": "node scripts/queue.js --cleanup",
         "schedule": "node scripts/schedule-post.js",
         "linkedin:auth": "node scripts/linkedin-auth.js",
         "linkedin:respond": "node scripts/respond-messages.js",
         "linkedin:save-session": "node scripts/save-linkedin-session.js",
         "test": "node --test \"tests/**/*.test.js\"",
-        "test:connection": "node scripts/test-connection.js"
+        "test:connection": "node scripts/test-connection.js",
+        "sync:dashboard": "node scripts/sync-dashboard.js"
     },
     "keywords": [
         "twitter",

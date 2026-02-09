@@ -56,7 +56,7 @@ Scheduling (pick one):
 
 Content (pick one):
   "Your text here"     Custom text
-  --ai, -a             AI-generated content (GPT-5.2)
+  --ai, -a             AI-generated content (configured LLM)
   --generate, -g       Template-generated content
 
 Options:

@@ -5,14 +5,17 @@
 
 import cron from 'node-cron';
 import { config } from './config.js';
-import { postTweet, postTweetWithVideo, testConnection } from './twitter-client.js';
-import { postToLinkedIn, postToLinkedInWithVideo, testLinkedInConnection } from './linkedin-client.js';
-import { postToFacebook, postToFacebookWithVideo, testFacebookConnection } from './facebook-client.js';
+import { postTweet, postTweetWithMedia, postTweetWithVideo, testConnection } from './twitter-client.js';
+import { postToLinkedIn, postToLinkedInWithImage, postToLinkedInWithVideo, testLinkedInConnection, ensureTokenHealth } from './linkedin-client.js';
+import { postToFacebook, postToFacebookWithImage, postToFacebookWithVideo, testFacebookConnection } from './facebook-client.js';
 import { postToInstagram, postInstagramReel, testInstagramConnection, uploadToTempHost } from './instagram-client.js';
 import { generateTweet, generateAITweet } from './content-library.js';
 import { adaptForAll } from './content-adapter.js';
 import { generateVideo, cleanupCache } from './video-generator.js';
+import { generateImage, cleanupImageCache } from './image-generator.js';
 import { isDuplicate, record } from './post-history.js';
+import { alertPostFailure, alertHealthCheckFailure, recordFailure, clearFailure } from './alerting.js';
+import { getTopPerformingExamples } from './content-feedback.js';
 
 /**
  * Decide whether to use a feature based on configured ratio (0-100)
@@ -39,19 +42,33 @@ async function autonomousPost() {
         console.log('\n🩺 Running health checks...');
         if (autonomy.platforms.x) {
             const xOk = await testConnection().catch(() => false);
-            if (!xOk) console.warn('   ⚠️ X API health check failed — will attempt post anyway');
+            if (!xOk) {
+                console.warn('   ⚠️ X API health check failed — will attempt post anyway');
+                alertHealthCheckFailure('X', new Error('Connection test failed')).catch(() => { });
+            }
         }
         if (autonomy.platforms.linkedin) {
+            // Check token health + refresh if needed
+            await ensureTokenHealth().catch(() => { });
             const liOk = await testLinkedInConnection().catch(() => false);
-            if (!liOk) console.warn('   ⚠️ LinkedIn health check failed — will skip LinkedIn');
+            if (!liOk) {
+                console.warn('   ⚠️ LinkedIn health check failed — will skip LinkedIn');
+                alertHealthCheckFailure('LinkedIn', new Error('Connection test failed')).catch(() => { });
+            }
         }
         if (autonomy.platforms.facebook) {
             const fbOk = await testFacebookConnection().catch(() => false);
-            if (!fbOk) console.warn('   ⚠️ Facebook health check failed — will skip Facebook');
+            if (!fbOk) {
+                console.warn('   ⚠️ Facebook health check failed — will skip Facebook');
+                alertHealthCheckFailure('Facebook', new Error('Connection test failed')).catch(() => { });
+            }
         }
         if (autonomy.platforms.instagram) {
             const igOk = await testInstagramConnection().catch(() => false);
-            if (!igOk) console.warn('   ⚠️ Instagram health check failed — will skip Instagram');
+            if (!igOk) {
+                console.warn('   ⚠️ Instagram health check failed — will skip Instagram');
+                alertHealthCheckFailure('Instagram', new Error('Connection test failed')).catch(() => { });
+            }
         }
     }
 
@@ -105,6 +122,8 @@ async function autonomousPost() {
 
     // Generate video if decided
     let videoPath = null;
+    let imagePath = null;
+
     if (useVideo) {
         try {
             console.log('\n🎬 Generating AI video...');
@@ -115,7 +134,19 @@ async function autonomousPost() {
             });
         } catch (error) {
             console.error(`❌ Video generation failed: ${error.message}`);
-            console.log('   Falling back to text-only post');
+            console.log('   Falling back to image generation...');
+        }
+    }
+
+    // Generate image if no video (ensures Instagram always has media)
+    if (!videoPath) {
+        try {
+            console.log('\n🎨 Generating branded image...');
+            cleanupImageCache();
+            imagePath = await generateImage(content.text, { style: 'bold' });
+        } catch (error) {
+            console.warn(`⚠️ Image generation failed: ${error.message}`);
+            console.log('   Proceeding with text-only post');
         }
     }
 
@@ -141,11 +172,16 @@ async function autonomousPost() {
             console.log('\n📤 Posting to X...');
             if (videoPath) {
                 results.x = await postTweetWithVideo(getText('x'), videoPath);
+            } else if (imagePath) {
+                results.x = await postTweetWithMedia(getText('x'), imagePath);
             } else {
                 results.x = await postTweet(getText('x'));
             }
+            clearFailure('X');
         } catch (error) {
             console.error(`❌ X post failed: ${error.message}`);
+            recordFailure('X');
+            alertPostFailure('X', error).catch(() => { });
         }
     }
 
@@ -157,14 +193,19 @@ async function autonomousPost() {
                 console.log('\n📤 Posting to LinkedIn...');
                 if (videoPath) {
                     results.linkedin = await postToLinkedInWithVideo(getText('linkedin'), videoPath);
+                } else if (imagePath) {
+                    results.linkedin = await postToLinkedInWithImage(getText('linkedin'), imagePath);
                 } else {
                     results.linkedin = await postToLinkedIn(getText('linkedin'));
                 }
+                clearFailure('LinkedIn');
             } else {
                 console.warn('   ⚠️ LinkedIn not authenticated, skipping');
             }
         } catch (error) {
             console.error(`❌ LinkedIn post failed: ${error.message}`);
+            recordFailure('LinkedIn');
+            alertPostFailure('LinkedIn', error).catch(() => { });
         }
     }
 
@@ -176,14 +217,19 @@ async function autonomousPost() {
                 console.log('\n📤 Posting to Facebook...');
                 if (videoPath) {
                     results.facebook = await postToFacebookWithVideo(getText('facebook'), videoPath);
+                } else if (imagePath) {
+                    results.facebook = await postToFacebookWithImage(getText('facebook'), imagePath);
                 } else {
                     results.facebook = await postToFacebook(getText('facebook'));
                 }
+                clearFailure('Facebook');
             } else {
                 console.warn('   ⚠️ Facebook not ready (no page access), skipping');
             }
         } catch (error) {
             console.error(`❌ Facebook post failed: ${error.message}`);
+            recordFailure('Facebook');
+            alertPostFailure('Facebook', error).catch(() => { });
         }
     }
 
@@ -194,17 +240,23 @@ async function autonomousPost() {
             if (igConnected) {
                 console.log('\n📤 Posting to Instagram...');
                 if (videoPath) {
-                    // Upload video to temp host for IG
                     const publicVideoUrl = await uploadToTempHost(videoPath);
                     results.instagram = await postInstagramReel(getText('instagram'), publicVideoUrl);
+                } else if (imagePath) {
+                    // Upload image to public host for IG Content Publishing API
+                    const publicImageUrl = await uploadToTempHost(imagePath);
+                    results.instagram = await postToInstagram(getText('instagram'), publicImageUrl);
                 } else {
                     console.log('   ⚠️ Instagram requires media — skipping text-only post');
                 }
+                clearFailure('Instagram');
             } else {
                 console.warn('   ⚠️ Instagram not connected, skipping');
             }
         } catch (error) {
             console.error(`❌ Instagram post failed: ${error.message}`);
+            recordFailure('Instagram');
+            alertPostFailure('Instagram', error).catch(() => { });
         }
     }
 
@@ -214,10 +266,12 @@ async function autonomousPost() {
         pillar: content.pillar,
         aiGenerated: useAI,
         hasVideo: !!videoPath,
+        hasImage: !!imagePath,
         results: {
             x: results.x ? `https://x.com/i/status/${results.x.id}` : null,
             linkedin: results.linkedin ? 'posted' : null,
             facebook: results.facebook ? 'posted' : null,
+            instagram: results.instagram ? 'posted' : null,
         },
     });
 
@@ -233,6 +287,7 @@ async function autonomousPost() {
     if (results.instagram) console.log(`  ✅ Instagram: ${results.instagram.id}`);
     else if (autonomy.platforms.instagram) console.log('  ❌ Instagram: Failed or skipped');
     if (videoPath) console.log(`  🎬 Video: Yes`);
+    if (imagePath) console.log(`  🎨 Image: Yes`);
     if (adapted) console.log('  🎯 Content: Adapted per platform');
     console.log('─'.repeat(50));
 }

@@ -35,7 +35,7 @@ const flags = {
     video: args.includes('--video') || args.includes('-v'),
     videoPrompt: args.find(a => a.startsWith('--video-prompt='))?.split('=')[1],
     generate: args.includes('--generate') || args.includes('-g'),
-    ai: args.includes('--ai') || args.includes('-a'), // GPT-5.2 thinking mode
+    ai: args.includes('--ai') || args.includes('-a'), // LLM-generated mode
     help: args.includes('--help') || args.includes('-h'),
 };
 
@@ -52,7 +52,7 @@ Usage:
 
 Content:
   --generate, -g          Generate content from templates
-  --ai, -a                Generate AI content using GPT-5.2 thinking 🧠
+  --ai, -a                Generate AI content using your configured LLM 🧠
 
 Media:
   --video, -v             Generate AI video from content/prompt
@@ -104,10 +104,10 @@ async function main() {
     // Generate content if not provided
     if (!content) {
         if (flags.ai) {
-            // Use GPT-5.2 thinking for AI generation
+            // Use configured LLM provider for AI generation
             const generated = await generateAITweet({ controversial: true });
             content = generated.text;
-            console.log(`🧠 AI Generated ${generated.pillar.toUpperCase()} content (GPT-5.2-thinking)`);
+            console.log(`🧠 AI Generated ${generated.pillar.toUpperCase()} content`);
         } else if (flags.generate) {
             // Use template-based generation
             const generated = generateTweet();

@@ -131,7 +131,7 @@ Reply:`;
         prompt,
         maxOutputTokens: 200,
         openaiModel: 'gpt-5.2',
-        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 
     return text.trim();

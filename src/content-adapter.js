@@ -76,7 +76,7 @@ Rewritten content:`;
         prompt,
         maxOutputTokens: 800,
         openaiModel: 'gpt-5.2',
-        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 
     const adapted = adaptedText?.trim();
@@ -138,7 +138,7 @@ OUTPUT FORMAT (strict JSON):
             prompt,
             maxOutputTokens: 2000,
             openaiModel: 'gpt-5.2',
-            geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+            geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
         });
 
         const raw = rawText?.trim() || '';

@@ -1,6 +1,6 @@
 /**
  * Content Library - Pre-written tweet templates by pillar
- * Now with GPT-5.2-thinking AI generation!
+ * Includes AI-assisted generation via configured LLM providers.
  */
 
 import { config } from './config.js';
@@ -444,7 +444,7 @@ export function generateTweet() {
 }
 
 /**
- * Generate AI-powered tweet using GPT-5.2 thinking model
+ * Generate AI-powered tweet using configured LLM provider(s)
  * Creates engaging, controversial content for Ghost AI brand
  */
 export async function generateAITweet(options = {}) {
@@ -492,7 +492,7 @@ Generate ONE tweet. Output ONLY the tweet text, nothing else.`;
         prompt,
         maxOutputTokens: 300,
         openaiModel: 'gpt-5.2',
-        geminiModel: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+        geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 
     const tweet = text.trim();
