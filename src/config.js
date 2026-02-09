@@ -74,6 +74,21 @@ export const config = {
         // Smart content adaptation per platform
         contentAdapt: process.env.CONTENT_ADAPT_ENABLED === 'true',
     },
+
+    // Facebook Sales Funnel
+    facebookFunnel: {
+        website: 'https://ghostaisystems.com',
+        ctaPages: [
+            '/buy',       // SiteDrop purchase
+            '/intake',    // Lead form
+            '/consulting', // High-ticket consulting
+            '/ai',        // AI stack showcase
+        ],
+        // Every Nth post gets a direct link injected
+        ctaFrequency: 3,
+        // Reel ratio for Facebook (higher than X/LinkedIn)
+        reelRatio: 60,
+    },
 };
 
 export default config;

@@ -17,6 +17,31 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_TIMES = ['09:30', '13:00', '18:30', '21:00'];
+const WEBSITE = 'https://ghostaisystems.com';
+const CTA_LINKS = [
+    { url: `${WEBSITE}`, label: 'See what we build' },
+    { url: `${WEBSITE}/buy`, label: 'Get a site shipped in 72 hours' },
+    { url: `${WEBSITE}/intake`, label: 'Ask us anything' },
+    { url: `${WEBSITE}/consulting`, label: 'Book a strategy call' },
+    { url: `${WEBSITE}/ai`, label: 'See our AI stack' },
+];
+
+// Counter for CTA injection — every 3rd post gets a direct link
+let postCounter = 0;
+
+function getCtaLink() {
+    return CTA_LINKS[Math.floor(Math.random() * CTA_LINKS.length)];
+}
+
+function injectCTA(caption) {
+    postCounter++;
+    if (postCounter % 3 === 0) {
+        const cta = getCtaLink();
+        return `${caption}\n\n🔗 ${cta.label}: ${cta.url}`;
+    }
+    return caption;
+}
+
 const STRATEGIES = [
     {
         id: 'myth-breaker',
@@ -83,6 +108,73 @@ If you could deploy one AI agent today, what should it own?
 
 Reply with a number and I will share the fastest implementation path.`,
         fallbackVideoPrompt: 'Vertical 9:16 social-first visual with bold kinetic typography-style motion and abstract AI interface backgrounds, optimized for immediate attention and a polling call-to-action feel.',
+    },
+    {
+        id: 'viral-ai-stat',
+        angle: 'Share a jaw-dropping AI statistic or prediction that stops scrollers. Frame it as an opportunity, not a threat. Position Ghost AI Systems as the team already building this future.',
+        cta: `Link to ${WEBSITE} with a soft CTA.`,
+        fallbackCaption: `AI agents will handle 80% of customer interactions by 2027.
+
+Not chatbots. Autonomous agents that:
+→ Answer calls in any language
+→ Book appointments 24/7
+→ Follow up on leads instantly
+→ Never take a day off
+
+We already build these for businesses.
+
+🔗 See the stack: ${WEBSITE}/ai`,
+        fallbackVideoPrompt: 'Vertical 9:16 futuristic AI control room with holographic dashboards, autonomous agents represented as glowing orbs processing requests, dramatic cinematic lighting with deep blue and gold tones.',
+    },
+    {
+        id: 'website-showcase',
+        angle: 'Showcase what Ghost AI Systems ships in 72 hours — a production-ready website with AI integrations, analytics, and security. Make it aspirational.',
+        cta: `Direct link to ${WEBSITE}/buy to purchase SiteDrop.`,
+        fallbackCaption: `What you get when we build your website:
+
+✓ Full custom design + development
+✓ SEO + metadata setup
+✓ AI voice agent integration
+✓ Analytics dashboard
+✓ Security headers
+✓ Cross-device testing
+✓ Production deploy
+
+All in 72 hours. Not a prototype — a system.
+
+🔗 Get started: ${WEBSITE}/buy`,
+        fallbackVideoPrompt: 'Vertical 9:16 rapid-fire montage of beautiful websites being designed, coded, and deployed — screens lighting up with analytics dashboards, phones ringing with AI voice agents, all set to dynamic electronic music pace.',
+    },
+    {
+        id: 'ai-hot-take',
+        angle: 'Drop a controversial opinion about AI that sparks debate. Be bold. Take a side. Make people feel something — then position Ghost AI as proof of the thesis.',
+        cta: 'Engage commenters and mention the website naturally.',
+        fallbackCaption: `Hot take: 90% of "AI companies" are just API wrappers.
+
+Real AI integration means:
+• Voice agents that book appointments
+• Systems that learn from your data
+• Automation that runs while you sleep
+
+We ship real AI systems, not demos.
+
+🔗 ${WEBSITE}`,
+        fallbackVideoPrompt: 'Vertical 9:16 dramatic split-screen: left side shows a generic chatbot widget, right side shows a full AI operations center with voice agents, booking flows, and analytics — cinematic reveal.',
+    },
+    {
+        id: 'free-audit-offer',
+        angle: 'Offer a free AI website audit to drive inbound leads. Create urgency with limited spots.',
+        cta: `Direct link to ${WEBSITE}/intake for the audit form.`,
+        fallbackCaption: `Free for the next 48 hours:
+
+I will personally audit your website and show you:
+✓ 3 quick wins for more conversions
+✓ How AI can handle your leads 24/7
+✓ What your competitors are doing that you're not
+
+DM "AUDIT" or fill out the form:
+🔗 ${WEBSITE}/intake`,
+        fallbackVideoPrompt: 'Vertical 9:16 screen recording style showing a website audit in progress — highlighting conversion issues, then AI improvements being implemented in real-time, satisfying before/after reveal.',
     },
 ];
 
@@ -164,6 +256,7 @@ async function generateAICreative(strategy, useReel) {
     if (!hasLLMProvider()) return null;
 
     const prompt = `You create high-performing Facebook Page content for "Artificial Intelligence Knowledge".
+This page is run by Ghost AI Systems (${WEBSITE}) — an AI agency that ships production-ready websites in 72 hours with AI voice agents, analytics, and automation.
 
 OBJECTIVE:
 ${strategy.angle}
@@ -181,11 +274,13 @@ Return strict JSON only:
 RULES:
 - Caption should be concise, scannable, and compelling.
 - Use short paragraphs and line breaks.
-- No hashtags unless absolutely necessary.
+- No hashtags unless absolutely necessary (max 3).
 - No markdown.
-- Make the first line a strong hook.
-- Keep caption between 140 and 500 characters.
+- Make the first line a strong hook that stops scrollers.
+- Keep caption between 200 and 600 characters.
+- If the strategy CTA mentions a link, INCLUDE the exact URL in the caption.
 - If useReel=true, videoPrompt must describe a cinematic 9:16 scroll-stopping scene.
+- Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.
 
 useReel=${useReel ? 'true' : 'false'}`;
 
@@ -322,9 +417,9 @@ async function runScheduledCycle(options = {}) {
                 duration: config.videoDuration,
             });
             savedVideoPath = saveAgenticVideo(generatedVideoPath);
-            result = await postToFacebookWithVideo(creative.caption, savedVideoPath);
+            result = await postToFacebookWithVideo(injectCTA(creative.caption), savedVideoPath);
         } else {
-            result = await postToFacebook(creative.caption);
+            result = await postToFacebook(injectCTA(creative.caption));
         }
 
         record({
