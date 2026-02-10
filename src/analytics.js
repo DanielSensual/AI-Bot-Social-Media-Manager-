@@ -13,7 +13,7 @@ import { getRecent } from './post-history.js';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const GRAPH_API_VERSION = 'v21.0';
+const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 const LOGS_DIR = path.join(__dirname, '..', 'logs', 'analytics');
 

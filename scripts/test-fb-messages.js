@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
-const API = 'https://graph.facebook.com/v21.0';
+const API = 'https://graph.facebook.com/v24.0';
 
 async function api(path) {
     const sep = path.includes('?') ? '&' : '?';

@@ -1,6 +1,6 @@
 /**
  * Facebook Page API Client
- * Posts to Facebook Pages via the Graph API v21.0
+ * Posts to Facebook Pages via the Graph API v24.0
  *
  * Required permissions: pages_manage_posts, pages_show_list, pages_read_engagement
  * Token must be a User Access Token with page management permissions,
@@ -15,7 +15,7 @@ import { fileURLToPath } from 'url';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const GRAPH_API_VERSION = 'v21.0';
+const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 /**

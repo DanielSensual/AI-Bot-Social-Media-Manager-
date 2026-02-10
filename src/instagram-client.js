@@ -1,6 +1,6 @@
 /**
  * Instagram Content Publishing Client
- * Posts to Instagram via the IG Content Publishing API (Graph API v21.0)
+ * Posts to Instagram via the IG Content Publishing API (Graph API v24.0)
  *
  * Requires:
  * - Facebook Page linked to an Instagram Business/Creator Account
@@ -14,7 +14,7 @@ import path from 'path';
 
 dotenv.config();
 
-const GRAPH_API_VERSION = 'v21.0';
+const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 /**

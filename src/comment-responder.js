@@ -12,7 +12,7 @@ import { hasLLMProvider, generateText } from './llm-client.js';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const GRAPH_API_VERSION = 'v21.0';
+const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 const LOGS_DIR = path.join(__dirname, '..', 'logs', 'facebook-comments');
 const REPLIED_FILE = path.join(__dirname, '..', '.fb-comment-replied.json');
