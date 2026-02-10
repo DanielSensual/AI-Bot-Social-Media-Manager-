@@ -10,6 +10,7 @@ node_modules/
 # Auth tokens
 .linkedin-token.json
 .linkedin-cookies.json
+.instagram-session.json
 
 # Logs
 *.log
@@ -20,3 +21,6 @@ logs/
 
 # Video cache
 .video-cache/
+
+# Runtime state
+.ig-engaged.json

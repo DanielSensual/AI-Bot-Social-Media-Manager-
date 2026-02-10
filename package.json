@@ -22,6 +22,7 @@
         "facebook:set-cover": "node scripts/set-facebook-cover.js",
         "facebook:respond": "node scripts/respond-facebook.js",
         "facebook:comments": "node scripts/respond-comments.js",
+        "instagram:engage": "node scripts/engage-instagram.js",
         "analytics": "node scripts/analytics-report.js",
         "analytics:week": "node scripts/analytics-report.js --week",
         "performance": "node scripts/performance-report.js",
