@@ -12,9 +12,11 @@ const openaiClient = process.env.OPENAI_API_KEY
     ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     : null;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GROK_API_KEY = process.env.GROK_API_KEY || process.env.XAI_API_KEY || '';
-const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.2';
+const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
+
+
 const DEFAULT_GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview';
 const DEFAULT_GROK_MODEL = process.env.GROK_MODEL || 'grok-3';
 
@@ -24,8 +26,8 @@ function getProviderOrder(requestedProvider = 'auto') {
     if (mode === 'openai') return ['openai'];
     if (mode === 'gemini') return ['gemini'];
     if (mode === 'grok') return ['grok'];
-    // Auto mode prefers Gemini first (user-requested default), then falls back to OpenAI.
-    return ['gemini', 'openai', 'grok'];
+    // Auto mode uses OpenAI + Grok first, with Gemini as a backup provider.
+    return ['openai', 'grok', 'gemini'];
 }
 
 async function callOpenAI({

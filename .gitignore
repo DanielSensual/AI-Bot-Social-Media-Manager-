@@ -24,3 +24,6 @@ logs/
 
 # Runtime state
 .ig-engaged.json
+.ai-engaged.json
+.x-engaged.json
+.x-session.json

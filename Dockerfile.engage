@@ -1,0 +1,30 @@
+# ==============================================================================
+# AI Takeover Engagement Bot — Railway Dockerfile
+# Uses Microsoft's Playwright image (Chromium pre-installed)
+# ==============================================================================
+
+FROM mcr.microsoft.com/playwright:v1.51.0-noble
+
+WORKDIR /app
+
+# Install production dependencies
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Install node-cron for scheduling
+RUN npm install node-cron
+
+# Copy application code
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+
+# Copy brain file if it exists
+COPY ai-takeover-brain.md* ./
+
+# Create data/logs directories
+RUN mkdir -p /app/data /app/logs/ai-takeover-engage
+
+EXPOSE ${PORT:-8787}
+
+# Entrypoint: the scheduler (handles cron + health check)
+CMD ["node", "scripts/ai-takeover-scheduler.js"]

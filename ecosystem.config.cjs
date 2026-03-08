@@ -240,5 +240,72 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        {
+            name: 'ai-takeover-daily',
+            script: 'scripts/ai-takeover-post.js',
+            cwd: __dirname,
+            cron_restart: '0 15 * * *', // 3:00 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/ai-takeover-error.log',
+            out_file: './logs/pm2/ai-takeover-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'ai-takeover-engage-morning',
+            script: 'scripts/ai-takeover-engage.js',
+            args: '--limit=8',
+            cwd: __dirname,
+            cron_restart: '0 10 * * *', // 10:00 AM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/ai-takeover-engage-error.log',
+            out_file: './logs/pm2/ai-takeover-engage-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'ai-takeover-engage-afternoon',
+            script: 'scripts/ai-takeover-engage.js',
+            args: '--limit=8',
+            cwd: __dirname,
+            cron_restart: '0 14 * * *', // 2:00 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/ai-takeover-engage-error.log',
+            out_file: './logs/pm2/ai-takeover-engage-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'ai-takeover-engage-evening',
+            script: 'scripts/ai-takeover-engage.js',
+            args: '--limit=8',
+            cwd: __dirname,
+            cron_restart: '0 19 * * *', // 7:00 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/ai-takeover-engage-error.log',
+            out_file: './logs/pm2/ai-takeover-engage-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
     ],
 };
