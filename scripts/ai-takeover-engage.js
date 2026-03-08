@@ -185,35 +185,36 @@ async function runEngagement(opts = {}) {
                 await page.waitForTimeout(1200);
             }
 
-            // Collect posts visible on screen
-            const postHandles = await page.$$('article[data-testid="tweet"]');
-            console.log(`   Found ${postHandles.length} posts`);
+            // Collect post metadata from the feed (extract before elements detach)
+            const postData = await page.evaluate(() => {
+                const articles = document.querySelectorAll('article[data-testid="tweet"]');
+                const results = [];
+                articles.forEach(article => {
+                    try {
+                        const link = article.querySelector('a[href*="/status/"]');
+                        if (!link) return;
+                        const href = link.getAttribute('href');
+                        const match = href?.match(/\/status\/(\d+)/);
+                        if (!match) return;
 
-            for (const postEl of postHandles) {
+                        const textEl = article.querySelector('[data-testid="tweetText"]');
+                        if (!textEl) return;
+                        const text = textEl.innerText?.trim();
+                        if (!text || text.length < 20) return;
+
+                        const userSpan = article.querySelector('a[href*="/"] span');
+                        const author = userSpan ? userSpan.innerText.replace('@', '').trim() : 'unknown';
+
+                        // Get the full tweet URL path (e.g., /user/status/12345)
+                        results.push({ tweetId: match[1], tweetUrl: href, tweetText: text, authorHandle: author });
+                    } catch { }
+                });
+                return results;
+            });
+            console.log(`   Found ${postData.length} posts`);
+
+            for (const { tweetId, tweetUrl, tweetText, authorHandle } of postData) {
                 if (replyCnt >= maxReplies) break;
-
-                // Get tweet ID from a link inside the post
-                let tweetId = null;
-                let tweetText = '';
-                let authorHandle = 'unknown';
-
-                try {
-                    const tweetLink = await postEl.$('a[href*="/status/"]');
-                    if (!tweetLink) continue;
-                    const href = await tweetLink.getAttribute('href');
-                    const match = href?.match(/\/status\/(\d+)/);
-                    if (!match) continue;
-                    tweetId = match[1];
-
-                    const textEl = await postEl.$('[data-testid="tweetText"]');
-                    if (!textEl) continue;
-                    tweetText = (await textEl.innerText()).trim();
-                    if (!tweetText || tweetText.length < 20) continue;
-
-                    const userLink = await postEl.$('a[href*="/"] span');
-                    if (userLink) authorHandle = (await userLink.innerText()).replace('@', '').trim();
-                } catch { continue; }
-
                 if (!tweetId || engaged.has(tweetId)) continue;
                 if (tweetText.startsWith('RT @')) continue;
 
@@ -236,18 +237,25 @@ async function runEngagement(opts = {}) {
                     continue;
                 }
 
-                // Click the reply button on the post
+                // Navigate to the tweet's page to reply (avoids virtual DOM detach)
                 try {
-                    const replyBtn = await postEl.$('[data-testid="reply"]');
-                    if (!replyBtn) { console.log('      ⚠️ No reply button — skipping'); continue; }
-                    await replyBtn.click();
-                    await page.waitForTimeout(1500);
+                    await page.goto(`https://x.com${tweetUrl}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+                    await page.waitForTimeout(2000);
 
-                    // Type into the reply modal
-                    const replyBox = await page.$('[data-testid="tweetTextarea_0"]');
+                    // Dismiss any overlays
+                    try {
+                        await page.evaluate(() => {
+                            document.querySelectorAll('[data-testid="twc-cc-mask"]').forEach(el => el.remove());
+                            const btns = [...document.querySelectorAll('button, [role="button"]')];
+                            const dismiss = btns.find(b => /refuse|reject|close|dismiss/i.test(b.textContent || ''));
+                            if (dismiss) dismiss.click();
+                        });
+                    } catch { }
+
+                    // Find and click the reply input area on the tweet page
+                    const replyBox = await page.waitForSelector('[data-testid="tweetTextarea_0"]', { timeout: 8000 });
                     if (!replyBox) {
-                        console.log('      ⚠️ Reply modal did not open — skipping');
-                        await page.keyboard.press('Escape');
+                        console.log('      ⚠️ Reply box not found on tweet page — skipping');
                         continue;
                     }
 
@@ -256,15 +264,14 @@ async function runEngagement(opts = {}) {
                     await page.keyboard.type(reply, { delay: 30 });
                     await page.waitForTimeout(1000);
 
-                    const postBtn = await page.$('[data-testid="tweetButton"]');
+                    const postBtn = await page.waitForSelector('[data-testid="tweetButton"]', { timeout: 5000 });
                     if (!postBtn) {
                         console.log('      ⚠️ Post button not found — closing');
-                        await page.keyboard.press('Escape');
                         continue;
                     }
 
                     await postBtn.click();
-                    await page.waitForTimeout(2000);
+                    await page.waitForTimeout(2500);
 
                     console.log(`      ✅ Replied!`);
                     saveEngaged(engaged, tweetId);
