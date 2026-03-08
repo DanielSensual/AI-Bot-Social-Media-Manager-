@@ -10,6 +10,7 @@
 
 import 'dotenv/config';
 import http from 'http';
+import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -143,6 +144,16 @@ function main() {
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`🏥 Health check: http://0.0.0.0:${PORT}/health`);
     });
+
+    // ---------- Keepalive ----------
+    // Railway puts services to sleep after 10 min of no outbound traffic.
+    // Make an outbound HTTP request every 5 min to keep the process alive.
+    setInterval(() => {
+        https.get('https://httpbin.org/status/200', (res) => {
+            res.resume();
+        }).on('error', () => { });
+        console.log(`   💓 [${new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York' })}] Keepalive ping`);
+    }, 5 * 60 * 1000);
 
     // Run immediately on startup (catch up if deployed mid-day)
     console.log('🚀 Running initial engagement on startup...');
