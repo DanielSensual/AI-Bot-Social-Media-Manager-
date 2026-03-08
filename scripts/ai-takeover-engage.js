@@ -141,7 +141,17 @@ async function runEngagement(opts = {}) {
         process.exit(1);
     }
 
-    const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+    const browser = await chromium.launch({
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-setuid-sandbox',
+            '--single-process',
+            '--no-zygote',
+        ]
+    });
     const ctx = await browser.newContext({ storageState: SESSION_FILE, viewport: { width: 1400, height: 900 } });
     const page = await ctx.newPage();
 
