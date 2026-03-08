@@ -7,12 +7,12 @@ FROM mcr.microsoft.com/playwright:v1.51.0-noble
 
 WORKDIR /app
 
-# Install production dependencies
+# Install dependencies (include playwright since the base image has Chromium)
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
-# Install node-cron for scheduling
-RUN npm install node-cron
+# Ensure playwright and node-cron are available
+RUN npm install playwright node-cron --save
 
 # Copy application code
 COPY src/ ./src/
