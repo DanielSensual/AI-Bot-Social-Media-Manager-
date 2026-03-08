@@ -252,8 +252,23 @@ async function runEngagement(opts = {}) {
                         });
                     } catch { }
 
-                    // Find and click the reply input area on the tweet page
-                    const replyBox = await page.waitForSelector('[data-testid="tweetTextarea_0"]', { timeout: 8000 });
+                    // On tweet detail pages, try the inline reply box first
+                    // If not found, click the reply icon to open a reply modal
+                    let replyBox = null;
+                    try {
+                        replyBox = await page.waitForSelector('[data-testid="tweetTextarea_0"]', { timeout: 5000 });
+                    } catch {
+                        // Try clicking the reply icon to open a modal
+                        try {
+                            const replyIcon = await page.waitForSelector('[data-testid="reply"]', { timeout: 3000 });
+                            if (replyIcon) {
+                                await replyIcon.click();
+                                await page.waitForTimeout(1500);
+                                replyBox = await page.waitForSelector('[data-testid="tweetTextarea_0"]', { timeout: 5000 });
+                            }
+                        } catch { }
+                    }
+
                     if (!replyBox) {
                         console.log('      ⚠️ Reply box not found on tweet page — skipping');
                         continue;
@@ -264,9 +279,18 @@ async function runEngagement(opts = {}) {
                     await page.keyboard.type(reply, { delay: 30 });
                     await page.waitForTimeout(1000);
 
-                    const postBtn = await page.waitForSelector('[data-testid="tweetButton"]', { timeout: 5000 });
+                    // Try both possible post button selectors
+                    let postBtn = null;
+                    try {
+                        postBtn = await page.waitForSelector('[data-testid="tweetButtonInline"]', { timeout: 3000 });
+                    } catch { }
                     if (!postBtn) {
-                        console.log('      ⚠️ Post button not found — closing');
+                        try {
+                            postBtn = await page.waitForSelector('[data-testid="tweetButton"]', { timeout: 3000 });
+                        } catch { }
+                    }
+                    if (!postBtn) {
+                        console.log('      ⚠️ Post button not found — skipping');
                         continue;
                     }
 
