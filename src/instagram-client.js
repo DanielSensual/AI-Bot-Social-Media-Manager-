@@ -1,11 +1,10 @@
 /**
  * Instagram Content Publishing Client
- * Posts to Instagram via the IG Content Publishing API (Graph API v24.0)
+ * Posts to Instagram via the IG Content Publishing API (Graph API v24.0 or Direct v22.0)
  *
- * Requires:
- * - Facebook Page linked to an Instagram Business/Creator Account
- * - Permissions: instagram_basic, instagram_content_publish, pages_read_engagement
- * - Media must be publicly accessible URLs
+ * Supports two modes via accountConfig:
+ * 1. Facebook Page linked to an Instagram Business/Creator Account
+ * 2. Direct Instagram Graph API token (IGA...)
  */
 
 import dotenv from 'dotenv';
@@ -16,69 +15,152 @@ dotenv.config();
 
 const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.IG_GRAPH_TIMEOUT_MS || '30000', 10);
+const STATUS_POLL_TIMEOUT_MS = Number.parseInt(process.env.IG_GRAPH_STATUS_TIMEOUT_MS || '15000', 10);
 
-/**
- * Get access token from env
- */
-function getAccessToken() {
-    const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
-    if (!token) throw new Error('Facebook/Instagram not configured. Set FACEBOOK_ACCESS_TOKEN in .env');
-    return token;
+function getGraphApiBase(token) {
+    if (token && token.startsWith('IGA')) return 'https://graph.instagram.com/v22.0';
+    return GRAPH_API_BASE;
+}
+
+function getTimeoutMs(value, fallback = DEFAULT_TIMEOUT_MS) {
+    const parsed = Number.parseInt(String(value ?? ''), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+async function fetchJson(url, options = {}, context = 'Instagram Graph request', timeoutMs = DEFAULT_TIMEOUT_MS) {
+    let response;
+    try {
+        response = await fetch(url, {
+            ...options,
+            signal: AbortSignal.timeout(getTimeoutMs(timeoutMs)),
+        });
+    } catch (error) {
+        if (error?.name === 'TimeoutError') {
+            throw new Error(`${context} timed out after ${getTimeoutMs(timeoutMs)}ms`);
+        }
+        throw new Error(`${context} failed: ${error.message}`);
+    }
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const message = data?.error?.message || `${context} failed with HTTP ${response.status}`;
+        throw new Error(message);
+    }
+    if (data?.error) {
+        throw new Error(`${context} failed: ${data.error.message}`);
+    }
+    return data;
 }
 
 /**
- * Resolve the Page Token (handles user tokens with managed pages)
+ * Resolve the Page Token (from Facebook account)
  */
-async function resolvePageToken() {
-    const token = getAccessToken();
+async function resolvePageToken(config) {
+    const tokenCandidates = [
+        config?.token,
+        process.env.FACEBOOK_ACCESS_TOKEN,
+        process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
+    ].filter(Boolean);
+    if (tokenCandidates.length === 0) throw new Error('Facebook/Instagram not configured. Missing token.');
 
-    const meResponse = await fetch(`${GRAPH_API_BASE}/me?fields=id,name&access_token=${token}`);
-    const meData = await meResponse.json();
-    if (meData.error) throw new Error(`Facebook API error: ${meData.error.message}`);
+    const configuredPageId = config?.pageId || process.env.FACEBOOK_PAGE_ID;
+    let lastError = null;
 
-    // Check if it's a page token
-    const pageCheck = await fetch(`${GRAPH_API_BASE}/${meData.id}?fields=category&access_token=${token}`);
-    const pageCheckData = await pageCheck.json();
+    for (const token of [...new Set(tokenCandidates)]) {
+        try {
+            const meData = await fetchJson(
+                `${GRAPH_API_BASE}/me?fields=id,name&access_token=${token}`,
+                {},
+                'Facebook /me lookup',
+            );
 
-    if (!pageCheckData.error && pageCheckData.category) {
-        return { pageId: meData.id, pageToken: token };
+            // Check if it's a page token
+            const pageCheckData = await fetchJson(
+                `${GRAPH_API_BASE}/${meData.id}?fields=category&access_token=${token}`,
+                {},
+                'Facebook page token check',
+            ).catch(() => ({}));
+
+            if (!pageCheckData.error && pageCheckData.category) {
+                if (!configuredPageId || String(meData.id) === String(configuredPageId)) {
+                    return { pageId: meData.id, pageToken: token };
+                }
+
+                lastError = new Error(`Page token targets ${meData.id}, not requested page ${configuredPageId}`);
+                continue;
+            }
+
+            // User token - find requested page or fall back to first page
+            const pagesData = await fetchJson(
+                `${GRAPH_API_BASE}/me/accounts?fields=id,name,access_token&access_token=${token}`,
+                {},
+                'Facebook managed pages lookup',
+            );
+
+            if (!pagesData.data || pagesData.data.length === 0) {
+                throw new Error('No Facebook Pages found. Cannot discover Instagram account.');
+            }
+
+            const page = configuredPageId
+                ? pagesData.data.find((entry) => String(entry.id) === String(configuredPageId)) || null
+                : pagesData.data[0];
+
+            if (!page) {
+                throw new Error(`Requested Facebook page ${configuredPageId} was not found in accessible pages.`);
+            }
+
+            return { pageId: page.id, pageToken: page.access_token };
+        } catch (error) {
+            lastError = error;
+        }
     }
 
-    // User token - get first page
-    const pagesResponse = await fetch(`${GRAPH_API_BASE}/me/accounts?fields=id,name,access_token&access_token=${token}`);
-    const pagesData = await pagesResponse.json();
-
-    if (!pagesData.data || pagesData.data.length === 0) {
-        throw new Error('No Facebook Pages found. Cannot discover Instagram account.');
-    }
-
-    const configuredPageId = process.env.FACEBOOK_PAGE_ID;
-    const page = configuredPageId
-        ? pagesData.data.find(p => p.id === configuredPageId) || pagesData.data[0]
-        : pagesData.data[0];
-
-    return { pageId: page.id, pageToken: page.access_token };
+    throw lastError || new Error('No usable Facebook page token found.');
 }
 
 /**
  * Discover the linked Instagram Business Account
- * @returns {Promise<object>} { igUserId, pageToken }
+ * @param {object} [config] - Explicit account config { type, token, pageId, igUserId }
+ * @returns {Promise<object>} { igUserId, pageToken, username, apiBase }
  */
-export async function testInstagramConnection() {
+export async function testInstagramConnection(config = null) {
     try {
-        const { pageId, pageToken } = await resolvePageToken();
+        // Direct IG Token Type
+        if (config?.type === 'direct_ig' || (!config && process.env.INSTAGRAM_GRAPH_TOKEN && process.env.INSTAGRAM_GRAPH_USER_ID)) {
+            const token = config?.token || process.env.INSTAGRAM_GRAPH_TOKEN;
+            const igUserId = config?.igUserId || process.env.INSTAGRAM_GRAPH_USER_ID;
+            const apiBase = getGraphApiBase(token);
+            let username = process.env.INSTAGRAM_GRAPH_USERNAME || igUserId;
 
-        const response = await fetch(`${GRAPH_API_BASE}/${pageId}?fields=instagram_business_account{id,username,followers_count,media_count}&access_token=${pageToken}`);
-        const data = await response.json();
-
-        if (data.error) {
-            console.error(`❌ Instagram discovery failed: ${data.error.message}`);
-            return false;
+            try {
+                const data = await fetchJson(
+                    `${apiBase}/${igUserId}?fields=username,followers_count,media_count&access_token=${token}`,
+                    {},
+                    'Instagram direct account check'
+                );
+                if (data.username) username = data.username;
+                console.log(`✅ Instagram connected: @${username}`);
+                if (data.followers_count) console.log(`   Followers: ${data.followers_count}`);
+                if (data.media_count) console.log(`   Posts: ${data.media_count}`);
+                return { igUserId, pageToken: token, username, apiBase };
+            } catch (err) {
+                console.log(`✅ Instagram connected (fallback): @${username}`);
+                return { igUserId, pageToken: token, username, apiBase };
+            }
         }
+
+        // Facebook Page Linked Type (Default fallback)
+        const { pageId, pageToken } = await resolvePageToken(config);
+
+        const data = await fetchJson(
+            `${GRAPH_API_BASE}/${pageId}?fields=instagram_business_account{id,username,followers_count,media_count}&access_token=${pageToken}`,
+            {},
+            'Instagram business account discovery',
+        );
 
         if (!data.instagram_business_account) {
             console.error('❌ No Instagram Business Account linked to this Facebook Page.');
-            console.warn('   Link your IG account at: Facebook Page Settings → Linked Accounts → Instagram');
             return false;
         }
 
@@ -87,24 +169,41 @@ export async function testInstagramConnection() {
         if (ig.followers_count) console.log(`   Followers: ${ig.followers_count}`);
         if (ig.media_count) console.log(`   Posts: ${ig.media_count}`);
 
-        return { igUserId: ig.id, pageToken, username: ig.username };
+        return { igUserId: ig.id, pageToken, username: ig.username, apiBase: getGraphApiBase(pageToken) };
     } catch (error) {
         console.error(`❌ Instagram connection failed: ${error.message}`);
         return false;
     }
 }
 
-/**
- * Upload a local file to a temporary public host (Catbox)
- * Required because IG Content Publishing API needs public URLs
- * @param {string} filePath - Local file path
- * @returns {Promise<string>} Public URL
- */
 export async function uploadToTempHost(filePath) {
     if (!fs.existsSync(filePath)) {
         throw new Error(`File not found: ${filePath}`);
     }
 
+    const uploadTimeoutMs = getTimeoutMs(process.env.IG_UPLOAD_TIMEOUT_MS, 120000);
+    const providers = [
+        { name: 'Catbox', fn: () => uploadToCatbox(filePath, uploadTimeoutMs) },
+        { name: 'Litterbox', fn: () => uploadToLitterbox(filePath, uploadTimeoutMs) },
+        { name: '0x0.st', fn: () => uploadTo0x0(filePath, uploadTimeoutMs) },
+    ];
+
+    let lastError = null;
+    for (const { name, fn } of providers) {
+        try {
+            const url = await fn();
+            console.log(`📤 Uploaded to ${name}: ${url}`);
+            return url;
+        } catch (err) {
+            console.warn(`⚠️ ${name} upload failed: ${err.message}`);
+            lastError = err;
+        }
+    }
+
+    throw new Error(`All temp host uploads failed. Last error: ${lastError?.message}`);
+}
+
+async function uploadToCatbox(filePath, timeoutMs) {
     const fileData = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
     const boundary = '----CatboxBoundary' + Date.now();
@@ -120,14 +219,65 @@ export async function uploadToTempHost(filePath) {
         method: 'POST',
         headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
         body,
+        signal: AbortSignal.timeout(timeoutMs),
     });
 
     const url = await response.text();
     if (!url.startsWith('https://')) {
-        throw new Error(`Catbox upload failed: ${url}`);
+        throw new Error(`Catbox returned: ${url.substring(0, 200)}`);
     }
+    return url.trim();
+}
 
-    console.log(`📤 Uploaded to temp host: ${url}`);
+async function uploadToLitterbox(filePath, timeoutMs) {
+    const fileData = fs.readFileSync(filePath);
+    const fileName = path.basename(filePath);
+    const boundary = '----LitterboxBoundary' + Date.now();
+
+    const body = Buffer.concat([
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="reqtype"\r\n\r\nfileupload\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="time"\r\n\r\n1h\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="fileToUpload"; filename="${fileName}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
+        fileData,
+        Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+
+    const response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        body,
+        signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    const url = await response.text();
+    if (!url.startsWith('https://')) {
+        throw new Error(`Litterbox returned: ${url.substring(0, 200)}`);
+    }
+    return url.trim();
+}
+
+async function uploadTo0x0(filePath, timeoutMs) {
+    const fileData = fs.readFileSync(filePath);
+    const fileName = path.basename(filePath);
+    const boundary = '----0x0Boundary' + Date.now();
+
+    const body = Buffer.concat([
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: application/octet-stream\r\n\r\n`),
+        fileData,
+        Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+
+    const response = await fetch('https://0x0.st', {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        body,
+        signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    const url = await response.text();
+    if (!url.startsWith('https://') && !url.startsWith('http://')) {
+        throw new Error(`0x0.st returned: ${url.substring(0, 200)}`);
+    }
     return url.trim();
 }
 
@@ -135,17 +285,17 @@ export async function uploadToTempHost(filePath) {
  * Post a single image to Instagram
  * @param {string} caption - Post caption
  * @param {string} imageUrl - Publicly accessible image URL
+ * @param {object} [config] - Explicit account config
  * @returns {Promise<object>} Post result
  */
-export async function postToInstagram(caption, imageUrl) {
-    const connection = await testInstagramConnection();
+export async function postToInstagram(caption, imageUrl, config = null) {
+    const connection = await testInstagramConnection(config);
     if (!connection) throw new Error('Instagram not connected');
 
-    const { igUserId, pageToken } = connection;
+    const { igUserId, pageToken, apiBase } = connection;
 
-    // Step 1: Create media container
     console.log('📤 Creating Instagram media container...');
-    const containerResponse = await fetch(`${GRAPH_API_BASE}/${igUserId}/media`, {
+    const containerData = await fetchJson(`${apiBase}/${igUserId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,32 +303,21 @@ export async function postToInstagram(caption, imageUrl) {
             caption,
             access_token: pageToken,
         }),
-    });
-
-    const containerData = await containerResponse.json();
-    if (containerData.error) {
-        throw new Error(`Instagram container creation failed: ${containerData.error.message}`);
-    }
+    }, 'Instagram image container creation');
 
     const containerId = containerData.id;
 
-    // Step 2: Wait for processing and publish
-    await waitForMediaReady(containerId, pageToken);
+    await waitForMediaReady(containerId, pageToken, apiBase);
 
     console.log('📤 Publishing to Instagram...');
-    const publishResponse = await fetch(`${GRAPH_API_BASE}/${igUserId}/media_publish`, {
+    const publishData = await fetchJson(`${apiBase}/${igUserId}/media_publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             creation_id: containerId,
             access_token: pageToken,
         }),
-    });
-
-    const publishData = await publishResponse.json();
-    if (publishData.error) {
-        throw new Error(`Instagram publish failed: ${publishData.error.message}`);
-    }
+    }, 'Instagram image publish');
 
     console.log(`✅ Instagram post published!`);
     console.log(`🔗 Media ID: ${publishData.id}`);
@@ -190,16 +329,17 @@ export async function postToInstagram(caption, imageUrl) {
  * Post a Reel to Instagram
  * @param {string} caption - Reel caption
  * @param {string} videoUrl - Publicly accessible video URL (mp4)
+ * @param {object} [config] - Explicit account config
  * @returns {Promise<object>} Post result
  */
-export async function postInstagramReel(caption, videoUrl) {
-    const connection = await testInstagramConnection();
+export async function postInstagramReel(caption, videoUrl, config = null) {
+    const connection = await testInstagramConnection(config);
     if (!connection) throw new Error('Instagram not connected');
 
-    const { igUserId, pageToken } = connection;
+    const { igUserId, pageToken, apiBase } = connection;
 
     console.log('📤 Creating Instagram Reel container...');
-    const containerResponse = await fetch(`${GRAPH_API_BASE}/${igUserId}/media`, {
+    const containerData = await fetchJson(`${apiBase}/${igUserId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -208,32 +348,21 @@ export async function postInstagramReel(caption, videoUrl) {
             media_type: 'REELS',
             access_token: pageToken,
         }),
-    });
-
-    const containerData = await containerResponse.json();
-    if (containerData.error) {
-        throw new Error(`Instagram Reel container creation failed: ${containerData.error.message}`);
-    }
+    }, 'Instagram Reel container creation');
 
     const containerId = containerData.id;
 
-    // Wait for video processing (can take longer)
-    await waitForMediaReady(containerId, pageToken, 60, 5000);
+    await waitForMediaReady(containerId, pageToken, apiBase, 60, 5000);
 
     console.log('📤 Publishing Reel...');
-    const publishResponse = await fetch(`${GRAPH_API_BASE}/${igUserId}/media_publish`, {
+    const publishData = await fetchJson(`${apiBase}/${igUserId}/media_publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             creation_id: containerId,
             access_token: pageToken,
         }),
-    });
-
-    const publishData = await publishResponse.json();
-    if (publishData.error) {
-        throw new Error(`Instagram Reel publish failed: ${publishData.error.message}`);
-    }
+    }, 'Instagram Reel publish');
 
     console.log(`✅ Instagram Reel published!`);
     console.log(`🔗 Media ID: ${publishData.id}`);
@@ -242,27 +371,94 @@ export async function postInstagramReel(caption, videoUrl) {
 }
 
 /**
+ * Post an Instagram Story (image or video)
+ * @param {string} mediaUrl - Publicly accessible media URL
+ * @param {object} options
+ * @param {string} [options.mediaType='image'] - image|video
+ * @param {string} [options.caption=''] - Optional caption
+ * @param {object} [options.config=null] - Explicit account config
+ * @returns {Promise<object>} Post result
+ */
+export async function postInstagramStory(mediaUrl, options = {}) {
+    if (!mediaUrl || typeof mediaUrl !== 'string') {
+        throw new Error('Story mediaUrl is required');
+    }
+
+    const mediaType = String(options.mediaType || 'image').toLowerCase();
+    if (!['image', 'video'].includes(mediaType)) {
+        throw new Error('Story mediaType must be image or video');
+    }
+
+    const caption = String(options.caption || '').trim();
+    const config = options.config || null;
+
+    const connection = await testInstagramConnection(config);
+    if (!connection) throw new Error('Instagram not connected');
+
+    const { igUserId, pageToken, apiBase } = connection;
+
+    console.log(`📤 Creating Instagram Story container (${mediaType})...`);
+    const payload = {
+        media_type: 'STORIES',
+        access_token: pageToken,
+    };
+
+    if (mediaType === 'video') {
+        payload.video_url = mediaUrl;
+    } else {
+        payload.image_url = mediaUrl;
+    }
+
+    if (caption) {
+        payload.caption = caption;
+    }
+
+    const containerData = await fetchJson(`${apiBase}/${igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    }, 'Instagram Story container creation');
+
+    const containerId = containerData.id;
+    await waitForMediaReady(containerId, pageToken, apiBase, mediaType === 'video' ? 60 : 30, 3000);
+
+    console.log('📤 Publishing Story...');
+    const publishData = await fetchJson(`${apiBase}/${igUserId}/media_publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            creation_id: containerId,
+            access_token: pageToken,
+        }),
+    }, 'Instagram Story publish');
+
+    console.log('✅ Instagram Story published!');
+    console.log(`🔗 Story ID: ${publishData.id}`);
+    return publishData;
+}
+
+/**
  * Post a carousel to Instagram
  * @param {string} caption - Carousel caption
  * @param {string[]} imageUrls - Array of publicly accessible image URLs (2-10)
+ * @param {object} [config] - Explicit account config
  * @returns {Promise<object>} Post result
  */
-export async function postInstagramCarousel(caption, imageUrls) {
+export async function postInstagramCarousel(caption, imageUrls, config = null) {
     if (!imageUrls || imageUrls.length < 2 || imageUrls.length > 10) {
         throw new Error('Carousel requires 2-10 images');
     }
 
-    const connection = await testInstagramConnection();
+    const connection = await testInstagramConnection(config);
     if (!connection) throw new Error('Instagram not connected');
 
-    const { igUserId, pageToken } = connection;
+    const { igUserId, pageToken, apiBase } = connection;
 
-    // Step 1: Create child containers
     console.log(`📤 Creating ${imageUrls.length} carousel items...`);
     const childIds = [];
 
     for (const url of imageUrls) {
-        const childResponse = await fetch(`${GRAPH_API_BASE}/${igUserId}/media`, {
+        const childData = await fetchJson(`${apiBase}/${igUserId}/media`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -270,18 +466,12 @@ export async function postInstagramCarousel(caption, imageUrls) {
                 is_carousel_item: true,
                 access_token: pageToken,
             }),
-        });
-
-        const childData = await childResponse.json();
-        if (childData.error) {
-            throw new Error(`Carousel item failed: ${childData.error.message}`);
-        }
+        }, 'Instagram carousel item creation');
         childIds.push(childData.id);
     }
 
-    // Step 2: Create carousel container
     console.log('📤 Creating carousel container...');
-    const carouselResponse = await fetch(`${GRAPH_API_BASE}/${igUserId}/media`, {
+    const carouselData = await fetchJson(`${apiBase}/${igUserId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -290,30 +480,19 @@ export async function postInstagramCarousel(caption, imageUrls) {
             children: childIds.join(','),
             access_token: pageToken,
         }),
-    });
+    }, 'Instagram carousel container creation');
 
-    const carouselData = await carouselResponse.json();
-    if (carouselData.error) {
-        throw new Error(`Carousel container failed: ${carouselData.error.message}`);
-    }
+    await waitForMediaReady(carouselData.id, pageToken, apiBase);
 
-    await waitForMediaReady(carouselData.id, pageToken);
-
-    // Step 3: Publish
     console.log('📤 Publishing carousel...');
-    const publishResponse = await fetch(`${GRAPH_API_BASE}/${igUserId}/media_publish`, {
+    const publishData = await fetchJson(`${apiBase}/${igUserId}/media_publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             creation_id: carouselData.id,
             access_token: pageToken,
         }),
-    });
-
-    const publishData = await publishResponse.json();
-    if (publishData.error) {
-        throw new Error(`Carousel publish failed: ${publishData.error.message}`);
-    }
+    }, 'Instagram carousel publish');
 
     console.log(`✅ Instagram carousel published!`);
     console.log(`🔗 Media ID: ${publishData.id}`);
@@ -321,13 +500,16 @@ export async function postInstagramCarousel(caption, imageUrls) {
     return publishData;
 }
 
-/**
- * Wait for a media container to finish processing
- */
-async function waitForMediaReady(containerId, pageToken, maxAttempts = 30, interval = 2000) {
+async function waitForMediaReady(containerId, pageToken, apiBase = GRAPH_API_BASE, maxAttempts = 30, interval = 2000) {
     for (let i = 0; i < maxAttempts; i++) {
-        const statusResponse = await fetch(`${GRAPH_API_BASE}/${containerId}?fields=status_code,status&access_token=${pageToken}`);
-        const statusData = await statusResponse.json();
+        const statusData = await fetchJson(
+            `${apiBase}/${containerId}?fields=status_code,status&access_token=${pageToken}`,
+            {},
+            'Instagram media status check',
+            STATUS_POLL_TIMEOUT_MS,
+        );
+        const code = statusData.status_code || 'UNKNOWN';
+        console.log(`   ⏳ Media status [${i + 1}/${maxAttempts}]: ${code}`);
 
         if (statusData.status_code === 'FINISHED') return;
         if (statusData.status_code === 'ERROR') {
@@ -345,5 +527,6 @@ export default {
     uploadToTempHost,
     postToInstagram,
     postInstagramReel,
+    postInstagramStory,
     postInstagramCarousel,
 };
