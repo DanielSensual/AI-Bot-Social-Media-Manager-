@@ -307,5 +307,25 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+
+        // ── ClawBot Log Watcher ─────────────────────────────────────────
+        {
+            name: 'clawbot-watcher',
+            script: 'scripts/clawbot-watcher.js',
+            cwd: __dirname,
+            watch: false,
+            autorestart: true,
+            max_restarts: 10,
+            restart_delay: 30000,
+            error_file: './logs/pm2/clawbot-watcher-error.log',
+            out_file: './logs/pm2/clawbot-watcher-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+                DASHBOARD_URL: 'https://ghostai-dashboard.vercel.app',
+            },
+        },
     ],
 };
