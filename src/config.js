@@ -2,6 +2,8 @@
  * GhostAI X Bot Configuration
  */
 
+import 'dotenv/config';
+
 export const config = {
     // Brand Info
     brand: {
