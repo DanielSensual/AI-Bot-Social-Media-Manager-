@@ -23,7 +23,7 @@ const openaiClient = process.env.OPENAI_API_KEY
     : null;
 
 const GROK_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
-const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1';
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1.5';
 
 /**
  * Generate a branded image card for a social media post.
@@ -202,7 +202,7 @@ async function generateWithDallE(prompt, size) {
         size,
     };
 
-    // gpt-image-1 doesn't use 'quality' param, dall-e-3 does
+    // gpt-image-1.5 doesn't use 'quality' param, dall-e-3 does
     if (OPENAI_IMAGE_MODEL.includes('dall-e')) {
         params.quality = 'standard';
     }
