@@ -20,7 +20,7 @@ import { getTopPerformingExamples } from './content-feedback.js';
 /**
  * Decide whether to use a feature based on configured ratio (0-100)
  */
-function shouldUse(ratio) {
+export function shouldUse(ratio) {
     return Math.random() * 100 < ratio;
 }
 
@@ -143,7 +143,7 @@ async function autonomousPost() {
         try {
             console.log('\n🎨 Generating branded image...');
             cleanupImageCache();
-            imagePath = await generateImage(content.text, { style: 'bold' });
+            imagePath = await generateImage(content.text, { style: 'bold', pillar: content.pillar });
         } catch (error) {
             console.warn(`⚠️ Image generation failed: ${error.message}`);
             console.log('   Proceeding with text-only post');
@@ -166,97 +166,102 @@ async function autonomousPost() {
 
     const getText = (platform) => adapted?.[platform] || content.text;
 
-    // Post to X
-    if (autonomy.platforms.x) {
-        try {
-            console.log('\n📤 Posting to X...');
-            if (videoPath) {
-                results.x = await postTweetWithVideo(getText('x'), videoPath);
-            } else if (imagePath) {
-                results.x = await postTweetWithMedia(getText('x'), imagePath);
-            } else {
-                results.x = await postTweet(getText('x'));
-            }
-            clearFailure('X');
-        } catch (error) {
-            console.error(`❌ X post failed: ${error.message}`);
-            recordFailure('X');
-            alertPostFailure('X', error).catch(() => { });
-        }
-    }
-
-    // Post to LinkedIn
-    if (autonomy.platforms.linkedin) {
-        try {
-            const connected = await testLinkedInConnection().catch(() => false);
-            if (connected) {
-                console.log('\n📤 Posting to LinkedIn...');
-                if (videoPath) {
-                    results.linkedin = await postToLinkedInWithVideo(getText('linkedin'), videoPath);
-                } else if (imagePath) {
-                    results.linkedin = await postToLinkedInWithImage(getText('linkedin'), imagePath);
-                } else {
-                    results.linkedin = await postToLinkedIn(getText('linkedin'));
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Platform Adapters — single source of truth for all platform posting logic
+    // ═══════════════════════════════════════════════════════════════════════════
+    const PLATFORM_ADAPTERS = [
+        {
+            key: 'x',
+            name: 'X',
+            enabled: autonomy.platforms.x,
+            postText: (text) => postTweet(text),
+            postImage: (text, img) => postTweetWithMedia(text, img),
+            postVideo: (text, vid) => postTweetWithVideo(text, vid),
+        },
+        {
+            key: 'linkedin',
+            name: 'LinkedIn',
+            enabled: autonomy.platforms.linkedin,
+            preCheck: async () => {
+                const ok = await testLinkedInConnection().catch(() => false);
+                if (!ok) console.warn('   ⚠️ LinkedIn not authenticated, skipping');
+                return ok;
+            },
+            postText: (text) => postToLinkedIn(text),
+            postImage: (text, img) => postToLinkedInWithImage(text, img),
+            postVideo: (text, vid) => postToLinkedInWithVideo(text, vid),
+        },
+        {
+            key: 'facebook',
+            name: 'Facebook',
+            enabled: autonomy.platforms.facebook,
+            preCheck: async () => {
+                const result = await testFacebookConnection().catch(() => false);
+                if (!result || result.type === 'user_no_pages') {
+                    console.warn('   ⚠️ Facebook not ready (no page access), skipping');
+                    return false;
                 }
-                clearFailure('LinkedIn');
-            } else {
-                console.warn('   ⚠️ LinkedIn not authenticated, skipping');
-            }
-        } catch (error) {
-            console.error(`❌ LinkedIn post failed: ${error.message}`);
-            recordFailure('LinkedIn');
-            alertPostFailure('LinkedIn', error).catch(() => { });
-        }
-    }
+                return true;
+            },
+            postText: (text) => postToFacebook(text),
+            postImage: (text, img) => postToFacebookWithImage(text, img),
+            postVideo: (text, vid) => postToFacebookWithVideo(text, vid),
+        },
+        {
+            key: 'instagram',
+            name: 'Instagram',
+            enabled: autonomy.platforms.instagram,
+            requiresMedia: true,
+            preCheck: async () => {
+                const ok = await testInstagramConnection().catch(() => false);
+                if (!ok) console.warn('   ⚠️ Instagram not connected, skipping');
+                return ok;
+            },
+            postText: null, // IG requires media
+            postImage: async (text, img) => {
+                const publicUrl = await uploadToTempHost(img);
+                return postToInstagram(text, publicUrl);
+            },
+            postVideo: async (text, vid) => {
+                const publicUrl = await uploadToTempHost(vid);
+                return postInstagramReel(text, publicUrl);
+            },
+        },
+    ];
 
-    // Post to Facebook
-    if (autonomy.platforms.facebook) {
-        try {
-            const fbConnected = await testFacebookConnection().catch(() => false);
-            if (fbConnected && fbConnected.type !== 'user_no_pages') {
-                console.log('\n📤 Posting to Facebook...');
-                if (videoPath) {
-                    results.facebook = await postToFacebookWithVideo(getText('facebook'), videoPath);
-                } else if (imagePath) {
-                    results.facebook = await postToFacebookWithImage(getText('facebook'), imagePath);
-                } else {
-                    results.facebook = await postToFacebook(getText('facebook'));
-                }
-                clearFailure('Facebook');
-            } else {
-                console.warn('   ⚠️ Facebook not ready (no page access), skipping');
-            }
-        } catch (error) {
-            console.error(`❌ Facebook post failed: ${error.message}`);
-            recordFailure('Facebook');
-            alertPostFailure('Facebook', error).catch(() => { });
-        }
-    }
+    // Unified posting loop
+    for (const adapter of PLATFORM_ADAPTERS) {
+        if (!adapter.enabled) continue;
 
-    // Post to Instagram
-    if (autonomy.platforms.instagram) {
         try {
-            const igConnected = await testInstagramConnection().catch(() => false);
-            if (igConnected) {
-                console.log('\n📤 Posting to Instagram...');
-                if (videoPath) {
-                    const publicVideoUrl = await uploadToTempHost(videoPath);
-                    results.instagram = await postInstagramReel(getText('instagram'), publicVideoUrl);
-                } else if (imagePath) {
-                    // Upload image to public host for IG Content Publishing API
-                    const publicImageUrl = await uploadToTempHost(imagePath);
-                    results.instagram = await postToInstagram(getText('instagram'), publicImageUrl);
-                } else {
-                    console.log('   ⚠️ Instagram requires media — skipping text-only post');
-                }
-                clearFailure('Instagram');
-            } else {
-                console.warn('   ⚠️ Instagram not connected, skipping');
+            // Run platform-specific pre-check (auth, page access, etc.)
+            if (adapter.preCheck) {
+                const ready = await adapter.preCheck();
+                if (!ready) continue;
             }
+
+            console.log(`\n📤 Posting to ${adapter.name}...`);
+            const platformText = getText(adapter.key);
+
+            // Skip text-only if platform requires media
+            if (!videoPath && !imagePath && adapter.requiresMedia) {
+                console.log(`   ⚠️ ${adapter.name} requires media — skipping text-only post`);
+                continue;
+            }
+
+            if (videoPath && adapter.postVideo) {
+                results[adapter.key] = await adapter.postVideo(platformText, videoPath);
+            } else if (imagePath && adapter.postImage) {
+                results[adapter.key] = await adapter.postImage(platformText, imagePath);
+            } else if (adapter.postText) {
+                results[adapter.key] = await adapter.postText(platformText);
+            }
+
+            clearFailure(adapter.name);
         } catch (error) {
-            console.error(`❌ Instagram post failed: ${error.message}`);
-            recordFailure('Instagram');
-            alertPostFailure('Instagram', error).catch(() => { });
+            console.error(`❌ ${adapter.name} post failed: ${error.message}`);
+            recordFailure(adapter.name);
+            alertPostFailure(adapter.name, error).catch(() => { });
         }
     }
 
