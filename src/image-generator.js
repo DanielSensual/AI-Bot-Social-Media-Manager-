@@ -66,40 +66,41 @@ export async function generateImage(postText, options = {}) {
 }
 
 /**
- * 8 visually DISTINCT concepts so consecutive posts never look the same.
- * Each concept defines a completely different composition, palette, and subject.
+ * 8 visually DISTINCT concepts — human, lifestyle, personal feel.
+ * These go on Daniel's personal LinkedIn, so they need to feel like a real person,
+ * NOT a tech company. Think: iPhone photos a founder would actually take.
  */
 const VISUAL_CONCEPTS = [
-    // 0 — Holographic Dashboard
-    (topic) => `A floating holographic dashboard projected in mid-air inside a dark glass room. Translucent blue and cyan data panels, 3D bar charts, and glowing route maps hover in space. Topic: "${topic}". Hyper-realistic render, volumetric light rays, no text.`,
-    // 1 — Neon Cityscape
-    (topic) => `Aerial drone shot of a futuristic city at night, rain-slicked streets reflecting neon pink, teal, and gold signs. Flying drones carry data packets between skyscrapers. Topic: "${topic}". Blade Runner aesthetic, ultra-wide 21:9 composition, no text.`,
-    // 2 — Gradient Orbs
-    (topic) => `Three luminous glass orbs on a matte black pedestal, each filled with swirling gradients — one orange-to-magenta, one teal-to-indigo, one gold-to-emerald. Soft studio lighting creates caustic reflections. Topic: "${topic}". Minimalist product-photography style, no text.`,
-    // 3 — Circuit Board Macro
-    (topic) => `Extreme close-up of a premium black circuit board with gold traces glowing with flowing data. Selective focus creates beautiful bokeh on background components. Small LEDs pulse in amber and cyan. Topic: "${topic}". Macro photography, shallow depth of field, no text.`,
-    // 4 — Abstract Data River
-    (topic) => `A luminous river of streaming data particles flowing through a dark canyon of obsidian rock. Particles shift from electric blue at the source to vivid purple downstream. Topic: "${topic}". Cinematic landscape, dramatic scale, no text.`,
-    // 5 — Cosmic AI Brain
-    (topic) => `A translucent human brain made of interconnected stars and nebula dust, floating in deep space. Neural pathways glow in warm gold while synapses fire in cool cyan. Surrounding galaxies provide depth. Topic: "${topic}". NASA-quality space photography style, no text.`,
-    // 6 — Brutalist Tech
-    (topic) => `Raw concrete walls with a single large LED panel displaying abstract generative art in orange and white. Industrial steel beams frame the scene. A desk with a single sleek monitor sits in the foreground. Topic: "${topic}". Architectural photography, harsh directional light, no text.`,
-    // 7 — Tropical Agency
-    (topic) => `A premium outdoor workspace overlooking a turquoise ocean at golden hour. A sleek laptop sits on a teak desk surrounded by tropical plants. Warm amber sunlight, lens flare, and breezy atmosphere. Topic: "${topic}". Travel-luxury editorial photography, no text.`,
+    // 0 — Coffee Shop Hustle
+    (topic) => `A Latino man working on a laptop at a cozy coffee shop, warm natural light streaming through the window. A cortadito and a notebook sit beside him. The vibe is focused but relaxed, candid iPhone photo. Golden hour window light, shallow depth of field. Topic: "${topic}". No text, no logos.`,
+    // 1 — Rooftop Sunset
+    (topic) => `Silhouette of a young man standing on a rooftop at sunset overlooking a city skyline (Orlando vibes — low-rise buildings, palm trees). He's looking at his phone, backlit by warm orange and pink sky. Cinematic, contemplative, authentic. Topic: "${topic}". No text.`,
+    // 2 — Late Night Desk
+    (topic) => `Overhead shot of a clean desk at night — a glowing laptop screen illuminates the space, a half-drunk coffee, AirPods, and a notebook with handwritten notes. Moody ambient lighting from a desk lamp. The vibe is "shipping at midnight." Topic: "${topic}". Cozy, real, no text.`,
+    // 3 — Walking & Thinking
+    (topic) => `A man walking down a palm-lined street in Orlando wearing casual clothes, AirPods in, looking thoughtful. Warm afternoon light creates long shadows. Shot from slightly behind — feels like a candid street photo. Topic: "${topic}". Natural colors, documentary style, no text.`,
+    // 4 — Whiteboard Moment
+    (topic) => `A blurry whiteboard in the background covered in diagrams and sticky notes. In the foreground, a hand holds a marker mid-thought. The scene feels like a real brainstorming session — messy, real, in-progress. Warm office lighting. Topic: "${topic}". No text readable.`,
+    // 5 — Team Dinner
+    (topic) => `A group of friends at an outdoor restaurant table at night, string lights overhead, laughter mid-conversation. Plates of food, drinks on the table. Warm, social, the kind of photo you'd post on a Friday night. Topic: "${topic}". Candid, slightly blurry, real moment. No text.`,
+    // 6 — Morning Energy
+    (topic) => `A man jogging past a lake at sunrise, earbuds in, palm trees in the background. Golden morning light, slight lens flare. Feels like a wellness/hustle culture photo but authentic — not staged gym content. Topic: "${topic}". Natural photography, no text.`,
+    // 7 — Home Office Real
+    (topic) => `A lived-in home office — dual monitors, a plant, a framed photo, coffee mug. Natural light from a nearby window. The desk has character — stickers on the laptop, a book open to a random page. Real, not minimalist perfection. Topic: "${topic}". Editorial lifestyle photography, no text.`,
 ];
 
 /**
- * Extra flavor words injected based on the content pillar
+ * Extra flavor words injected based on the content pillar — human emotions, not corporate jargon
  */
 const PILLAR_KEYWORDS = {
-    hotTakes: 'controversial, disruptive energy, bold contrast',
-    builderLogs: 'work-in-progress, raw creation, blueprints',
-    industryCommentary: 'news broadcast, data visualization, headlines',
-    subtleFlex: 'luxury results, trophy, achievement',
-    cta: 'invitation, open door, warm welcome',
-    value: 'education, knowledge, illumination',
-    portfolio: 'showcase, gallery, exhibition',
-    bts: 'behind the scenes, studio, workshop',
+    hotTakes: 'confident energy, strong opinion, main character moment',
+    builderLogs: 'late night grind, shipping code, builder energy',
+    industryCommentary: 'thoughtful, informed perspective, in-the-know',
+    subtleFlex: 'casual confidence, no big deal energy, earned success',
+    cta: 'friendly invitation, approachable, genuine connection',
+    value: 'sharing knowledge, teaching moment, generosity',
+    portfolio: 'proud of the work, showing results, client love',
+    bts: 'raw and real, unfiltered, work in progress',
 };
 
 /**
