@@ -1,0 +1,41 @@
+# ==============================================================================
+# GhostAI Bot Fleet — Railway Scheduler Dockerfile
+# Runs all bot schedulers in a single lightweight container
+# No Playwright/Chromium needed — all posting uses APIs
+# ==============================================================================
+
+FROM node:20-slim
+
+# System deps for better-sqlite3 native addon
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install production dependencies
+# --legacy-peer-deps handles workspace deps like @ghostai/shared
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --legacy-peer-deps 2>/dev/null || npm install --omit=dev --legacy-peer-deps && npm cache clean --force
+
+# Copy application code
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+
+# Copy brain/persona files (wildcard — don't fail if missing)
+COPY *-brain.md ./
+
+# Create data + logs directories
+RUN mkdir -p /app/data /app/logs /app/.image-cache /app/.video-cache
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -sf http://localhost:${PORT:-8787}/health || exit 1
+
+EXPOSE ${PORT:-8787}
+
+# Default: run the unified fleet starter
+CMD ["node", "scripts/railway-start.js"]
