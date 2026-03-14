@@ -1,0 +1,15 @@
+{
+  "completed_at": 1771282282,
+  "created_at": 1771282178,
+  "error": null,
+  "expires_at": 1771285882,
+  "id": "video_69939f01f25c8191aba43ca8e202b5c600c251a7f034a034",
+  "model": "sora-2",
+  "object": "video",
+  "progress": 100,
+  "prompt": "Use case: vertical cinematic social clip\nPrimary request: giant cat versus kaiju battle in a dense modern city\nScene/background: dawn after heavy rain, wet streets reflecting city lights, drifting smoke and mist between skyscrapers\nSubject: a colossal orange tabby cat with realistic fur and feline motion fighting an original armored kaiju (not based on existing franchises)\nAction: in one continuous shot, the giant cat sprints down an avenue, vaults off a bus, collides with the kaiju, then lands and lets out a final roar as debris settles\nCamera: vertical 9:16 framing, low-angle handheld chase camera, fast push-in then slight orbit during impact, dynamic but readable composition\nLighting/mood: dramatic storm-break light with volumetric rays, lightning flashes, high contrast, tense and heroic tone\nColor palette: steel blue, neon cyan, warm amber highlights, charcoal shadows\nStyle/format: photoreal cinematic action, large-format camera look, shallow depth of field, 24fps feel, subtle natural motion blur, fine film grain\nTiming/beats: 0-2s approach and tension build, 2-6s explosive clash, 6-8s heroic hold with roar and falling debris\nAudio: deep creature roars, distant sirens, thunder, concrete cracking, metal impacts, echoing city ambience\nConstraints: no blood or gore, no civilians visible, realistic physics, period-neutral city details, keep both creatures fully in frame during key impact\nAvoid: text overlays, logos, copyrighted creature likenesses, extra limbs, warped anatomy, jitter, flicker",
+  "remixed_from_video_id": null,
+  "seconds": "8",
+  "size": "720x1280",
+  "status": "completed"
+}

@@ -1,13 +1,32 @@
 /**
  * Content Library - Pre-written tweet templates by pillar
  * Includes AI-assisted generation via configured LLM providers.
+ * Reads x-brain.md for centralized persona and strategy.
  */
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import dotenv from 'dotenv';
 import { generateText } from './llm-client.js';
 
 dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const X_BRAIN_PATH = path.join(__dirname, '..', 'x-brain.md');
+
+/**
+ * Load the x-brain.md memory file for AI prompt context
+ */
+function loadXBrain() {
+    try {
+        return fs.readFileSync(X_BRAIN_PATH, 'utf-8');
+    } catch {
+        console.warn('⚠️ x-brain.md not found — using fallback prompts');
+        return null;
+    }
+}
 
 // Helper to get random item from array
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -394,12 +413,17 @@ DM "AUDIT" - limited spots this week.`,
  * Get a random tweet by pillar type
  */
 export function getTweetByPillar(pillar) {
+    // Map new pillar names to template pools (legacy templates still work)
     const templates = {
-        value: valueTemplates,
         hotTakes: hotTakeTemplates,
+        builderLogs: [...btsTemplates, ...valueTemplates],
+        industryCommentary: hotTakeTemplates,
+        subtleFlex: portfolioTemplates,
+        cta: ctaTemplates,
+        // Legacy fallbacks
+        value: valueTemplates,
         portfolio: portfolioTemplates,
         bts: btsTemplates,
-        cta: ctaTemplates,
     };
 
     const pillarTemplates = templates[pillar];
@@ -426,7 +450,7 @@ export function getWeightedPillar() {
         }
     }
 
-    return 'value'; // fallback
+    return 'hotTakes'; // fallback — spicy by default
 }
 
 /**
@@ -445,51 +469,44 @@ export function generateTweet() {
 
 /**
  * Generate AI-powered tweet using configured LLM provider(s)
- * Creates engaging, controversial content for Ghost AI brand
+ * Reads x-brain.md for centralized persona, voice, and strategy.
  */
 export async function generateAITweet(options = {}) {
     const {
         pillar = getWeightedPillar(),
         controversial = true,
         maxLength = 280,
+        provider = 'auto',
     } = options;
 
     const pillarDescriptions = {
-        value: 'educational value bomb about web development, AI websites, or conversion optimization',
-        hotTakes: 'controversial hot take that challenges industry norms about web agencies, AI, or tech',
-        portfolio: 'showcase of Ghost AI work - fast delivery, AI voice agents, conversion systems',
-        bts: 'behind-the-scenes look at AI agents, automation, or the Ghost AI process',
-        cta: 'call-to-action offering free audits, consultations, or demos',
+        hotTakes: 'a controversial hot take that makes people want to argue or agree strongly. Challenge assumptions about AI, agencies, or tech.',
+        builderLogs: 'a raw, real builder log — what you shipped today, a late-night deploy, a problem you solved. Show the work, not the polish.',
+        industryCommentary: 'a sharp take on something happening in AI right now — a launch, an acquisition, a trend. Have a strong position.',
+        subtleFlex: 'a subtle flex — client result, speed record, or revenue milestone. Let the numbers do the talking, don\'t brag explicitly.',
+        cta: 'a soft sell — offer a free audit, mention the website naturally, or invite DMs. Never pushy, never more than 1 in 10 posts.',
+        // Legacy fallbacks
+        value: 'educational value about web development, AI, or conversion optimization',
+        portfolio: 'showcase of client work and results',
+        bts: 'behind-the-scenes look at building with AI',
     };
 
-    const prompt = `You are the voice of Ghost AI Systems, a cutting-edge web development and AI automation agency run by Daniel Castillo in Florida.
+    // Load x-brain.md for full persona context
+    const xBrain = loadXBrain();
 
-BRAND VOICE:
-- Provocative and confident, but not arrogant
-- Data-driven claims with specific numbers
-- Anti-establishment (calls out bloated agencies)
-- Fast & efficient (72-hour delivery is our thing)
-- AI-forward (we deploy AI voice agents, chatbots, automation)
-- Use emojis sparingly (👻 is our signature, also 🔥 💀 ⚡)
-
-CONTENT TYPE: ${pillarDescriptions[pillar]}
-
-${controversial ? 'Make this CONTROVERSIAL and engagement-baiting. Challenge assumptions. Say something that will make people want to argue or agree strongly.' : 'Keep this informative but still punchy.'}
-
-RULES:
-- MUST be under ${maxLength} characters (this is Twitter/X)
-- NO hashtags unless absolutely essential
-- NO "Hey everyone" or generic openings
-- Use line breaks for readability
-- End with either a bold statement, question, or subtle CTA
-- Include our website ${config.brand.website} only if it fits naturally
-
-Generate ONE tweet. Output ONLY the tweet text, nothing else.`;
+    let prompt;
+    if (xBrain) {
+        prompt = `Here is your complete identity, voice, and strategy guide:\n\n${xBrain}\n\n---\n\nNow generate a tweet for the "${pillar}" content pillar: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make this SPICY — the kind of tweet that gets quote-tweeted and argued about.' : 'Keep it punchy but not necessarily controversial.'}\n\nRULES:\n- MUST be under ${maxLength} characters\n- Follow ALL the voice rules and hard rules from the brain file above\n- Output ONLY the tweet text, nothing else`;
+    } else {
+        // Fallback if x-brain.md is missing
+        prompt = `You are Daniel Castillo, founder of Ghost AI Systems. You build AI-powered websites in 72 hours, AI voice agents, and automation.\n\nYour voice on X: casual, spicy, builder energy. Lowercase ok. "ngl", "tbh" ok. NO hashtags ever. 1 emoji max.\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make it controversial and engagement-baiting.' : 'Keep it punchy.'}\n\nMust be under ${maxLength} characters. Output ONLY the tweet text.`;
+    }
 
     console.log('🧠 Generating AI content...');
 
     const { text } = await generateText({
         prompt,
+        provider,
         maxOutputTokens: 300,
         openaiModel: 'gpt-5.2',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',

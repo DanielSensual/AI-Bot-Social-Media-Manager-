@@ -17,6 +17,7 @@ const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.IG_GRAPH_TIMEOUT_MS || '30000', 10);
 const STATUS_POLL_TIMEOUT_MS = Number.parseInt(process.env.IG_GRAPH_STATUS_TIMEOUT_MS || '15000', 10);
+const DEFAULT_GHOSTAI_FACEBOOK_PAGE_ID = '753873537816019';
 
 function getGraphApiBase(token) {
     if (token && token.startsWith('IGA')) return 'https://graph.instagram.com/v22.0';
@@ -64,7 +65,10 @@ async function resolvePageToken(config) {
     ].filter(Boolean);
     if (tokenCandidates.length === 0) throw new Error('Facebook/Instagram not configured. Missing token.');
 
-    const configuredPageId = config?.pageId || process.env.FACEBOOK_PAGE_ID;
+    const configuredPageId = config?.pageId
+        || process.env.FACEBOOK_PAGE_ID
+        || process.env.GHOSTAI_FACEBOOK_PAGE_ID
+        || DEFAULT_GHOSTAI_FACEBOOK_PAGE_ID;
     let lastError = null;
 
     for (const token of [...new Set(tokenCandidates)]) {

@@ -9,13 +9,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getRecent } from './post-history.js';
+import { config } from './config.js';
+import { getTimeZoneDateKey, isTimestampOnDateInTimeZone, parseStoredTimestamp } from './timezone.js';
+import { resolvePageToken, getGraphApiBase } from '@ghostai/shared/graph-api';
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const GRAPH_API_VERSION = 'v24.0';
-const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 const LOGS_DIR = path.join(__dirname, '..', 'logs', 'analytics');
+const REPORT_TIMEZONE = config.schedule?.timezone || 'America/New_York';
 
 fs.mkdirSync(LOGS_DIR, { recursive: true });
 
@@ -53,26 +55,11 @@ export async function getXMetrics(postId) {
  * @returns {Promise<object|null>} Metrics or null
  */
 export async function getFacebookMetrics(postId) {
-    const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
-    if (!token) return null;
+    const resolved = await resolvePageToken();
+    if (!resolved) return null;
 
     try {
-        // First resolve page token if needed
-        let pageToken = token;
-        const meResponse = await fetch(`${GRAPH_API_BASE}/me?fields=id&access_token=${token}`);
-        const meData = await meResponse.json();
-        if (meData.error) return null;
-
-        const pageCheck = await fetch(`${GRAPH_API_BASE}/${meData.id}?fields=category&access_token=${token}`);
-        const pageCheckData = await pageCheck.json();
-
-        if (pageCheckData.error || !pageCheckData.category) {
-            const pagesResponse = await fetch(`${GRAPH_API_BASE}/me/accounts?fields=id,access_token&access_token=${token}`);
-            const pagesData = await pagesResponse.json();
-            if (pagesData.data?.[0]) pageToken = pagesData.data[0].access_token;
-        }
-
-        const response = await fetch(`${GRAPH_API_BASE}/${postId}?fields=likes.summary(true),comments.summary(true),shares,created_time&access_token=${pageToken}`);
+        const response = await fetch(`${getGraphApiBase()}/${postId}?fields=likes.summary(true),comments.summary(true),shares,created_time&access_token=${resolved.pageToken}`);
         const data = await response.json();
 
         if (data.error) return null;
@@ -96,25 +83,11 @@ export async function getFacebookMetrics(postId) {
  * @returns {Promise<object|null>} Metrics or null
  */
 export async function getInstagramMetrics(mediaId) {
-    const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
-    if (!token) return null;
+    const resolved = await resolvePageToken();
+    if (!resolved) return null;
 
     try {
-        // Resolve page token
-        let pageToken = token;
-        const meResponse = await fetch(`${GRAPH_API_BASE}/me?fields=id&access_token=${token}`);
-        const meData = await meResponse.json();
-
-        const pageCheck = await fetch(`${GRAPH_API_BASE}/${meData.id}?fields=category&access_token=${token}`);
-        const pageCheckData = await pageCheck.json();
-
-        if (pageCheckData.error || !pageCheckData.category) {
-            const pagesResponse = await fetch(`${GRAPH_API_BASE}/me/accounts?fields=id,access_token&access_token=${token}`);
-            const pagesData = await pagesResponse.json();
-            if (pagesData.data?.[0]) pageToken = pagesData.data[0].access_token;
-        }
-
-        const response = await fetch(`${GRAPH_API_BASE}/${mediaId}?fields=like_count,comments_count,timestamp&access_token=${pageToken}`);
+        const response = await fetch(`${getGraphApiBase()}/${mediaId}?fields=like_count,comments_count,timestamp&access_token=${resolved.pageToken}`);
         const data = await response.json();
 
         if (data.error) return null;
@@ -130,6 +103,7 @@ export async function getInstagramMetrics(mediaId) {
         return null;
     }
 }
+
 
 /**
  * Extract a post ID from various result formats
@@ -149,12 +123,20 @@ function extractPostId(resultStr, platform) {
  */
 export async function getWeeklyDigest() {
     const recentPosts = getRecent(50);
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const now = new Date();
 
-    const thisWeek = recentPosts.filter(p => p.timestamp >= oneWeekAgo);
+    const thisWeek = recentPosts.filter((post) => {
+        const parsed = parseStoredTimestamp(post.timestamp);
+        return parsed && parsed.getTime() >= oneWeekAgo.getTime();
+    });
 
     const digest = {
-        period: { start: oneWeekAgo, end: new Date().toISOString() },
+        period: {
+            start: getTimeZoneDateKey(oneWeekAgo, REPORT_TIMEZONE),
+            end: getTimeZoneDateKey(now, REPORT_TIMEZONE),
+            timezone: REPORT_TIMEZONE,
+        },
         totalPosts: thisWeek.length,
         byPlatform: { x: 0, linkedin: 0, facebook: 0, instagram: 0 },
         bySource: { ai: 0, template: 0 },
@@ -218,11 +200,14 @@ export async function getWeeklyDigest() {
  */
 export async function getTodayStats() {
     const recentPosts = getRecent(20);
-    const today = new Date().toISOString().split('T')[0];
-    const todayPosts = recentPosts.filter(p => p.timestamp?.startsWith(today));
+    const today = getTimeZoneDateKey(new Date(), REPORT_TIMEZONE);
+    const todayPosts = recentPosts.filter((post) =>
+        isTimestampOnDateInTimeZone(post.timestamp, today, REPORT_TIMEZONE)
+    );
 
     return {
         date: today,
+        timezone: REPORT_TIMEZONE,
         totalPosts: todayPosts.length,
         byPlatform: {
             x: todayPosts.filter(p => p.results?.x).length,
@@ -239,7 +224,7 @@ export async function getTodayStats() {
  * Save digest to log file
  */
 export function saveDigest(digest) {
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = getTimeZoneDateKey(new Date(), REPORT_TIMEZONE);
     const logFile = path.join(LOGS_DIR, `${dateStr}-digest.json`);
     fs.writeFileSync(logFile, JSON.stringify(digest, null, 2));
     console.log(`📊 Digest saved to ${logFile}`);

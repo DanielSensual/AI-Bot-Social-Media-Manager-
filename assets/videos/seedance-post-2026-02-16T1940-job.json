@@ -1,0 +1,32 @@
+{
+  "create": {
+    "id": "video_699372c5991c81908fdc1d1dca6305170edbd501d60cbd41",
+    "object": "video",
+    "created_at": 1771270853,
+    "status": "queued",
+    "completed_at": null,
+    "error": null,
+    "expires_at": null,
+    "model": "sora-2",
+    "progress": 0,
+    "prompt": "A vertical cinematic shot of a glowing neural network lattice materializing inside a dark smartphone screen, electric blue and violet tendrils of light weaving through circuit-board patterns, camera slowly pushing in as data particles swirl and coalesce into a hyper-realistic human face, shallow depth of field, volumetric lighting, no text, no logos",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  },
+  "final": {
+    "id": "video_699372c5991c81908fdc1d1dca6305170edbd501d60cbd41",
+    "object": "video",
+    "created_at": 1771270853,
+    "status": "completed",
+    "completed_at": 1771270958,
+    "error": null,
+    "expires_at": 1771274558,
+    "model": "sora-2",
+    "progress": 100,
+    "prompt": "A vertical cinematic shot of a glowing neural network lattice materializing inside a dark smartphone screen, electric blue and violet tendrils of light weaving through circuit-board patterns, camera slowly pushing in as data particles swirl and coalesce into a hyper-realistic human face, shallow depth of field, volumetric lighting, no text, no logos",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  }
+}

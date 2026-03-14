@@ -1,0 +1,15 @@
+{
+  "completed_at": 1771281548,
+  "created_at": 1771281436,
+  "error": null,
+  "expires_at": 1771285148,
+  "id": "video_69939c1b9b248191b88ca6fa9273368600f0e3eb90f2766f",
+  "model": "sora-2",
+  "object": "video",
+  "progress": 100,
+  "prompt": "Cinematic WWII combat action sequence filmed with modern large-format cinema cameras. Handheld ARRI Alexa 65-style image, shallow depth of field, 24fps with subtle natural motion blur. A squad of American infantry advances cautiously through a bombed-out French village at dawn: shattered stone buildings, rubble-strewn streets, drifting smoke haze, dust motes in the air, intermittent muzzle flashes briefly illuminating faces and debris.\n\nThe camera tracks low behind the soldiers in a continuous, immersive single-take movement, weaving between crumbling walls and collapsed doorways, occasionally pushing past shoulders and gear for an intimate, chaotic perspective. Explosions erupt in the background, sending chunks of masonry and dirt skyward; shockwaves ripple dust and fabric as soldiers dive for cover behind broken carts and ruined masonry.\n\nLighting is hyper-real and filmic: golden-hour rim light cutting through thick atmospheric fog, strong volumetric rays, deep contrast. Modern color science with desaturated teal shadows, warm amber highlights, and subtle film grain. Ultra-detailed, period-accurate uniforms, helmets, packs, and weapons. Sound design: sharp rifle cracks, distant artillery thumps, debris falling, shouted orders, heavy breathing, boots crunching over rubble. Tense, visceral, grounded realism with precise military movement and believable physics.",
+  "remixed_from_video_id": null,
+  "seconds": "8",
+  "size": "1280x720",
+  "status": "completed"
+}

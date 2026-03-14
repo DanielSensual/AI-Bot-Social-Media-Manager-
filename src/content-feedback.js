@@ -1,43 +1,11 @@
 /**
- * Content Feedback Loop
+ * Content Feedback Loop — SQLite-backed
  * Tracks post engagement over time and adjusts pillar weights
  * to favor content types that perform best.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { getDb } from './db.js';
 import { config } from './config.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FEEDBACK_FILE = path.join(__dirname, '..', '.content-feedback.json');
-
-/**
- * Load feedback data from disk
- * @returns {object} { pillarMetrics, recentTopPosts, lastUpdated }
- */
-function loadFeedback() {
-    try {
-        if (fs.existsSync(FEEDBACK_FILE)) {
-            return JSON.parse(fs.readFileSync(FEEDBACK_FILE, 'utf-8'));
-        }
-    } catch (e) {
-        console.warn('⚠️ Error loading feedback data, starting fresh');
-    }
-    return {
-        pillarMetrics: {},
-        recentTopPosts: [],
-        lastUpdated: null,
-    };
-}
-
-/**
- * Save feedback data to disk
- */
-function saveFeedback(data) {
-    data.lastUpdated = new Date().toISOString();
-    fs.writeFileSync(FEEDBACK_FILE, JSON.stringify(data, null, 2));
-}
 
 /**
  * Record engagement for a post
@@ -47,46 +15,68 @@ function saveFeedback(data) {
  * @param {string} platform - Platform name
  */
 export function recordEngagement(pillar, engagement, text, platform) {
-    const data = loadFeedback();
+    const db = getDb();
+    const totalEngagement = (engagement.likes || 0) + (engagement.comments || 0) * 2 + (engagement.shares || 0) * 3;
 
-    if (!data.pillarMetrics[pillar]) {
-        data.pillarMetrics[pillar] = {
-            totalPosts: 0,
-            totalLikes: 0,
-            totalComments: 0,
-            totalShares: 0,
-            totalImpressions: 0,
-            avgEngagement: 0,
-        };
+    // Upsert pillar metrics
+    const existing = db.prepare('SELECT * FROM pillar_metrics WHERE pillar = ?').get(pillar);
+
+    if (existing) {
+        const newTotal = existing.total_posts + 1;
+        const newAvg = Math.round(
+            ((existing.avg_engagement * existing.total_posts) + totalEngagement) / newTotal
+        );
+
+        db.prepare(`
+            UPDATE pillar_metrics SET
+                total_posts = ?,
+                total_likes = total_likes + ?,
+                total_comments = total_comments + ?,
+                total_shares = total_shares + ?,
+                total_impressions = total_impressions + ?,
+                avg_engagement = ?,
+                updated_at = ?
+            WHERE pillar = ?
+        `).run(
+            newTotal,
+            engagement.likes || 0,
+            engagement.comments || 0,
+            engagement.shares || 0,
+            engagement.impressions || 0,
+            newAvg,
+            new Date().toISOString(),
+            pillar,
+        );
+    } else {
+        db.prepare(`
+            INSERT INTO pillar_metrics (pillar, total_posts, total_likes, total_comments,
+                total_shares, total_impressions, avg_engagement, updated_at)
+            VALUES (?, 1, ?, ?, ?, ?, ?, ?)
+        `).run(
+            pillar,
+            engagement.likes || 0,
+            engagement.comments || 0,
+            engagement.shares || 0,
+            engagement.impressions || 0,
+            totalEngagement,
+            new Date().toISOString(),
+        );
     }
 
-    const metrics = data.pillarMetrics[pillar];
-    metrics.totalPosts++;
-    metrics.totalLikes += engagement.likes || 0;
-    metrics.totalComments += engagement.comments || 0;
-    metrics.totalShares += engagement.shares || 0;
-    metrics.totalImpressions += engagement.impressions || 0;
+    // Track top-performing posts (keep max 20)
+    db.prepare(
+        'INSERT INTO top_posts (text, pillar, platform, score) VALUES (?, ?, ?, ?)'
+    ).run(text.substring(0, 200), pillar, platform, totalEngagement);
 
-    const totalEngagement = (engagement.likes || 0) + (engagement.comments || 0) * 2 + (engagement.shares || 0) * 3;
-    metrics.avgEngagement = Math.round(
-        ((metrics.avgEngagement * (metrics.totalPosts - 1)) + totalEngagement) / metrics.totalPosts,
-    );
-
-    // Track top-performing posts for style examples
-    const score = totalEngagement;
-    data.recentTopPosts.push({
-        text: text.substring(0, 200),
-        pillar,
-        platform,
-        score,
-        timestamp: new Date().toISOString(),
-    });
-
-    // Keep only top 20 posts sorted by score
-    data.recentTopPosts.sort((a, b) => b.score - a.score);
-    data.recentTopPosts = data.recentTopPosts.slice(0, 20);
-
-    saveFeedback(data);
+    // Prune to top 20
+    const count = db.prepare('SELECT COUNT(*) as c FROM top_posts').get().c;
+    if (count > 20) {
+        db.prepare(`
+            DELETE FROM top_posts WHERE id NOT IN (
+                SELECT id FROM top_posts ORDER BY score DESC LIMIT 20
+            )
+        `).run();
+    }
 }
 
 /**
@@ -95,33 +85,29 @@ export function recordEngagement(pillar, engagement, text, platform) {
  * @returns {object} { pillarName: adjustedWeight }
  */
 export function getOptimizedWeights() {
-    const data = loadFeedback();
+    const db = getDb();
     const baseWeights = {};
     const pillars = config.pillars || {};
 
-    // Extract base weights from config (pillars is { name: weight })
     for (const [name, weight] of Object.entries(pillars)) {
         baseWeights[name] = weight || 1;
     }
 
     // If insufficient data, return base weights
-    const totalTrackedPosts = Object.values(data.pillarMetrics).reduce((sum, m) => sum + m.totalPosts, 0);
-    if (totalTrackedPosts < 10) {
+    const totalRow = db.prepare('SELECT SUM(total_posts) as total FROM pillar_metrics').get();
+    if (!totalRow.total || totalRow.total < 10) {
         return baseWeights;
     }
 
     // Blend base weights with performance
-    const optimized = {};
-    const maxAvgEngagement = Math.max(
-        ...Object.values(data.pillarMetrics).map(m => m.avgEngagement),
-        1,
-    );
+    const metrics = db.prepare('SELECT * FROM pillar_metrics').all();
+    const maxAvg = Math.max(...metrics.map(m => m.avg_engagement), 1);
 
+    const optimized = {};
     for (const [name, baseWeight] of Object.entries(baseWeights)) {
-        const metrics = data.pillarMetrics[name];
-        if (metrics && metrics.totalPosts >= 3) {
-            // Performance multiplier: 0.5x to 2.0x based on relative engagement
-            const performanceFactor = 0.5 + (metrics.avgEngagement / maxAvgEngagement) * 1.5;
+        const m = metrics.find(row => row.pillar === name);
+        if (m && m.total_posts >= 3) {
+            const performanceFactor = 0.5 + (m.avg_engagement / maxAvg) * 1.5;
             optimized[name] = Math.round(baseWeight * performanceFactor);
         } else {
             optimized[name] = baseWeight;
@@ -137,33 +123,43 @@ export function getOptimizedWeights() {
  * @returns {string[]} Array of post texts
  */
 export function getTopPerformingExamples(count = 3) {
-    const data = loadFeedback();
-    return data.recentTopPosts
-        .slice(0, count)
-        .map(p => p.text);
+    const db = getDb();
+    const rows = db.prepare(
+        'SELECT text FROM top_posts ORDER BY score DESC LIMIT ?'
+    ).all(count);
+
+    return rows.map(r => r.text);
 }
 
 /**
  * Get a summary of pillar performance for analytics
- * @returns {object} Performance summary
  */
 export function getPerformanceSummary() {
-    const data = loadFeedback();
-    const summary = {};
+    const db = getDb();
 
-    for (const [pillar, metrics] of Object.entries(data.pillarMetrics)) {
-        summary[pillar] = {
-            posts: metrics.totalPosts,
-            avgEngagement: metrics.avgEngagement,
-            totalLikes: metrics.totalLikes,
-            totalComments: metrics.totalComments,
+    const metrics = db.prepare('SELECT * FROM pillar_metrics').all();
+    const topPosts = db.prepare('SELECT * FROM top_posts ORDER BY score DESC LIMIT 5').all();
+
+    const pillarPerformance = {};
+    for (const m of metrics) {
+        pillarPerformance[m.pillar] = {
+            posts: m.total_posts,
+            avgEngagement: m.avg_engagement,
+            totalLikes: m.total_likes,
+            totalComments: m.total_comments,
         };
     }
 
     return {
-        pillarPerformance: summary,
-        topPosts: data.recentTopPosts.slice(0, 5),
-        lastUpdated: data.lastUpdated,
+        pillarPerformance,
+        topPosts: topPosts.map(p => ({
+            text: p.text,
+            pillar: p.pillar,
+            platform: p.platform,
+            score: p.score,
+            timestamp: p.created_at,
+        })),
+        lastUpdated: metrics[0]?.updated_at || null,
     };
 }
 

@@ -17,6 +17,11 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+const DEFAULT_GHOSTAI_FACEBOOK_PAGE_ID = '753873537816019';
+
+function getConfiguredPageId() {
+    return process.env.FACEBOOK_PAGE_ID || process.env.GHOSTAI_FACEBOOK_PAGE_ID || DEFAULT_GHOSTAI_FACEBOOK_PAGE_ID;
+}
 
 /**
  * Get the configured access token
@@ -35,44 +40,20 @@ function getAccessToken() {
  */
 export async function testFacebookConnection() {
     try {
-        const token = getAccessToken();
+        getAccessToken();
+        const { pageId, pageToken, pageName } = await resolvePageCredentials();
+        const pageResponse = await fetch(`${GRAPH_API_BASE}/${pageId}?fields=id,name,category,fan_count&access_token=${pageToken}`);
+        const pageData = await pageResponse.json();
 
-        // Query basic identity first (works for both User and Page tokens)
-        const meResponse = await fetch(`${GRAPH_API_BASE}/me?fields=id,name&access_token=${token}`);
-        const meData = await meResponse.json();
-
-        if (meData.error) {
-            console.error(`❌ Facebook API error: ${meData.error.message}`);
+        if (pageData.error) {
+            console.error(`❌ Facebook API error: ${pageData.error.message}`);
             return false;
         }
 
-        // Try page-specific fields to detect if this is a Page token
-        const pageCheckResponse = await fetch(`${GRAPH_API_BASE}/${meData.id}?fields=category,fan_count&access_token=${token}`);
-        const pageCheck = await pageCheckResponse.json();
-
-        if (!pageCheck.error && pageCheck.category) {
-            // It's a direct page token
-            console.log(`✅ Facebook Page connected: ${meData.name}`);
-            console.log(`   Category: ${pageCheck.category}`);
-            if (pageCheck.fan_count) console.log(`   Followers: ${pageCheck.fan_count}`);
-            return { type: 'page', ...meData, ...pageCheck };
-        }
-
-        // It's a user token — try to get managed pages
-        console.log(`✅ Facebook User: ${meData.name}`);
-        const pagesResponse = await fetch(`${GRAPH_API_BASE}/me/accounts?fields=id,name,category,access_token&access_token=${token}`);
-        const pagesData = await pagesResponse.json();
-
-        if (pagesData.data && pagesData.data.length > 0) {
-            const page = pagesData.data[0];
-            console.log(`✅ Facebook Page found: ${page.name} (${page.category})`);
-            return { type: 'user_with_page', user: meData, page };
-        }
-
-        console.warn('⚠️ No Facebook Pages found. Token needs pages_manage_posts permission.');
-        console.warn('   Go to: https://developers.facebook.com/tools/explorer/');
-        console.warn('   Add permissions: pages_manage_posts, pages_show_list, pages_read_engagement');
-        return { type: 'user_no_pages', user: meData };
+        console.log(`✅ Facebook Page connected: ${pageName || pageData.name}`);
+        console.log(`   Category: ${pageData.category}`);
+        if (pageData.fan_count) console.log(`   Followers: ${pageData.fan_count}`);
+        return { type: 'page', ...pageData };
     } catch (error) {
         console.error(`❌ Facebook connection failed: ${error.message}`);
         return false;
@@ -84,40 +65,48 @@ export async function testFacebookConnection() {
  * Handles both direct Page tokens and User tokens with page access
  */
 async function resolvePageCredentials() {
-    const token = getAccessToken();
+    const configuredPageId = getConfiguredPageId();
+    const tokenCandidates = [
+        process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
+        process.env.FACEBOOK_ACCESS_TOKEN,
+    ].filter(Boolean);
 
-    // Get basic identity
-    const meResponse = await fetch(`${GRAPH_API_BASE}/me?fields=id,name&access_token=${token}`);
-    const meData = await meResponse.json();
+    let lastError = null;
 
-    if (meData.error) {
-        throw new Error(`Facebook API error: ${meData.error.message}`);
+    for (const token of [...new Set(tokenCandidates)]) {
+        const meResponse = await fetch(`${GRAPH_API_BASE}/me?fields=id,name&access_token=${token}`);
+        const meData = await meResponse.json();
+
+        if (meData.error) {
+            lastError = new Error(`Facebook API error: ${meData.error.message}`);
+            continue;
+        }
+
+        const pageCheckResponse = await fetch(`${GRAPH_API_BASE}/${meData.id}?fields=category&access_token=${token}`);
+        const pageCheck = await pageCheckResponse.json();
+
+        if (!pageCheck.error && pageCheck.category) {
+            if (configuredPageId && String(meData.id) !== String(configuredPageId)) {
+                lastError = new Error(`Page token targets ${meData.id}, not requested page ${configuredPageId}`);
+                continue;
+            }
+
+            return { pageId: meData.id, pageToken: token, pageName: meData.name };
+        }
+
+        const pagesResponse = await fetch(`${GRAPH_API_BASE}/me/accounts?fields=id,name,access_token&access_token=${token}`);
+        const pagesData = await pagesResponse.json();
+
+        if (!pagesData.data || pagesData.data.length === 0) {
+            lastError = new Error('No Facebook Pages accessible. Token needs pages_manage_posts + pages_show_list permissions.');
+            continue;
+        }
+
+        const page = pagesData.data.find((entry) => String(entry.id) === String(configuredPageId)) || pagesData.data[0];
+        return { pageId: page.id, pageToken: page.access_token, pageName: page.name };
     }
 
-    // Check if it's a Page token
-    const pageCheckResponse = await fetch(`${GRAPH_API_BASE}/${meData.id}?fields=category&access_token=${token}`);
-    const pageCheck = await pageCheckResponse.json();
-
-    if (!pageCheck.error && pageCheck.category) {
-        // Direct page token
-        return { pageId: meData.id, pageToken: token, pageName: meData.name };
-    }
-
-    // User token — get first managed page
-    const configuredPageId = process.env.FACEBOOK_PAGE_ID;
-    const pagesResponse = await fetch(`${GRAPH_API_BASE}/me/accounts?fields=id,name,access_token&access_token=${token}`);
-    const pagesData = await pagesResponse.json();
-
-    if (!pagesData.data || pagesData.data.length === 0) {
-        throw new Error('No Facebook Pages accessible. Token needs pages_manage_posts + pages_show_list permissions.');
-    }
-
-    // Use configured page ID or first page
-    const page = configuredPageId
-        ? pagesData.data.find(p => p.id === configuredPageId) || pagesData.data[0]
-        : pagesData.data[0];
-
-    return { pageId: page.id, pageToken: page.access_token, pageName: page.name };
+    throw lastError || new Error('No usable Facebook page credentials found.');
 }
 
 /**

@@ -1,0 +1,49 @@
+# Dependencies (rebuilt in container)
+node_modules
+
+# Git
+.git
+.gitignore
+
+# Environment (injected at runtime, never baked in)
+.env
+.env.*
+
+# Logs and temp
+logs/
+tmp/
+
+# Caches
+.video-cache/
+.image-cache/
+
+# Runtime state (lives on volume, not in image)
+*.db
+*.db-wal
+*.db-shm
+
+# Session/auth files (injected at runtime)
+.linkedin-cookies.json
+.linkedin-token.json
+.instagram-session.json
+
+# Engagement tracking (lives on volume)
+.x-engaged.json
+.x-replied.json
+.fb-comment-replied.json
+.fb-responded.json
+.ig-comment-replied.json
+.ig-engaged.json
+.post-history.json
+
+# PM2 (not used in container)
+ecosystem.config.cjs
+
+# Railway (not used in container)
+railway.json
+
+# Tests (not needed in production image)
+tests/
+
+# Assets (generated at runtime)
+assets/generated/

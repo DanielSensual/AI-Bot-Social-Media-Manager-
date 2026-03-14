@@ -1,0 +1,9 @@
+After testing real outputs, this is my current AI video model ranking:
+
+1) Veo 3.1 (Gemini Ultra)
+2) Sora 2 Pro
+3) Grok Imagine
+
+This edit includes Imagine + Veo3 clips for a direct quality comparison on prompt adherence, realism, and consistency.
+
+What would you rank #1 right now?

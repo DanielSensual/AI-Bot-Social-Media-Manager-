@@ -1,0 +1,32 @@
+{
+  "create": {
+    "id": "video_699a042b17848190b88b948bc8e679a20b6eec17efb1723a",
+    "object": "video",
+    "created_at": 1771701291,
+    "status": "queued",
+    "completed_at": null,
+    "error": null,
+    "expires_at": null,
+    "model": "sora-2",
+    "progress": 0,
+    "prompt": "Hyper-realistic vertical ad shot in Times Square at night: a confident beautiful woman in a red dress stands in the middle of neon traffic, turns to camera with a sharp look, subtle smile, and strong cinematic push-in. Fast, high-contrast lighting, premium commercial style, extremely eye-catching, photoreal, no text overlay, no watermark.",
+    "remixed_from_video_id": null,
+    "seconds": "12",
+    "size": "720x1280"
+  },
+  "final": {
+    "id": "video_699a042b17848190b88b948bc8e679a20b6eec17efb1723a",
+    "object": "video",
+    "created_at": 1771701291,
+    "status": "completed",
+    "completed_at": 1771701435,
+    "error": null,
+    "expires_at": 1771705035,
+    "model": "sora-2",
+    "progress": 100,
+    "prompt": "Hyper-realistic vertical ad shot in Times Square at night: a confident beautiful woman in a red dress stands in the middle of neon traffic, turns to camera with a sharp look, subtle smile, and strong cinematic push-in. Fast, high-contrast lighting, premium commercial style, extremely eye-catching, photoreal, no text overlay, no watermark.",
+    "remixed_from_video_id": null,
+    "seconds": "12",
+    "size": "720x1280"
+  }
+}

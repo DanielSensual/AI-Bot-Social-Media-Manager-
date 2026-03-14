@@ -28,7 +28,20 @@ export async function postTweet(text) {
         throw new Error(`Tweet exceeds 280 characters (${text.length})`);
     }
 
-    const tweet = await rwClient.v2.tweet(text);
+    let tweet;
+    try {
+        tweet = await rwClient.v2.tweet(text);
+    } catch (error) {
+        // Surface clear message for billing issues
+        if (error.code === 402 || error.data?.status === 402 || /402/.test(error.message)) {
+            console.error('💳 ═══════════════════════════════════════');
+            console.error('   X API CREDITS EXHAUSTED (HTTP 402)');
+            console.error('   Add credits → https://console.x.com');
+            console.error('═══════════════════════════════════════════');
+            throw new Error('X API credits exhausted — add credits at https://console.x.com');
+        }
+        throw error;
+    }
 
     console.log(`✅ Tweet posted: ${tweet.data.id}`);
     console.log(`📝 "${text.substring(0, 50)}..."`);

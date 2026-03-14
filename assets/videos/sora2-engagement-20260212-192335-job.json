@@ -1,0 +1,32 @@
+{
+  "create": {
+    "completed_at": null,
+    "created_at": 1770942216,
+    "error": null,
+    "expires_at": null,
+    "id": "video_698e6f08a7548190be277f99a3d9212608a9e98efe7b7bca",
+    "model": "sora-2",
+    "object": "video",
+    "progress": 0,
+    "prompt": "Primary request: A visually striking 8-second social media clip: a field of glowing neon cubes pulses in perfect rhythm, then one cube transforms into a bright circuit-like core, camera pushes in dramatically, ultra-clean motion, high contrast, cinematic lighting, no people, no text, no logos.",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "1280x720",
+    "status": "queued"
+  },
+  "final": {
+    "completed_at": 1770942347,
+    "created_at": 1770942216,
+    "error": null,
+    "expires_at": 1770945947,
+    "id": "video_698e6f08a7548190be277f99a3d9212608a9e98efe7b7bca",
+    "model": "sora-2",
+    "object": "video",
+    "progress": 100,
+    "prompt": "Primary request: A visually striking 8-second social media clip: a field of glowing neon cubes pulses in perfect rhythm, then one cube transforms into a bright circuit-like core, camera pushes in dramatically, ultra-clean motion, high contrast, cinematic lighting, no people, no text, no logos.",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "1280x720",
+    "status": "completed"
+  }
+}

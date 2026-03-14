@@ -40,7 +40,7 @@ async function main() {
 
     if (args.includes('--today') || (!args.includes('--week') && args.length === 0)) {
         const today = await getTodayStats();
-        console.log(`📅 Today (${today.date})`);
+        console.log(`📅 Today (${today.date} ${today.timezone})`);
         console.log('─'.repeat(30));
         console.log(`   Total posts: ${today.totalPosts}`);
         console.log(`   X: ${today.byPlatform.x} | LinkedIn: ${today.byPlatform.linkedin} | Facebook: ${today.byPlatform.facebook} | Instagram: ${today.byPlatform.instagram}`);
@@ -54,7 +54,7 @@ async function main() {
 
         console.log('📅 Weekly Digest');
         console.log('─'.repeat(30));
-        console.log(`   Period: ${digest.period.start.split('T')[0]} → ${digest.period.end.split('T')[0]}`);
+        console.log(`   Period: ${digest.period.start} → ${digest.period.end} (${digest.period.timezone})`);
         console.log(`   Total posts: ${digest.totalPosts}`);
         console.log('');
         console.log('   Platform breakdown:');

@@ -1,0 +1,32 @@
+{
+  "create": {
+    "id": "video_699374577d088190b543cd8fdcf8d72d0e1f1073b6bc049d",
+    "object": "video",
+    "created_at": 1771271255,
+    "status": "queued",
+    "completed_at": null,
+    "error": null,
+    "expires_at": null,
+    "model": "sora-2",
+    "progress": 0,
+    "prompt": "A stylish young professional woman in a dark blazer standing in a modern glass-walled tech office, she turns toward the camera and begins speaking with confident hand gestures as if presenting an exciting AI demo, warm ambient lighting, shallow depth of field, soft bokeh from city lights behind glass, cinematic vertical composition, natural subtle movements, editorial fashion photography style",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  },
+  "final": {
+    "id": "video_699374577d088190b543cd8fdcf8d72d0e1f1073b6bc049d",
+    "object": "video",
+    "created_at": 1771271255,
+    "status": "completed",
+    "completed_at": 1771271354,
+    "error": null,
+    "expires_at": 1771274954,
+    "model": "sora-2",
+    "progress": 100,
+    "prompt": "A stylish young professional woman in a dark blazer standing in a modern glass-walled tech office, she turns toward the camera and begins speaking with confident hand gestures as if presenting an exciting AI demo, warm ambient lighting, shallow depth of field, soft bokeh from city lights behind glass, cinematic vertical composition, natural subtle movements, editorial fashion photography style",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  }
+}

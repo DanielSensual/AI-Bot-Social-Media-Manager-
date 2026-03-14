@@ -13,22 +13,64 @@ import { alertTokenExpiry, alertPostFailure } from './alerting.js';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TOKEN_FILE = path.join(__dirname, '..', '.linkedin-token.json');
 
 const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2';
 const TOKEN_WARN_DAYS = 7;  // Alert when token expires in fewer than this many days
 const TOKEN_REFRESH_DAYS = 10; // Attempt refresh when fewer than this many days remain
 
 /**
+ * Get token file path for a specific profile
+ */
+function getTokenFile(profile = 'default') {
+    return profile === 'default'
+        ? path.join(__dirname, '..', '.linkedin-token.json')
+        : path.join(__dirname, '..', `.linkedin-token-${profile}.json`);
+}
+
+/**
+ * Get API credentials for a specific profile
+ */
+export function getClientConfig(profile = 'default') {
+    if (profile === 'default') {
+        return {
+            clientId: process.env.LINKEDIN_CLIENT_ID,
+            clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+            orgId: process.env.LINKEDIN_ORG_ID,
+            redirectUri: process.env.LINKEDIN_REDIRECT_URI || 'http://localhost:3000/callback',
+        };
+    }
+    const prefix = `LINKEDIN_${profile.toUpperCase()}`;
+    return {
+        clientId: process.env[`${prefix}_CLIENT_ID`],
+        clientSecret: process.env[`${prefix}_CLIENT_SECRET`],
+        orgId: process.env[`${prefix}_ORG_ID`],
+        redirectUri: process.env[`${prefix}_REDIRECT_URI`]
+            || process.env.LINKEDIN_REDIRECT_URI
+            || 'http://localhost:3000/callback',
+    };
+}
+
+/**
+ * Resolve OAuth redirect URI for a profile.
+ */
+export function resolveRedirectUri(profileName = 'default', overrideUri = '') {
+    const normalizedOverride = String(overrideUri || '').trim();
+    if (normalizedOverride) return normalizedOverride;
+    const config = getClientConfig(profileName);
+    return config.redirectUri || 'http://localhost:3000/callback';
+}
+
+/**
  * Load stored access token
  */
-function loadToken() {
+function loadToken(profile = 'default') {
+    const file = getTokenFile(profile);
     try {
-        if (fs.existsSync(TOKEN_FILE)) {
-            return JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf-8'));
+        if (fs.existsSync(file)) {
+            return JSON.parse(fs.readFileSync(file, 'utf-8'));
         }
     } catch (e) {
-        console.error('Error loading LinkedIn token:', e.message);
+        console.error(`Error loading LinkedIn token for ${profile}:`, e.message);
     }
     return null;
 }
@@ -36,31 +78,31 @@ function loadToken() {
 /**
  * Save access token
  */
-function saveToken(token) {
-    fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2));
+function saveToken(token, profile = 'default') {
+    fs.writeFileSync(getTokenFile(profile), JSON.stringify(token, null, 2));
 }
 
 /**
  * Get current access token or throw if not authenticated.
  * Also checks for upcoming expiry and fires alerts.
  */
-function getAccessToken() {
-    const token = loadToken();
+function getAccessToken(profile = 'default') {
+    const token = loadToken(profile);
     if (!token || !token.access_token) {
-        throw new Error('LinkedIn not authenticated. Run: npm run linkedin:auth');
+        throw new Error(`LinkedIn not authenticated for profile '${profile}'. Run: node scripts/linkedin-auth.js --profile ${profile}`);
     }
 
     // Check if token is expired
     if (token.expires_at && Date.now() > token.expires_at) {
-        throw new Error('LinkedIn token expired. Run: npm run linkedin:auth');
+        throw new Error(`LinkedIn token expired for profile '${profile}'. Run: node scripts/linkedin-auth.js --profile ${profile}`);
     }
 
     // Check for upcoming expiry and warn
     if (token.expires_at) {
         const daysLeft = Math.floor((token.expires_at - Date.now()) / (1000 * 60 * 60 * 24));
         if (daysLeft <= TOKEN_WARN_DAYS) {
-            console.warn(`⚠️ LinkedIn token expires in ${daysLeft} days!`);
-            alertTokenExpiry('LinkedIn', daysLeft).catch(() => { });
+            console.warn(`⚠️ LinkedIn token strictly for ${profile} expires in ${daysLeft} days!`);
+            alertTokenExpiry(`LinkedIn (${profile})`, daysLeft).catch(() => { });
         }
     }
 
@@ -72,15 +114,14 @@ function getAccessToken() {
  * LinkedIn Community Management API tokens support refresh_token grants.
  * @returns {Promise<boolean>} True if refresh succeeded
  */
-export async function refreshToken() {
-    const token = loadToken();
+export async function refreshToken(profile = 'default') {
+    const token = loadToken(profile);
     if (!token?.refresh_token) {
-        console.log('ℹ️ No refresh_token available — manual re-auth required.');
+        console.log(`ℹ️ No refresh_token available for ${profile} — manual re-auth required.`);
         return false;
     }
 
-    const clientId = process.env.LINKEDIN_CLIENT_ID;
-    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+    const { clientId, clientSecret } = getClientConfig(profile);
 
     try {
         const params = new URLSearchParams({
@@ -98,7 +139,7 @@ export async function refreshToken() {
 
         if (!response.ok) {
             const error = await response.text();
-            console.error(`❌ Token refresh failed: ${response.status} - ${error}`);
+            console.error(`❌ Token refresh failed for ${profile}: ${response.status} - ${error}`);
             return false;
         }
 
@@ -110,12 +151,12 @@ export async function refreshToken() {
             newToken.refresh_token = token.refresh_token;
         }
 
-        saveToken(newToken);
+        saveToken(newToken, profile);
         const days = Math.round(newToken.expires_in / 86400);
-        console.log(`✅ LinkedIn token refreshed! Expires in ${days} days.`);
+        console.log(`✅ LinkedIn token refreshed for ${profile}! Expires in ${days} days.`);
         return true;
     } catch (err) {
-        console.error(`❌ Token refresh error: ${err.message}`);
+        console.error(`❌ Token refresh error for ${profile}: ${err.message}`);
         return false;
     }
 }
@@ -124,24 +165,24 @@ export async function refreshToken() {
  * Check token health: refresh if close to expiry, alert if manual intervention needed.
  * Call this from health checks or before posting.
  */
-export async function ensureTokenHealth() {
-    const token = loadToken();
+export async function ensureTokenHealth(profile = 'default') {
+    const token = loadToken(profile);
     if (!token?.access_token) return false;
 
     if (token.expires_at) {
         const daysLeft = Math.floor((token.expires_at - Date.now()) / (1000 * 60 * 60 * 24));
 
         if (daysLeft <= 0) {
-            console.error('❌ LinkedIn token has expired.');
+            console.error(`❌ LinkedIn token for ${profile} has expired.`);
             // Try refresh as last resort
-            return await refreshToken();
+            return await refreshToken(profile);
         }
 
         if (daysLeft <= TOKEN_REFRESH_DAYS) {
-            console.log(`⏳ LinkedIn token expires in ${daysLeft} days — attempting refresh...`);
-            const refreshed = await refreshToken();
+            console.log(`⏳ LinkedIn token for ${profile} expires in ${daysLeft} days — attempting refresh...`);
+            const refreshed = await refreshToken(profile);
             if (!refreshed && daysLeft <= TOKEN_WARN_DAYS) {
-                await alertTokenExpiry('LinkedIn', daysLeft).catch(() => { });
+                await alertTokenExpiry(`LinkedIn (${profile})`, daysLeft).catch(() => { });
             }
             return refreshed || daysLeft > 0; // Still valid even if refresh failed
         }
@@ -153,8 +194,8 @@ export async function ensureTokenHealth() {
 /**
  * Get the authenticated user's profile (for getting user URN)
  */
-export async function getProfile() {
-    const accessToken = getAccessToken();
+export async function getProfile(profileName = 'default') {
+    const accessToken = getAccessToken(profileName);
 
     const response = await fetch(`${LINKEDIN_API_BASE}/userinfo`, {
         headers: {
@@ -164,7 +205,7 @@ export async function getProfile() {
 
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(`LinkedIn API error: ${response.status} - ${error}`);
+        throw new Error(`LinkedIn API error for ${profileName}: ${response.status} - ${error}`);
     }
 
     return response.json();
@@ -173,14 +214,23 @@ export async function getProfile() {
 /**
  * Post to LinkedIn
  * @param {string} text - Post content
+ * @param {string} profileName - Profile to post to
  * @returns {Promise<object>} Post response
  */
-export async function postToLinkedIn(text) {
-    const accessToken = getAccessToken();
+export async function postToLinkedIn(text, profileName = 'default') {
+    const accessToken = getAccessToken(profileName);
+    const config = getClientConfig(profileName);
 
-    // Get user ID first
-    const profile = await getProfile();
-    const userUrn = `urn:li:person:${profile.sub}`;
+    // Get user or org ID first
+    let profile, userUrn;
+    if (config.orgId) {
+        userUrn = `urn:li:organization:${config.orgId}`;
+        console.log(`🏢 Posting to Company Page [${profileName}]`);
+    } else {
+        profile = await getProfile(profileName);
+        userUrn = `urn:li:person:${profile.sub}`;
+        console.log(`👤 Posting to Personal Profile [${profileName}]`);
+    }
 
     const postBody = {
         author: userUrn,
@@ -210,11 +260,11 @@ export async function postToLinkedIn(text) {
 
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(`LinkedIn post failed: ${response.status} - ${error}`);
+        throw new Error(`LinkedIn post failed [${profileName}]: ${response.status} - ${error}`);
     }
 
     const result = await response.json();
-    console.log('✅ LinkedIn post published!');
+    console.log(`✅ LinkedIn post published! [${profileName}]`);
     console.log(`🔗 Post ID: ${result.id}`);
 
     return result;
@@ -223,14 +273,20 @@ export async function postToLinkedIn(text) {
 /**
  * Test LinkedIn connection
  */
-export async function testLinkedInConnection() {
+export async function testLinkedInConnection(profileName = 'default') {
     try {
-        const profile = await getProfile();
-        console.log(`✅ LinkedIn connected as: ${profile.name}`);
+        const config = getClientConfig(profileName);
+        if (config.orgId) {
+            console.log(`✅ LinkedIn connected [${profileName}]. Bot configured to post to Company Page (${config.orgId})`);
+            return true;
+        }
+
+        const profile = await getProfile(profileName);
+        console.log(`✅ LinkedIn connected as [${profileName}]: ${profile.name} (Personal Profile)`);
         console.log(`   Email: ${profile.email}`);
         return true;
     } catch (error) {
-        console.error('❌ LinkedIn connection failed:', error.message);
+        console.error(`❌ LinkedIn connection failed [${profileName}]:`, error.message);
         return false;
     }
 }
@@ -239,16 +295,25 @@ export async function testLinkedInConnection() {
  * Post to LinkedIn with an image
  * @param {string} text - Post content
  * @param {string} imagePath - Path to image file
+ * @param {string} profileName - Profile to post to
  * @returns {Promise<object>} Post response
  */
-export async function postToLinkedInWithImage(text, imagePath) {
-    const accessToken = getAccessToken();
+export async function postToLinkedInWithImage(text, imagePath, profileName = 'default') {
+    const accessToken = getAccessToken(profileName);
+    const config = getClientConfig(profileName);
 
-    // Get user ID first
-    const profile = await getProfile();
-    const userUrn = `urn:li:person:${profile.sub}`;
+    // Get user or org ID first
+    let profile, userUrn;
+    if (config.orgId) {
+        userUrn = `urn:li:organization:${config.orgId}`;
+        console.log(`🏢 Posting image to Company Page [${profileName}]`);
+    } else {
+        profile = await getProfile(profileName);
+        userUrn = `urn:li:person:${profile.sub}`;
+        console.log(`👤 Posting image to Personal Profile [${profileName}]`);
+    }
 
-    console.log('📤 Uploading image to LinkedIn...');
+    console.log(`📤 Uploading image to LinkedIn... [${profileName}]`);
 
     // Step 1: Register the image upload
     const registerResponse = await fetch(`${LINKEDIN_API_BASE}/assets?action=registerUpload`, {
@@ -271,7 +336,7 @@ export async function postToLinkedInWithImage(text, imagePath) {
 
     if (!registerResponse.ok) {
         const error = await registerResponse.text();
-        throw new Error(`LinkedIn image register failed: ${registerResponse.status} - ${error}`);
+        throw new Error(`LinkedIn image register failed [${profileName}]: ${registerResponse.status} - ${error}`);
     }
 
     const registerData = await registerResponse.json();
@@ -291,10 +356,10 @@ export async function postToLinkedInWithImage(text, imagePath) {
 
     if (!uploadResponse.ok) {
         const error = await uploadResponse.text();
-        throw new Error(`LinkedIn image upload failed: ${uploadResponse.status} - ${error}`);
+        throw new Error(`LinkedIn image upload failed [${profileName}]: ${uploadResponse.status} - ${error}`);
     }
 
-    console.log('✅ Image uploaded to LinkedIn');
+    console.log(`✅ Image uploaded to LinkedIn [${profileName}]`);
 
     // Step 3: Create the post with the image
     const postBody = {
@@ -329,11 +394,11 @@ export async function postToLinkedInWithImage(text, imagePath) {
 
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(`LinkedIn post with image failed: ${response.status} - ${error}`);
+        throw new Error(`LinkedIn post with image failed [${profileName}]: ${response.status} - ${error}`);
     }
 
     const result = await response.json();
-    console.log('✅ LinkedIn post with image published!');
+    console.log(`✅ LinkedIn post with image published! [${profileName}]`);
     console.log(`🔗 Post ID: ${result.id}`);
 
     return result;
@@ -343,16 +408,25 @@ export async function postToLinkedInWithImage(text, imagePath) {
  * Post to LinkedIn with a video
  * @param {string} text - Post content
  * @param {string} videoPath - Path to video file (mp4)
+ * @param {string} profileName - Profile to post to
  * @returns {Promise<object>} Post response
  */
-export async function postToLinkedInWithVideo(text, videoPath) {
-    const accessToken = getAccessToken();
+export async function postToLinkedInWithVideo(text, videoPath, profileName = 'default') {
+    const accessToken = getAccessToken(profileName);
+    const config = getClientConfig(profileName);
 
-    // Get user ID first
-    const profile = await getProfile();
-    const userUrn = `urn:li:person:${profile.sub}`;
+    // Get user or org ID first
+    let profile, userUrn;
+    if (config.orgId) {
+        userUrn = `urn:li:organization:${config.orgId}`;
+        console.log(`🏢 Posting video to Company Page [${profileName}]`);
+    } else {
+        profile = await getProfile(profileName);
+        userUrn = `urn:li:person:${profile.sub}`;
+        console.log(`👤 Posting video to Personal Profile [${profileName}]`);
+    }
 
-    console.log('📤 Uploading video to LinkedIn...');
+    console.log(`📤 Uploading video to LinkedIn... [${profileName}]`);
 
     // Get file size
     const stats = fs.statSync(videoPath);
@@ -381,7 +455,7 @@ export async function postToLinkedInWithVideo(text, videoPath) {
 
     if (!registerResponse.ok) {
         const error = await registerResponse.text();
-        throw new Error(`LinkedIn video register failed: ${registerResponse.status} - ${error}`);
+        throw new Error(`LinkedIn video register failed [${profileName}]: ${registerResponse.status} - ${error}`);
     }
 
     const registerData = await registerResponse.json();
@@ -402,15 +476,15 @@ export async function postToLinkedInWithVideo(text, videoPath) {
 
     if (!uploadResponse.ok) {
         const error = await uploadResponse.text();
-        throw new Error(`LinkedIn video upload failed: ${uploadResponse.status} - ${error}`);
+        throw new Error(`LinkedIn video upload failed [${profileName}]: ${uploadResponse.status} - ${error}`);
     }
 
-    console.log('⏳ Waiting for LinkedIn video processing...');
+    console.log(`⏳ Waiting for LinkedIn video processing... [${profileName}]`);
 
     // Step 3: Wait for video processing
     await waitForLinkedInVideoProcessing(asset, accessToken);
 
-    console.log('✅ Video uploaded to LinkedIn');
+    console.log(`✅ Video uploaded to LinkedIn [${profileName}]`);
 
     // Step 4: Create the post with the video
     const postBody = {
@@ -445,11 +519,11 @@ export async function postToLinkedInWithVideo(text, videoPath) {
 
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(`LinkedIn post with video failed: ${response.status} - ${error}`);
+        throw new Error(`LinkedIn post with video failed [${profileName}]: ${response.status} - ${error}`);
     }
 
     const result = await response.json();
-    console.log('✅ LinkedIn post with video published!');
+    console.log(`✅ LinkedIn post with video published! [${profileName}]`);
     console.log(`🔗 Post ID: ${result.id}`);
 
     return result;
@@ -495,17 +569,23 @@ async function waitForLinkedInVideoProcessing(asset, accessToken, maxWaitMs = 12
 /**
  * Generate OAuth authorization URL
  */
-export function getAuthUrl() {
-    const clientId = process.env.LINKEDIN_CLIENT_ID;
-    const redirectUri = 'http://localhost:3000/callback';
-    const scope = 'openid profile email w_member_social';
+export function getAuthUrl(profileName = 'default', options = {}) {
+    const config = getClientConfig(profileName);
+    const clientId = config.clientId;
+    const redirectUri = resolveRedirectUri(profileName, options.redirectUri);
+
+    if (!clientId) {
+        throw new Error(`Missing Client ID for profile: ${profileName}`);
+    }
+
+    const scope = 'openid profile email w_member_social w_organization_social r_organization_social';
 
     const params = new URLSearchParams({
         response_type: 'code',
         client_id: clientId,
         redirect_uri: redirectUri,
         scope: scope,
-        state: 'ghostai-bot',
+        state: `ghostai-bot-${profileName}`,
     });
 
     return `https://www.linkedin.com/oauth/v2/authorization?${params}`;
@@ -514,10 +594,15 @@ export function getAuthUrl() {
 /**
  * Exchange authorization code for access token
  */
-export async function exchangeCodeForToken(code) {
-    const clientId = process.env.LINKEDIN_CLIENT_ID;
-    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-    const redirectUri = 'http://localhost:3000/callback';
+export async function exchangeCodeForToken(code, profileName = 'default', options = {}) {
+    const config = getClientConfig(profileName);
+    const clientId = config.clientId;
+    const clientSecret = config.clientSecret;
+    const redirectUri = resolveRedirectUri(profileName, options.redirectUri);
+
+    if (!clientId || !clientSecret) {
+        throw new Error(`Missing Client ID or Secret for profile: ${profileName}`);
+    }
 
     const params = new URLSearchParams({
         grant_type: 'authorization_code',
@@ -537,7 +622,7 @@ export async function exchangeCodeForToken(code) {
 
     if (!response.ok) {
         const error = await response.text();
-        throw new Error(`Token exchange failed: ${response.status} - ${error}`);
+        throw new Error(`Token exchange failed for ${profileName}: ${response.status} - ${error}`);
     }
 
     const token = await response.json();
@@ -546,9 +631,9 @@ export async function exchangeCodeForToken(code) {
     token.expires_at = Date.now() + (token.expires_in * 1000);
 
     // Save token
-    saveToken(token);
+    saveToken(token, profileName);
 
-    console.log('✅ LinkedIn authenticated successfully!');
+    console.log(`✅ LinkedIn authenticated successfully for profile: ${profileName}!`);
     console.log(`   Token expires in ${Math.round(token.expires_in / 86400)} days`);
 
     return token;
@@ -564,4 +649,5 @@ export default {
     getProfile,
     refreshToken,
     ensureTokenHealth,
+    getClientConfig
 };

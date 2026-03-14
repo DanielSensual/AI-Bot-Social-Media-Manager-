@@ -48,6 +48,7 @@ const TARGET_HASHTAGS = [
 
 const TARGET_ACCOUNTS = [
     'openai',
+    'chatgpt',
     'anthropicai',
     'googledeepmind',
     'mistralai',
@@ -116,11 +117,32 @@ function getCredentials() {
     };
 }
 
+function isInstagramPostPath(pathname) {
+    if (!pathname || typeof pathname !== 'string') return false;
+    return /^\/(?:[^/]+\/)?(?:p|reel)\/[^/]+\/?$/i.test(pathname);
+}
+
 function normalizePostHref(href) {
     if (!href || typeof href !== 'string') return null;
-    const cleaned = href.trim().split('?')[0];
-    if (!/^\/(p|reel)\//.test(cleaned)) return null;
-    return `https://www.instagram.com${cleaned}`;
+    const raw = href.trim();
+    if (!raw) return null;
+
+    if (raw.startsWith('/')) {
+        const cleanedPath = raw.split('?')[0];
+        if (!isInstagramPostPath(cleanedPath)) return null;
+        return `https://www.instagram.com${cleanedPath}`;
+    }
+
+    let parsed;
+    try {
+        parsed = new URL(raw);
+    } catch {
+        return null;
+    }
+
+    if (!/instagram\.com$/i.test(parsed.hostname)) return null;
+    if (!isInstagramPostPath(parsed.pathname)) return null;
+    return `https://www.instagram.com${parsed.pathname}`;
 }
 
 function postIdFromUrl(url) {
@@ -288,15 +310,34 @@ async function collectPostUrls(page, discoveryLimit = 60) {
     return page.evaluate((limit) => {
         const links = new Set();
         const anchors = [...document.querySelectorAll('a[href]')];
+        const postPathPattern = /^\/(?:[^/]+\/)?(?:p|reel)\/[^/]+\/?$/i;
         for (const anchor of anchors) {
             const href = anchor.getAttribute('href');
             if (!href) continue;
-            if (!/^\/(p|reel)\//.test(href)) continue;
-            links.add(href.split('?')[0]);
+            const cleaned = href.split('?')[0];
+            if (!postPathPattern.test(cleaned)) continue;
+            links.add(cleaned);
             if (links.size >= limit) break;
         }
         return [...links];
     }, discoveryLimit).catch(() => []);
+}
+
+async function waitForPostLinks(page, timeoutMs = 8000) {
+    await page.waitForFunction(
+        () => {
+            const re = /^\/(?:[^/]+\/)?(?:p|reel)\/[^/]+\/?$/i;
+            const anchors = document.querySelectorAll('a[href]');
+            for (const anchor of anchors) {
+                const href = anchor.getAttribute('href');
+                if (!href) continue;
+                const cleaned = href.split('?')[0];
+                if (re.test(cleaned)) return true;
+            }
+            return false;
+        },
+        { timeout: timeoutMs },
+    ).catch(() => null);
 }
 
 async function collectTargets(page, engagedIds, options = {}) {
@@ -304,7 +345,7 @@ async function collectTargets(page, engagedIds, options = {}) {
         hashtags = TARGET_HASHTAGS,
         accounts = TARGET_ACCOUNTS,
         hashtagCount = 4,
-        accountCount = 3,
+        accountCount = accounts.length,
         discoveryLimit = 60,
     } = options;
 
@@ -319,6 +360,7 @@ async function collectTargets(page, engagedIds, options = {}) {
         try {
             await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForSelector('a[href]', { timeout: 20000 });
+            await waitForPostLinks(page);
             const links = await collectPostUrls(page, discoveryLimit);
             for (const link of links) {
                 const fullUrl = normalizePostHref(link);
@@ -341,6 +383,7 @@ async function collectTargets(page, engagedIds, options = {}) {
         try {
             await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
             await page.waitForSelector('a[href]', { timeout: 20000 });
+            await waitForPostLinks(page);
             const links = await collectPostUrls(page, discoveryLimit);
             for (const link of links) {
                 const fullUrl = normalizePostHref(link);

@@ -54,7 +54,10 @@ function restoreSession() {
 }
 
 // ---------- Run Engagement ----------
-function runEngagement() {
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 30_000;
+
+function runEngagement(attempt = 1) {
     if (isRunning) {
         console.log('⏳ Engagement already running, skipping...');
         return;
@@ -62,7 +65,8 @@ function runEngagement() {
 
     isRunning = true;
     const startTime = new Date();
-    console.log(`\n🤖 [${startTime.toISOString()}] Starting engagement run...`);
+    const prefix = attempt > 1 ? ` (retry ${attempt - 1}/${MAX_RETRIES})` : '';
+    console.log(`\n🤖 [${startTime.toISOString()}] Starting engagement run${prefix}...`);
 
     const child = spawn('node', [ENGAGE_SCRIPT, `--limit=${ENGAGE_LIMIT}`], {
         cwd: path.join(__dirname, '..'),
@@ -73,15 +77,32 @@ function runEngagement() {
     child.on('close', (code) => {
         isRunning = false;
         lastRunAt = new Date().toISOString();
-        lastRunResult = code === 0 ? 'success' : `failed (exit ${code})`;
-        console.log(`\n✅ [${lastRunAt}] Engagement run finished: ${lastRunResult}`);
+
+        if (code === 0) {
+            lastRunResult = 'success';
+            console.log(`\n✅ [${lastRunAt}] Engagement run finished: success`);
+        } else if (attempt <= MAX_RETRIES) {
+            lastRunResult = `failed (exit ${code}), retrying in ${RETRY_DELAY_MS / 1000}s...`;
+            console.error(`\n⚠️ [${lastRunAt}] Engagement run failed (exit ${code}), retrying in ${RETRY_DELAY_MS / 1000}s...`);
+            setTimeout(() => runEngagement(attempt + 1), RETRY_DELAY_MS);
+        } else {
+            lastRunResult = `failed after ${attempt} attempts (exit ${code})`;
+            console.error(`\n❌ [${lastRunAt}] Engagement run failed after ${attempt} attempts (exit ${code})`);
+        }
     });
 
     child.on('error', (err) => {
         isRunning = false;
         lastRunAt = new Date().toISOString();
-        lastRunResult = `error: ${err.message}`;
-        console.error(`❌ [${lastRunAt}] Engagement run error: ${err.message}`);
+
+        if (attempt <= MAX_RETRIES) {
+            lastRunResult = `error: ${err.message}, retrying in ${RETRY_DELAY_MS / 1000}s...`;
+            console.error(`\n⚠️ [${lastRunAt}] Engagement run error: ${err.message}, retrying...`);
+            setTimeout(() => runEngagement(attempt + 1), RETRY_DELAY_MS);
+        } else {
+            lastRunResult = `error after ${attempt} attempts: ${err.message}`;
+            console.error(`\n❌ [${lastRunAt}] Engagement failed after ${attempt} attempts: ${err.message}`);
+        }
     });
 }
 

@@ -1,0 +1,178 @@
+{
+    "event": {
+        "name": "Beso del Sol Pool Party",
+        "date": "March 29, 2026",
+        "time": "Dance Class at 4pm | Dance until 9pm",
+        "venue": "Best Western Orlando Gateway",
+        "address": "7299 Universal Blvd, Orlando, FL 32819",
+        "price": "Presale $15 | Door $20",
+        "eventUrl": "https://www.facebook.com/events/1402286424911399/",
+        "flyerPath": "./flyer.jpg",
+        "djs": [
+            "DJ MamboTrbe",
+            "DJ MoodShift"
+        ],
+        "host": "Jorge Rivera",
+        "performer": "Yair Guzman",
+        "style": "Bachata Pool Party"
+    },
+    "post": {
+        "text": "🚨 NEW EVENT ALERT IN ORLANDO! 🚨\n\n🌴🏊‍♂️ BESO DEL SOL — Bachata Pool Party! 🏊‍♀️🌴\n\n📅 Saturday, March 29th\n🕓 Dance Class at 4PM | Dance until 9PM\n📍 Best Western Orlando Gateway\n     7299 Universal Blvd, Orlando, FL 32819\n💰 Presale $15 | Door $20\n\n🎵 Music by DJ MamboTrbe & DJ MoodShift\n🎤 Hosted by Jorge Rivera\n💃 Featuring Yair Guzman\n\nBring your swimsuits, sunnies, and your BEST dance moves! This is going to be the hottest bachata pool party in Orlando this spring! ☀️🔥\n\n🎟️ Get your tickets NOW before they sell out!\n👉 https://www.facebook.com/events/1402286424911399/\n\n#BachataPollParty #BachataOrlando #OrlandoBachata #SalsaOrlando #LatinDance #BesoDeSol #OrlandoEvents #BachataLovers #PoolParty #OrlandoNightlife #DanceCommunity #BachataFlorida #LatinParty #OrlandoLatino #CentralFloridaDance",
+        "textShort": "🚨 BACHATA POOL PARTY! 🚨\n\n🌴 Beso del Sol — March 29th\n🕓 4PM-9PM | Dance class + social dancing\n📍 Best Western Orlando Gateway\n💰 $15 presale | $20 door\n🎵 DJ MamboTrbe & DJ MoodShift\n\nBring your swimsuit and dance moves! ☀️💃🔥\n\n🎟️ Tickets: https://www.facebook.com/events/1402286424911399/\n\n#BachataOrlando #PoolParty #LatinDance #OrlandoEvents"
+    },
+    "groups": {
+        "joined": [
+            {
+                "name": "Orlando Bachata Social Dancers",
+                "url": "https://www.facebook.com/groups/BachataOrlando/",
+                "members": "2.0K",
+                "status": "managed",
+                "priority": 1,
+                "notes": "Daniel owns/manages this group"
+            }
+        ],
+        "avoid": [
+            {
+                "name": "BACHATA ORLANDO",
+                "members": "2.1K",
+                "reason": "Competition"
+            }
+        ],
+        "dance_groups_to_join": [
+            {
+                "name": "Salsa Orlando - LatinDanceCalendar.com",
+                "members": "2.3K",
+                "search": "Orlando bachata",
+                "priority": 1
+            },
+            {
+                "name": "Salsa & Bachata Nights South Florida",
+                "members": "5.3K",
+                "search": "Orlando bachata",
+                "priority": 2
+            },
+            {
+                "name": "Central Florida Latin Dance",
+                "members": "1.3K",
+                "search": "Orlando bachata",
+                "priority": 1
+            },
+            {
+                "name": "Tampa Salsa and Bachata Scene",
+                "members": "1.6K",
+                "search": "Orlando bachata",
+                "priority": 3
+            },
+            {
+                "name": "BACHATA LOVERS IN FLORIDA",
+                "members": "1.6K",
+                "search": "Orlando bachata",
+                "priority": 1
+            },
+            {
+                "name": "Dance Events in South Florida",
+                "members": "3.6K",
+                "search": "Orlando bachata",
+                "priority": 2
+            },
+            {
+                "name": "International Bachata Festivals",
+                "members": "26K",
+                "search": "Orlando bachata",
+                "priority": 2
+            },
+            {
+                "name": "Dominican Bachata Videos",
+                "members": "7.2K",
+                "search": "Orlando bachata",
+                "priority": 3
+            },
+            {
+                "name": "Salsa and Bachata Nights!",
+                "members": "1.9K",
+                "search": "Orlando bachata",
+                "priority": 2
+            },
+            {
+                "name": "Jacksonville Salsa Bachata and Kizomba Lovers",
+                "members": "2.3K",
+                "search": "Orlando bachata",
+                "priority": 3
+            },
+            {
+                "name": "Bachata News",
+                "members": "13K",
+                "search": "Orlando bachata",
+                "priority": 2
+            },
+            {
+                "name": "Central Florida Dancers",
+                "members": "5.5K",
+                "search": "Central Florida salsa bachata",
+                "priority": 1
+            },
+            {
+                "name": "Tampa Loves Salsa, Bachata, Merengue, and Cha-Cha!",
+                "members": "11K",
+                "search": "Central Florida salsa bachata",
+                "priority": 3
+            },
+            {
+                "name": "Salsa & Bachata Events",
+                "members": "15K",
+                "search": "Central Florida salsa bachata",
+                "priority": 1
+            },
+            {
+                "name": "Dance Events in SW Florida",
+                "members": "2.2K",
+                "search": "Florida bachata",
+                "priority": 3
+            }
+        ],
+        "latino_groups_to_join": [
+            {
+                "name": "Comunidad Hispana en Orlando y sus alrededores",
+                "members": "48K",
+                "search": "Latino Orlando",
+                "priority": 1
+            },
+            {
+                "name": "latinos en kissimmee y orlando",
+                "members": "73K",
+                "search": "Latino Orlando",
+                "priority": 1
+            },
+            {
+                "name": "Boricuas en Orlando y Kissimmee and central florida",
+                "members": "107K",
+                "search": "Latino Orlando",
+                "priority": 1
+            },
+            {
+                "name": "Latinos en Orlando - Florida",
+                "members": "27K",
+                "search": "Latino Orlando",
+                "priority": 1
+            },
+            {
+                "name": "Puertorriquenos en Orlando & Kissimmee",
+                "members": "37K",
+                "search": "Latino Orlando",
+                "priority": 1
+            },
+            {
+                "name": "Latinos en Orlando & Kissimmee",
+                "members": "67K",
+                "search": "Latino Orlando",
+                "priority": 1
+            },
+            {
+                "name": "Ayuda para Hispanos en Orlando",
+                "members": "57K",
+                "search": "Latino Orlando",
+                "priority": 2
+            }
+        ]
+    }
+}

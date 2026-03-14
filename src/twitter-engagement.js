@@ -25,10 +25,27 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOGS_DIR = path.join(__dirname, '..', 'logs', 'twitter-engagement');
 const ENGAGED_FILE = path.join(__dirname, '..', '.x-engaged.json');
+const X_BRAIN_PATH = path.join(__dirname, '..', 'x-brain.md');
 const MAX_ENGAGED_RECORDS = 5000;
 const MAX_BACKOFF_MS = 20000;
+const MIN_FOLLOWERS_FOR_ENGAGEMENT = 50000;
+const MAX_TWEET_AGE_HOURS = 24;
+const SEARCH_QUERIES_PER_RUN = 8;
+const SEARCH_MAX_RESULTS = 25;
+const TARGET_ACCOUNTS_PER_RUN = 8;
 
 fs.mkdirSync(LOGS_DIR, { recursive: true });
+
+/**
+ * Load x-brain.md memory file for persona context
+ */
+function loadXBrain() {
+    try {
+        return fs.readFileSync(X_BRAIN_PATH, 'utf-8');
+    } catch {
+        return null;
+    }
+}
 
 /**
  * Target accounts and search queries for engagement
@@ -44,6 +61,13 @@ const TARGET_SEARCHES = [
     'no-code AI',
     'AI startup',
     'website in 72 hours',
+    'Seedance 2.0',
+    'Moltbots',
+    'AI video generation',
+    'Gemini 3',
+    'GPT-5',
+    'Claude AI',
+    'AI agents 2026',
 ];
 
 /**
@@ -52,16 +76,23 @@ const TARGET_SEARCHES = [
 const TARGET_ACCOUNTS = [
     'GeminiApp',
     'OpenAI',
-    'xaborja',
-    'levelsio',
-    'elonmusk',
     'sama',
-    'gaborja',
+    'Maborja',
+    'maborja',
+    'GoogleDeepMind',
+    'AnthropicAI',
+    'huaborja',
+    'huggingface',
+    'xai',
+    'elonmusk',
+    'levelsio',
     'AndrewYNg',
-    'kaborja',
     'garyvee',
     'dharmesh',
     'naval',
+    'ylecun',
+    'kaborja',
+    'maborja',
 ];
 
 function assertRequiredEnv() {
@@ -134,6 +165,14 @@ async function runWithRetry(taskName, fn, options = {}) {
     }
 }
 
+function isRecentTweet(createdAt, maxAgeHours = MAX_TWEET_AGE_HOURS, now = Date.now()) {
+    if (!createdAt) return false;
+    const createdTs = Date.parse(createdAt);
+    if (Number.isNaN(createdTs)) return false;
+    const ageMs = Math.max(0, now - createdTs);
+    return ageMs <= (maxAgeHours * 60 * 60 * 1000);
+}
+
 /**
  * Search for trending tweets to engage with
  */
@@ -142,16 +181,17 @@ async function findEngagementTargets(client, myUserId, engagedIds, limit = 15, r
 
     const shuffled = [...TARGET_SEARCHES].sort(() => Math.random() - 0.5);
 
-    for (const query of shuffled.slice(0, 4)) {
+    for (const query of shuffled.slice(0, SEARCH_QUERIES_PER_RUN)) {
+        const queryText = `${query} -is:retweet lang:en`;
         try {
             const results = await runWithRetry(
                 `search query "${query}"`,
-                () => client.v2.search(query, {
-                    max_results: 10,
+                () => client.v2.search(queryText, {
+                    max_results: SEARCH_MAX_RESULTS,
                     'tweet.fields': ['created_at', 'public_metrics', 'author_id', 'conversation_id'],
                     'user.fields': ['username', 'name', 'public_metrics'],
                     expansions: ['author_id'],
-                    sort_order: 'relevancy',
+                    sort_order: 'recency',
                 }),
                 retryOptions,
             );
@@ -167,13 +207,18 @@ async function findEngagementTargets(client, myUserId, engagedIds, limit = 15, r
             for (const tweet of tweets) {
                 if (engagedIds.has(tweet.id)) continue;
                 if (tweet.author_id === myUserId) continue;
+                const text = String(tweet.text || '').trim();
+                if (!text || text.startsWith('@') || /^RT @/i.test(text)) continue;
 
                 const author = users[tweet.author_id];
                 const followers = author?.public_metrics?.followers_count || 0;
                 const metrics = tweet.public_metrics || {};
                 const engagement = (metrics.like_count || 0) + (metrics.retweet_count || 0) + (metrics.reply_count || 0);
+                const recentEnough = isRecentTweet(tweet.created_at);
 
-                if (engagement >= 5 || followers >= 1000) {
+                if (!recentEnough) continue;
+                if (followers < MIN_FOLLOWERS_FOR_ENGAGEMENT) continue;
+                if (engagement >= 5 || followers >= MIN_FOLLOWERS_FOR_ENGAGEMENT) {
                     targets.push({
                         id: tweet.id,
                         text: tweet.text,
@@ -203,7 +248,7 @@ async function findTargetAccountTweets(client, myUserId, engagedIds, limit = 5, 
     const targets = [];
     const shuffledAccounts = [...TARGET_ACCOUNTS].sort(() => Math.random() - 0.5);
 
-    for (const username of shuffledAccounts.slice(0, 3)) {
+    for (const username of shuffledAccounts.slice(0, TARGET_ACCOUNTS_PER_RUN)) {
         try {
             const user = await runWithRetry(
                 `lookup @${username}`,
@@ -218,7 +263,7 @@ async function findTargetAccountTweets(client, myUserId, engagedIds, limit = 5, 
             const timeline = await runWithRetry(
                 `timeline @${username}`,
                 () => client.v2.userTimeline(user.data.id, {
-                    max_results: 5,
+                    max_results: 10,
                     'tweet.fields': ['created_at', 'public_metrics', 'text'],
                     exclude: ['retweets'],
                 }),
@@ -228,17 +273,22 @@ async function findTargetAccountTweets(client, myUserId, engagedIds, limit = 5, 
             for (const tweet of timeline?.data?.data || []) {
                 if (engagedIds.has(tweet.id)) continue;
                 if (tweet.author_id === myUserId) continue;
+                if (!isRecentTweet(tweet.created_at)) continue;
+                const text = String(tweet.text || '').trim();
+                if (!text || text.startsWith('@') || /^RT @/i.test(text)) continue;
 
                 const metrics = tweet.public_metrics || {};
                 const engagement = (metrics.like_count || 0) + (metrics.retweet_count || 0);
+                const followers = user.data.public_metrics?.followers_count || 0;
+                if (followers < MIN_FOLLOWERS_FOR_ENGAGEMENT) continue;
 
-                if (engagement >= 10) {
+                if (engagement >= 2) {
                     targets.push({
                         id: tweet.id,
                         text: tweet.text,
                         authorUsername: username,
                         authorName: user.data.name,
-                        followers: user.data.public_metrics?.followers_count || 0,
+                        followers,
                         engagement,
                         query: `@${username} timeline`,
                     });
@@ -261,25 +311,16 @@ async function findTargetAccountTweets(client, myUserId, engagedIds, limit = 5, 
 async function generateEngagementReply(tweet) {
     if (!hasLLMProvider()) return null;
 
-    const prompt = `You are @GhostAISystems on X (Twitter). You build AI automation systems for businesses — websites in 72 hours, AI voice agents, autonomous social media engines.
+    const xBrain = loadXBrain();
 
-You're replying to a tweet from @${tweet.authorUsername} (${tweet.followers.toLocaleString()} followers):
-"${tweet.text}"
-
-Write a reply that:
-1. Adds genuine value or a sharp take — NOT generic praise
-2. Shows expertise in AI/automation/business without being salesy
-3. Is witty, confident, slightly provocative if the tweet calls for it
-4. Under 280 characters
-5. Do NOT mention your website or services unless it's PERFECTLY natural
-6. Do NOT say "Great post!" or "Love this!" — add substance
-7. Match the tone: if they're technical, be technical. If casual, be casual.
-8. 0-1 emojis max
-9. NO hashtags
-
-The goal is to make people click your profile, not pitch them.
-
-Reply:`;
+    let prompt;
+    if (xBrain) {
+        // Extract just the voice + engagement sections to keep prompt focused
+        prompt = `Here is your identity and engagement strategy:\n\n${xBrain}\n\n---\n\nYou're scrolling X and see this from @${tweet.authorUsername} (${tweet.followers.toLocaleString()} followers):\n"${tweet.text}"\n\nWrite a casual reply following ALL the engagement rules from your brain file. Be a real person in the conversation. Under 280 characters. Output ONLY the reply text.`;
+    } else {
+        // Fallback if x-brain.md is missing
+        prompt = `You're a real person named Daniel who runs an AI agency. You're scrolling X and genuinely reacting to posts \u2014 not as a brand, just as a dude who's deep in AI and builds stuff.\n\nYou're replying to @${tweet.authorUsername} (${tweet.followers.toLocaleString()} followers):\n"${tweet.text}"\n\nWrite a casual reply like a real human would. Rules:\n1. Sound like you're texting a friend \u2014 lowercase fine, fragments fine\n2. Have an actual OPINION or ADD something\n3. No \"Great take!\", no \"This \ud83d\udd25\" \u2014 bot energy\n4. 0-1 emojis, NO hashtags, under 280 chars\n5. Don't mention your business\n\nReply:`;
+    }
 
     const { text } = await generateText({
         prompt,

@@ -255,22 +255,33 @@ async function main() {
 
     // Post to LinkedIn
     if (postToLI) {
-        try {
-            const connected = await testLinkedInConnection().catch(() => false);
-            if (!connected) {
-                console.error('❌ LinkedIn not authenticated. Run: npm run linkedin:auth');
-            } else {
-                console.log('\n📤 Posting to LinkedIn...');
-                if (videoPath) {
-                    results.linkedin = await postToLinkedInWithVideo(getText('linkedin'), videoPath);
-                } else if (imagePath) {
-                    results.linkedin = await postToLinkedInWithImage(getText('linkedin'), imagePath);
+        const linkedinProfiles = process.env.LINKEDIN_PROFILES
+            ? process.env.LINKEDIN_PROFILES.split(',').map(p => p.trim())
+            : ['default'];
+
+        results.linkedin = [];
+
+        for (const profile of linkedinProfiles) {
+            try {
+                const connected = await testLinkedInConnection(profile).catch(() => false);
+                if (!connected) {
+                    console.error(`❌ LinkedIn not authenticated for profile '${profile}'. Run: node scripts/linkedin-auth.js --profile ${profile}`);
                 } else {
-                    results.linkedin = await postToLinkedIn(getText('linkedin'));
+                    console.log(`\n📤 Posting to LinkedIn [${profile}]...`);
+                    let res;
+                    if (videoPath) {
+                        res = await postToLinkedInWithVideo(getText('linkedin'), videoPath, profile);
+                    } else if (imagePath) {
+                        res = await postToLinkedInWithImage(getText('linkedin'), imagePath, profile);
+                    } else {
+                        res = await postToLinkedIn(getText('linkedin'), profile);
+                    }
+                    results.linkedin.push({ profile, id: res.id, success: true });
                 }
+            } catch (error) {
+                console.error(`❌ LinkedIn failed [${profile}]: ${error.message}`);
+                results.linkedin.push({ profile, success: false, error: error.message });
             }
-        } catch (error) {
-            console.error(`❌ LinkedIn failed: ${error.message}`);
         }
     }
 
@@ -307,8 +318,14 @@ async function main() {
         console.log('  ❌ X: Failed');
     }
 
-    if (results.linkedin) {
-        console.log(`  ✅ LinkedIn: Posted successfully`);
+    if (results.linkedin && results.linkedin.length > 0) {
+        for (const res of results.linkedin) {
+            if (res.success) {
+                console.log(`  ✅ LinkedIn [${res.profile}]: Posted successfully`);
+            } else {
+                console.log(`  ❌ LinkedIn [${res.profile}]: Failed`);
+            }
+        }
     } else if (postToLI) {
         console.log('  ❌ LinkedIn: Failed or skipped');
     }

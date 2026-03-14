@@ -8,78 +8,202 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { hasLLMProvider, generateText } from './llm-client.js';
+import { getResponderProfile } from './facebook-responder-profiles.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GRAPH_API_VERSION = 'v24.0';
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 const LOGS_DIR = path.join(__dirname, '..', 'logs', 'facebook-responses');
-const RESPONDED_FILE = path.join(__dirname, '..', '.fb-responded.json');
+const DEFAULT_LIMIT = Number.parseInt(process.env.FACEBOOK_RESPONDER_LIMIT || '5', 10) || 5;
+const MAX_RESPONDED_KEYS = 500;
+const MAX_PREVIEW_LENGTH = 140;
+const MESSAGES_PER_CONVERSATION = 5;
+const SCAM_POLICY_PATTERNS = [
+    /scheduled for permanent deletion/i,
+    /page\s+(?:is\s+)?(?:scheduled|set)\s+for\s+permanent\s+deletion/i,
+    /violat(?:e|ed|ion).*(?:trademark|copyright|policy)/i,
+    /important warning from meta/i,
+    /facebook support/i,
+    /meta support/i,
+    /confirm your account/i,
+    /appeal (?:here|now)/i,
+    /to avoid deletion/i,
+    /policy violation/i,
+];
+const INQUIRY_PATTERNS = [
+    /\?/,
+    /\b(class|classes|lesson|lessons|private|price|pricing|cost|ticket|tickets|event|schedule|time|location|where|when|how|can i|do you)\b/i,
+    /\b(clase|clases|leccion|lecciones|precio|costo|evento|horario|donde|cu[aá]ndo|puedo|tienen)\b/i,
+];
+const SPANISH_PATTERNS = [
+    /[áéíóúñ¿¡]/i,
+    /\b(hola|gracias|clase|clases|leccion|lecciones|precio|costo|evento|horario|donde|cuando|quiero|puedo|bailar)\b/i,
+];
 
 fs.mkdirSync(LOGS_DIR, { recursive: true });
 
-const DISCLAIMER = `\n\n---\n📌 This account uses AI assistance. Your message has been forwarded to Daniel for personal review.`;
+function normalizeText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeKey(value) {
+    return normalizeText(value).toLowerCase();
+}
+
+function slugify(value) {
+    return normalizeText(value)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'page';
+}
+
+function buildGraphUrl(endpoint, params = {}) {
+    const query = new URLSearchParams(params);
+    return `${GRAPH_API_BASE}${endpoint}?${query.toString()}`;
+}
+
+function getAccessTokens(optionsToken = '') {
+    const explicit = normalizeText(optionsToken);
+    if (explicit) return [explicit];
+
+    const candidates = [
+        normalizeText(process.env.FACEBOOK_ACCESS_TOKEN),
+        normalizeText(process.env.FACEBOOK_PAGE_ACCESS_TOKEN),
+    ].filter(Boolean);
+
+    if (candidates.length === 0) {
+        throw new Error('Facebook not configured. Set FACEBOOK_ACCESS_TOKEN or FACEBOOK_PAGE_ACCESS_TOKEN in .env');
+    }
+
+    return [...new Set(candidates)];
+}
+
+function resolveTargetSelection(options = {}) {
+    const targetPageId = normalizeText(options.pageId || options.targetPageId || process.env.FACEBOOK_RESPONDER_PAGE_ID || process.env.FACEBOOK_PAGE_ID);
+    const targetPageName = normalizeText(options.pageName || options.targetPageName || process.env.FACEBOOK_RESPONDER_PAGE_NAME);
+
+    if (!targetPageId && !targetPageName) {
+        throw new Error('Explicit page target required. Set --page-id/--page-name or FACEBOOK_RESPONDER_PAGE_ID/FACEBOOK_RESPONDER_PAGE_NAME.');
+    }
+
+    return { targetPageId: targetPageId || null, targetPageName: targetPageName || null };
+}
+
+function assertTargetMatch(candidate, { targetPageId, targetPageName }) {
+    if (targetPageId && String(candidate.id) !== String(targetPageId)) {
+        throw new Error(`Target page ID mismatch. Expected ${targetPageId}, got ${candidate.id} (${candidate.name}).`);
+    }
+    if (targetPageName && normalizeKey(candidate.name) !== normalizeKey(targetPageName)) {
+        throw new Error(`Target page name mismatch. Expected "${targetPageName}", got "${candidate.name}".`);
+    }
+}
+
+async function fetchJson(url, fetchImpl = fetch) {
+    const response = await fetchImpl(url);
+    const data = await response.json();
+    return data;
+}
 
 /**
- * Get page credentials (reuses facebook-client pattern)
+ * Resolve page credentials from explicit target page ID/name.
  */
-async function getPageCredentials() {
-    const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
-    if (!token) throw new Error('Facebook not configured. Set FACEBOOK_ACCESS_TOKEN in .env');
+export async function resolvePageCredentials(options = {}, dependencies = {}) {
+    const fetchImpl = dependencies.fetchImpl || fetch;
+    const selection = resolveTargetSelection(options);
+    const tokenCandidates = getAccessTokens(options.token);
 
-    const meResponse = await fetch(`${GRAPH_API_BASE}/me?fields=id,name&access_token=${token}`);
-    const meData = await meResponse.json();
-    if (meData.error) throw new Error(`Facebook API error: ${meData.error.message}`);
+    let lastError = null;
+    for (const token of tokenCandidates) {
+        try {
+            const meData = await fetchJson(
+                buildGraphUrl('/me', { fields: 'id,name', access_token: token }),
+                fetchImpl,
+            );
+            if (meData.error) {
+                throw new Error(`Facebook API error: ${meData.error.message}`);
+            }
 
-    // Check if it's a Page token
-    const pageCheck = await fetch(`${GRAPH_API_BASE}/${meData.id}?fields=category&access_token=${token}`);
-    const pageCheckData = await pageCheck.json();
+            const pageCheckData = await fetchJson(
+                buildGraphUrl(`/${meData.id}`, { fields: 'category', access_token: token }),
+                fetchImpl,
+            );
 
-    if (!pageCheckData.error && pageCheckData.category) {
-        return { pageId: meData.id, pageToken: token, pageName: meData.name };
+            if (!pageCheckData.error && pageCheckData.category) {
+                const pageCandidate = { id: meData.id, name: meData.name, access_token: token };
+                assertTargetMatch(pageCandidate, selection);
+                return { pageId: pageCandidate.id, pageToken: pageCandidate.access_token, pageName: pageCandidate.name };
+            }
+
+            const pagesData = await fetchJson(
+                buildGraphUrl('/me/accounts', { fields: 'id,name,access_token', access_token: token }),
+                fetchImpl,
+            );
+
+            if (!pagesData.data || pagesData.data.length === 0) {
+                throw new Error('No Facebook Pages accessible. Token needs pages_manage_posts + pages_messaging permissions.');
+            }
+
+            let page = null;
+            if (selection.targetPageId) {
+                page = pagesData.data.find((p) => String(p.id) === String(selection.targetPageId)) || null;
+            } else if (selection.targetPageName) {
+                page = pagesData.data.find((p) => normalizeKey(p.name) === normalizeKey(selection.targetPageName)) || null;
+            }
+
+            if (!page) {
+                const available = pagesData.data.map((p) => `${p.name} (${p.id})`).join(', ');
+                throw new Error(`Target page not found in accessible pages. Requested id="${selection.targetPageId || 'n/a'}" name="${selection.targetPageName || 'n/a'}". Available: ${available}`);
+            }
+
+            assertTargetMatch(page, selection);
+            return { pageId: page.id, pageToken: page.access_token, pageName: page.name };
+        } catch (error) {
+            lastError = error;
+        }
     }
 
-    // User token — get first page
-    const pagesResponse = await fetch(`${GRAPH_API_BASE}/me/accounts?fields=id,name,access_token&access_token=${token}`);
-    const pagesData = await pagesResponse.json();
-
-    if (!pagesData.data || pagesData.data.length === 0) {
-        throw new Error('No Facebook Pages accessible. Token needs pages_manage_posts + pages_messaging permissions.');
-    }
-
-    const configuredPageId = process.env.FACEBOOK_PAGE_ID;
-    const page = configuredPageId
-        ? pagesData.data.find(p => p.id === configuredPageId) || pagesData.data[0]
-        : pagesData.data[0];
-
-    return { pageId: page.id, pageToken: page.access_token, pageName: page.name };
+    throw lastError || new Error('Failed to resolve Facebook page credentials.');
 }
 
 /**
  * Load set of already-responded conversation IDs
  */
-function loadResponded() {
+export function getRespondedStatePath(baseDir, pageId) {
+    return path.join(baseDir, `.fb-responded.${pageId}.json`);
+}
+
+function loadResponded(stateFile) {
     try {
-        if (fs.existsSync(RESPONDED_FILE)) {
-            return new Set(JSON.parse(fs.readFileSync(RESPONDED_FILE, 'utf-8')));
+        if (fs.existsSync(stateFile)) {
+            return new Set(JSON.parse(fs.readFileSync(stateFile, 'utf-8')));
         }
     } catch { /* ignore */ }
     return new Set();
 }
 
-function saveResponded(respondedSet) {
-    const arr = [...respondedSet].slice(-500); // keep last 500
-    fs.writeFileSync(RESPONDED_FILE, JSON.stringify(arr, null, 2));
+function saveResponded(stateFile, respondedSet) {
+    const arr = [...respondedSet].slice(-MAX_RESPONDED_KEYS);
+    fs.writeFileSync(stateFile, JSON.stringify(arr, null, 2));
+}
+
+function getConversationKey(conversation) {
+    const lastMessageAt = conversation.messages?.data?.[0]?.created_time || conversation.updated_time || 'unknown';
+    return `${conversation.id}:${lastMessageAt}`;
 }
 
 /**
- * Get recent conversations with unread messages
+ * Get recent conversations from page inbox.
  */
-async function getConversations(pageId, pageToken, limit = 10) {
-    const url = `${GRAPH_API_BASE}/${pageId}/conversations?fields=id,updated_time,participants,message_count,messages.limit(3){message,from,created_time}&limit=${limit}&access_token=${pageToken}`;
-    const response = await fetch(url);
-    const data = await response.json();
+export async function getConversations(pageId, pageToken, limit = 10, dependencies = {}) {
+    const fetchImpl = dependencies.fetchImpl || fetch;
+    const url = buildGraphUrl(`/${pageId}/conversations`, {
+        fields: `id,updated_time,participants,message_count,messages.limit(${MESSAGES_PER_CONVERSATION}){message,from,created_time}`,
+        limit: String(limit),
+        access_token: pageToken,
+    });
+    const data = await fetchJson(url, fetchImpl);
 
     if (data.error) {
         throw new Error(`Failed to fetch conversations: ${data.error.message}`);
@@ -88,63 +212,156 @@ async function getConversations(pageId, pageToken, limit = 10) {
     return data.data || [];
 }
 
-/**
- * Check if the last message in a conversation is from a user (not the page)
- */
-function needsReply(conversation, pageId) {
-    const messages = conversation.messages?.data;
-    if (!messages || messages.length === 0) return false;
+function isScamPolicyMessage(text) {
+    return SCAM_POLICY_PATTERNS.some((pattern) => pattern.test(text));
+}
 
-    const lastMessage = messages[0]; // Most recent
-    return lastMessage.from?.id !== pageId;
+function isLikelyInquiry(text) {
+    return INQUIRY_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function getLatestInboundMessage(conversation, pageId) {
+    const messages = conversation.messages?.data || [];
+    return messages.find((message) => String(message?.from?.id || '') !== String(pageId)) || null;
+}
+
+export function detectMessageLanguage(messageText) {
+    const text = normalizeText(messageText);
+    if (!text) return 'en';
+    if (SPANISH_PATTERNS.some((pattern) => pattern.test(text))) return 'es';
+    return 'en';
 }
 
 /**
- * Generate AI response using OpenAI
+ * Deterministic thread classifier.
+ * Labels: inquiry | spam_policy_scam | empty_or_nontext | unknown
  */
-async function generateAIResponse(senderName, messages) {
-    if (!hasLLMProvider()) return 'Thanks for reaching out! We\'ll get back to you shortly.';
+export function classifyConversation(conversation, pageId) {
+    const latestInbound = getLatestInboundMessage(conversation, pageId);
+    if (!latestInbound) {
+        return { classification: 'unknown', reason: 'no_inbound_message_found' };
+    }
 
-    const conversationContext = messages
-        .map(m => `${m.from?.name || 'Unknown'}: ${m.message}`)
+    const inboundText = normalizeText(latestInbound.message);
+
+    if (!inboundText) {
+        return { classification: 'empty_or_nontext', reason: 'last_message_empty_or_nontext' };
+    }
+    if (isScamPolicyMessage(inboundText)) {
+        return { classification: 'spam_policy_scam', reason: 'policy_or_trademark_scam_pattern' };
+    }
+    if (isLikelyInquiry(inboundText)) {
+        return { classification: 'inquiry', reason: 'question_or_inquiry_pattern' };
+    }
+    return { classification: 'unknown', reason: 'no_inquiry_pattern' };
+}
+
+export function evaluateConversationForReply({ conversation, pageId, respondedSet }) {
+    const lastMessage = conversation.messages?.data?.[0] || null;
+    const lastMessageAt = lastMessage?.created_time || conversation.updated_time || null;
+    const conversationKey = getConversationKey(conversation);
+    const senderId = lastMessage?.from?.id || null;
+    const classification = classifyConversation(conversation, pageId);
+
+    if (respondedSet?.has(conversationKey)) {
+        return {
+            ...classification,
+            shouldReply: false,
+            action: 'skipped',
+            reason: 'already_responded_to_last_message',
+            conversationKey,
+            lastMessageAt,
+        };
+    }
+
+    if (!lastMessage || !senderId || String(senderId) === String(pageId)) {
+        return {
+            ...classification,
+            shouldReply: false,
+            action: 'skipped',
+            reason: 'last_sender_is_page',
+            conversationKey,
+            lastMessageAt,
+        };
+    }
+
+    if (classification.classification !== 'inquiry') {
+        return {
+            ...classification,
+            shouldReply: false,
+            action: 'skipped',
+            reason: classification.reason,
+            conversationKey,
+            lastMessageAt,
+        };
+    }
+
+    return {
+        ...classification,
+        shouldReply: true,
+        action: 'eligible',
+        reason: 'inquiry_ready_for_reply',
+        conversationKey,
+        lastMessageAt,
+    };
+}
+
+/**
+ * Generate AI response using configured provider and selected profile.
+ */
+export async function generateAIResponse({ senderName, messages, profile, language }, dependencies = {}) {
+    const hasLLMProviderFn = dependencies.hasLLMProviderFn || hasLLMProvider;
+    const generateTextFn = dependencies.generateTextFn || generateText;
+
+    const fallbackReply = profile.fallbackReplies[language] || profile.fallbackReplies.en;
+    if (!hasLLMProviderFn()) return fallbackReply;
+
+    const conversationContext = (messages || [])
+        .map((m) => `${m.from?.name || 'Unknown'}: ${normalizeText(m.message)}`)
         .reverse()
         .join('\n');
 
-    const prompt = `You are responding to a Facebook Messenger conversation on behalf of Daniel Castillo, who runs Ghost AI Systems (a web development and AI automation agency in Florida).
+    const languageInstruction = language === 'es'
+        ? 'Write the full reply in Spanish with natural conversational tone.'
+        : 'Write the full reply in English with natural conversational tone.';
+    const guardrails = profile.guardrails.map((rule, index) => `${index + 1}. ${rule}`).join('\n');
+    const prompt = `You are responding to a Facebook Messenger conversation for ${profile.pageDisplayName}.
+You are assisting ${profile.ownerName}, who represents ${profile.businessSummary}.
 
 The sender is: ${senderName}
+Preferred reply language: ${language === 'es' ? 'Spanish' : 'English'}
+${languageInstruction}
 
 Recent conversation:
 ${conversationContext}
 
-Generate a professional, friendly response that:
-1. Acknowledges their message appropriately
-2. Is helpful and engaging
-3. Keeps the door open for follow-up if relevant
-4. Is concise (2-4 sentences max)
-5. Matches the tone of a busy but friendly agency owner
+Tone: ${profile.tone}
+Length: ${profile.replyLengthGuidance}
+Language policy: ${profile.languagePolicy}
 
-DO NOT include any disclaimer or mention that you're an AI - that will be added separately.
-DO NOT use overly formal language - keep it conversational and professional.
-DO NOT start with "Hey [Name]!" - vary your greetings.
+Rules:
+${guardrails}
+Do not mention being an AI.
+Do not use markdown lists or signatures.
 
 Response:`;
 
-    const { text } = await generateText({
+    const { text } = await generateTextFn({
         prompt,
         maxOutputTokens: 500,
         openaiModel: 'gpt-5.2',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 
-    return text.trim();
+    return normalizeText(text) || fallbackReply;
 }
 
 /**
  * Send a reply to a conversation
  */
-async function sendReply(conversationId, recipientId, message, pageToken) {
-    const response = await fetch(`${GRAPH_API_BASE}/me/messages`, {
+async function sendReply(recipientId, message, pageToken, dependencies = {}) {
+    const fetchImpl = dependencies.fetchImpl || fetch;
+    const response = await fetchImpl(`${GRAPH_API_BASE}/me/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -164,91 +381,251 @@ async function sendReply(conversationId, recipientId, message, pageToken) {
 /**
  * Log interaction to file
  */
-function logInteraction(senderName, messages, sentResponse) {
-    const timestamp = new Date().toISOString();
+function appendDecisionLog(entry, { baseDir, pageName, timestamp }) {
     const dateStr = timestamp.split('T')[0];
-    const logFile = path.join(LOGS_DIR, `${dateStr}.json`);
+    const pageSlug = slugify(pageName);
+    const pageDir = path.join(baseDir, 'logs', 'facebook-responses', pageSlug);
+    const logFile = path.join(pageDir, `${dateStr}.json`);
+
+    fs.mkdirSync(pageDir, { recursive: true });
 
     let logs = [];
     if (fs.existsSync(logFile)) {
         try { logs = JSON.parse(fs.readFileSync(logFile, 'utf-8')); } catch { logs = []; }
     }
 
-    logs.push({ timestamp, sender: senderName, messages, sentResponse });
+    logs.push(entry);
     fs.writeFileSync(logFile, JSON.stringify(logs, null, 2));
+}
+
+function parseLimit(raw, fallback = DEFAULT_LIMIT) {
+    const parsed = Number.parseInt(String(raw ?? ''), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    return parsed;
+}
+
+function getLastMessagePreview(conversation, pageId) {
+    const inboundMessage = getLatestInboundMessage(conversation, pageId);
+    const message = normalizeText(inboundMessage?.message || conversation.messages?.data?.[0]?.message);
+    if (!message) return '';
+    return message.slice(0, MAX_PREVIEW_LENGTH);
+}
+
+function getSender(conversation, pageId) {
+    const participants = conversation.participants?.data || [];
+    const sender = participants.find((participant) => String(participant.id) !== String(pageId));
+    const lastMessageSenderId = conversation.messages?.data?.[0]?.from?.id || null;
+    return {
+        id: sender?.id || lastMessageSenderId || null,
+        name: sender?.name || conversation.messages?.data?.[0]?.from?.name || 'Unknown',
+    };
+}
+
+function getProfileId(options = {}) {
+    return normalizeText(options.profile || process.env.FACEBOOK_RESPONDER_PROFILE || 'default') || 'default';
+}
+
+export async function getFacebookInboxContext(options = {}, dependencies = {}) {
+    const fetchImpl = dependencies.fetchImpl || fetch;
+    const limit = parseLimit(options.limit, DEFAULT_LIMIT);
+    const { pageId, pageToken, pageName } = await resolvePageCredentials(options, { fetchImpl });
+    const conversations = await getConversations(pageId, pageToken, limit, { fetchImpl });
+    const byClassification = {
+        inquiry: 0,
+        spam_policy_scam: 0,
+        empty_or_nontext: 0,
+        unknown: 0,
+    };
+
+    const items = conversations.map((conversation) => {
+        const baseClassification = classifyConversation(conversation, pageId);
+        const decision = evaluateConversationForReply({
+            conversation,
+            pageId,
+            respondedSet: new Set(),
+        });
+        byClassification[decision.classification] += 1;
+        const sender = getSender(conversation, pageId);
+
+        return {
+            conversationId: conversation.id,
+            updatedTime: conversation.updated_time || null,
+            lastMessageAt: decision.lastMessageAt,
+            senderName: sender.name,
+            classification: decision.classification,
+            classificationReason: baseClassification.reason,
+            actionReason: decision.reason,
+            shouldReply: decision.shouldReply,
+            lastMessagePreview: getLastMessagePreview(conversation, pageId),
+        };
+    });
+
+    return {
+        pageId,
+        pageName,
+        limit,
+        fetchedAt: new Date().toISOString(),
+        byClassification,
+        conversations: items,
+    };
 }
 
 /**
  * Main function: check and respond to Facebook messages
  */
-export async function respondToFacebookMessages(options = {}) {
-    const { dryRun = false, limit = 5 } = options;
+export async function respondToFacebookMessages(options = {}, dependencies = {}) {
+    const fetchImpl = dependencies.fetchImpl || fetch;
+    const nowFn = dependencies.nowFn || (() => new Date());
+    const mode = normalizeKey(options.mode || (options.dryRun ? 'dry' : 'live')) === 'dry' ? 'dry' : 'live';
+    const dryRun = mode === 'dry';
+    const limit = parseLimit(options.limit, DEFAULT_LIMIT);
+    const profile = getResponderProfile(getProfileId(options));
+    const baseDir = options.baseDir || dependencies.baseDir || path.join(__dirname, '..');
 
     console.log('');
     console.log('🤖 Facebook Messenger AI Responder');
     console.log('═'.repeat(50));
     console.log(`   Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
     console.log(`   Max responses: ${limit}`);
+    console.log(`   Profile: ${profile.id}`);
     console.log('');
 
-    const { pageId, pageToken, pageName } = await getPageCredentials();
-    console.log(`✅ Page: ${pageName}`);
+    const { pageId, pageToken, pageName } = await resolvePageCredentials(options, { fetchImpl });
+    const stateFile = getRespondedStatePath(baseDir, pageId);
+    const responded = loadResponded(stateFile);
 
-    const conversations = await getConversations(pageId, pageToken, limit * 2);
+    console.log(`✅ Page: ${pageName} (${pageId})`);
+    console.log(`🧠 State: ${path.basename(stateFile)}`);
+
+    const conversations = await getConversations(pageId, pageToken, Math.max(limit * 2, limit), { fetchImpl });
     console.log(`📬 Found ${conversations.length} recent conversation(s)`);
 
-    const responded = loadResponded();
     let repliedCount = 0;
+    let eligibleCount = 0;
+    let skippedCount = 0;
+    let failedCount = 0;
 
     for (const conv of conversations) {
         if (repliedCount >= limit) break;
 
-        // Skip if already responded
-        const lastMsgId = conv.messages?.data?.[0]?.created_time;
-        const convKey = `${conv.id}:${lastMsgId}`;
-        if (responded.has(convKey)) continue;
-
-        // Skip if last message is from the page
-        if (!needsReply(conv, pageId)) continue;
-
-        const senderParticipant = conv.participants?.data?.find(p => p.id !== pageId);
-        const senderName = senderParticipant?.name || 'Unknown';
-        const senderId = senderParticipant?.id;
+        const decision = evaluateConversationForReply({
+            conversation: conv,
+            pageId,
+            respondedSet: responded,
+        });
+        const sender = getSender(conv, pageId);
         const messages = conv.messages?.data || [];
+        const lastMessageText = normalizeText(messages[0]?.message);
+        const timestamp = nowFn().toISOString();
+        const baseLogEntry = {
+            timestamp,
+            pageId,
+            conversationId: conv.id,
+            classification: decision.classification,
+            lastMessageAt: decision.lastMessageAt,
+            senderName: sender.name,
+        };
+
+        if (!decision.shouldReply) {
+            skippedCount++;
+            appendDecisionLog({
+                ...baseLogEntry,
+                action: 'skipped',
+                reason: decision.reason,
+            }, { baseDir, pageName, timestamp });
+            continue;
+        }
+
+        if (!sender.id) {
+            skippedCount++;
+            appendDecisionLog({
+                ...baseLogEntry,
+                action: 'skipped',
+                reason: 'missing_recipient_id',
+            }, { baseDir, pageName, timestamp });
+            continue;
+        }
+
+        eligibleCount++;
+        const language = detectMessageLanguage(lastMessageText);
 
         console.log('');
-        console.log(`💬 ${senderName}`);
-        console.log(`   Last message: "${messages[0]?.message?.substring(0, 60)}..."`);
+        console.log(`💬 ${sender.name}`);
+        console.log(`   Last message: "${lastMessageText.substring(0, 60)}${lastMessageText.length > 60 ? '...' : ''}"`);
+        console.log(`   Classification: ${decision.classification} (${decision.reason})`);
+        console.log(`   Language: ${language.toUpperCase()}`);
 
-        // Generate AI response
         console.log('   🧠 Generating AI response...');
-        const aiResponse = await generateAIResponse(senderName, messages);
-        const fullResponse = aiResponse + DISCLAIMER;
+        const aiResponse = await generateAIResponse({
+            senderName: sender.name,
+            messages,
+            profile,
+            language,
+        }, dependencies);
+        const fullResponse = aiResponse + (profile.disclaimer || '');
 
         console.log(`   Response: "${aiResponse.substring(0, 60)}..."`);
 
         if (dryRun) {
             console.log('   🔒 DRY RUN - Not sending');
+            appendDecisionLog({
+                ...baseLogEntry,
+                action: 'dry_run',
+                reason: 'inquiry_ready_for_reply',
+            }, { baseDir, pageName, timestamp });
         } else {
             try {
-                await sendReply(conv.id, senderId, fullResponse, pageToken);
+                await sendReply(sender.id, fullResponse, pageToken, { fetchImpl });
                 console.log('   ✅ Message sent!');
-                logInteraction(senderName, messages, fullResponse);
-                responded.add(convKey);
+                responded.add(decision.conversationKey);
                 repliedCount++;
+                appendDecisionLog({
+                    ...baseLogEntry,
+                    action: 'sent',
+                    reason: 'auto_reply_sent',
+                }, { baseDir, pageName, timestamp });
             } catch (error) {
                 console.error(`   ❌ Failed to send: ${error.message}`);
+                failedCount++;
+                appendDecisionLog({
+                    ...baseLogEntry,
+                    action: 'send_failed',
+                    reason: error.message,
+                }, { baseDir, pageName, timestamp });
             }
         }
     }
 
-    saveResponded(responded);
+    saveResponded(stateFile, responded);
 
     console.log('');
     console.log('═'.repeat(50));
     console.log(`✅ Done! Responded to ${repliedCount} message(s)`);
+    console.log(`   Eligible inquiries: ${eligibleCount}`);
+    console.log(`   Skipped threads: ${skippedCount}`);
+    if (failedCount > 0) {
+        console.log(`   Send failures: ${failedCount}`);
+    }
 
-    return { success: true, responded: repliedCount };
+    return {
+        success: true,
+        mode,
+        responded: repliedCount,
+        eligible: eligibleCount,
+        skipped: skippedCount,
+        failed: failedCount,
+        pageId,
+        pageName,
+    };
 }
 
-export default { respondToFacebookMessages };
+export default {
+    respondToFacebookMessages,
+    getFacebookInboxContext,
+    resolvePageCredentials,
+    classifyConversation,
+    detectMessageLanguage,
+    evaluateConversationForReply,
+    getRespondedStatePath,
+    getConversations,
+};

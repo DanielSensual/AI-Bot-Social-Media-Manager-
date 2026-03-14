@@ -1,0 +1,32 @@
+{
+  "create": {
+    "id": "video_69951664aa9c8198a1cee08af65dc3f901c8bbdfa64be75a",
+    "object": "video",
+    "created_at": 1771378277,
+    "status": "queued",
+    "completed_at": null,
+    "error": null,
+    "expires_at": null,
+    "model": "sora-2",
+    "progress": 0,
+    "prompt": "Photorealistic video of a human male presenter speaking directly to camera in a natural confident tone, realistic lip sync and subtle head movement, clean modern office background, cinematic soft lighting. He says exactly: 'Grok 4.2 Beta is out now, Multi Agent Nex Level AI agents.' No on-screen text, no watermark.",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  },
+  "final": {
+    "id": "video_69951664aa9c8198a1cee08af65dc3f901c8bbdfa64be75a",
+    "object": "video",
+    "created_at": 1771378277,
+    "status": "completed",
+    "completed_at": 1771378378,
+    "error": null,
+    "expires_at": 1771381978,
+    "model": "sora-2",
+    "progress": 100,
+    "prompt": "Photorealistic video of a human male presenter speaking directly to camera in a natural confident tone, realistic lip sync and subtle head movement, clean modern office background, cinematic soft lighting. He says exactly: 'Grok 4.2 Beta is out now, Multi Agent Nex Level AI agents.' No on-screen text, no watermark.",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  }
+}

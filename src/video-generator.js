@@ -280,7 +280,7 @@ async function generateWithVeo(prompt, options = {}, imagePath = null) {
     throw new Error(`Video generation failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
-async function startGrokGeneration({ prompt, imagePath = null, options = {} }) {
+async function startGrokGeneration({ prompt, imagePath = null, videoUrl = null, options = {} }) {
     if (!XAI_API_KEY) {
         throw new Error('XAI_API_KEY / GROK_API_KEY is not configured');
     }
@@ -302,6 +302,12 @@ async function startGrokGeneration({ prompt, imagePath = null, options = {} }) {
     if (imagePath) {
         const resolvedImagePath = normalizeImagePath(imagePath);
         body.image = `data:${getMimeType(resolvedImagePath)};base64,${toBase64(resolvedImagePath)}`;
+    } else if (options.imageUrl) {
+        body.image_url = options.imageUrl;
+    }
+
+    if (videoUrl) {
+        body.video_url = videoUrl;
     }
 
     const response = await fetch(`${XAI_BASE_URL}/videos/generations`, {
@@ -373,7 +379,7 @@ async function pollGrokVideoUrl(generationId, maxWaitMs = 6 * 60 * 1000, pollInt
     throw new Error('Grok generation timed out');
 }
 
-async function generateWithGrok(prompt, options = {}, imagePath = null) {
+async function generateWithGrok(prompt, options = {}, inputPath = null) {
     if (!XAI_API_KEY) {
         throw new Error('XAI_API_KEY / GROK_API_KEY not configured in .env');
     }
@@ -385,10 +391,12 @@ async function generateWithGrok(prompt, options = {}, imagePath = null) {
         pollIntervalMs = Number.parseInt(String(process.env.GROK_VIDEO_POLL_INTERVAL_MS || ''), 10) || 3000,
     } = options;
 
-    console.log(`🎬 Generating video${imagePath ? ' from image' : ''} with Grok...`);
+    const inputType = inputPath ? (inputPath.startsWith('http') ? 'url' : (path.extname(inputPath) === '.mp4' ? 'video' : 'image')) : 'text';
+
+    console.log(`🎬 Generating video from ${inputType} with Grok...`);
     console.log(`   Prompt: "${String(prompt || '').substring(0, 70)}..."`);
-    if (imagePath) {
-        console.log(`   Image: ${path.basename(imagePath)}`);
+    if (inputPath) {
+        console.log(`   Source: ${inputPath.startsWith('http') ? inputPath : path.basename(inputPath)}`);
     }
     console.log(`   Model: ${options.grokModel || GROK_VIDEO_MODEL}`);
 
@@ -397,7 +405,16 @@ async function generateWithGrok(prompt, options = {}, imagePath = null) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             console.log(`\n⏳ Starting generation (attempt ${attempt}/${maxRetries})...`);
-            const generationId = await startGrokGeneration({ prompt, imagePath, options });
+
+            let genArgs = { prompt, options };
+            if (inputType === 'image') genArgs.imagePath = inputPath;
+            if (inputType === 'url' || inputType === 'video') genArgs.videoUrl = inputPath;
+
+            // Allow explicit overrides from options
+            if (options.imagePath) genArgs.imagePath = options.imagePath;
+            if (options.videoUrl) genArgs.videoUrl = options.videoUrl;
+
+            const generationId = await startGrokGeneration(genArgs);
             console.log(`   Generation ID: ${generationId}`);
 
             const videoUrl = await pollGrokVideoUrl(generationId, maxWaitMs, pollIntervalMs);
@@ -468,6 +485,33 @@ export async function generateVideoFromImage(imagePath, prompt, options = {}) {
     }
 
     throw new Error(`No video provider succeeded: ${lastError?.message || 'Unknown error'}`);
+}
+
+/**
+ * Transform an existing video (Edit) using a prompt.
+ * @param {string} videoSource - Public URL or local path (if provider supports it)
+ * @param {string} prompt
+ * @param {object} options
+ * @returns {Promise<string>}
+ */
+export async function transformVideo(videoSource, prompt, options = {}) {
+    normalizePrompt(prompt);
+
+    // For Grok, if it's a local file, we would need to upload it first.
+    // For now, we assume bridge uploads are handled by the caller or we expect a URL.
+
+    const providers = getProviderOrder(options.provider || 'grok');
+    let lastError = null;
+
+    for (const provider of providers) {
+        try {
+            if (provider === 'grok') return await generateWithGrok(prompt, options, videoSource);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw new Error(`Transformation failed: ${lastError?.message || 'No suitable provider'}`);
 }
 
 /**

@@ -1,0 +1,5 @@
+So today I wanted to talk about the best AI video model. So for me, my favorite one,
+it's VO3.1 on Gemini Ultra. So you get about 25,000 credits there.
+The video that comes out of the high resolution version is top notch. It follows for the prompt
+pretty well and I get it generally better result than any other model. Sora 2 Pro, I would say,
+is still the next best one and then rock imagine I put it at third.

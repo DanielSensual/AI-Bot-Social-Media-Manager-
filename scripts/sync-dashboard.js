@@ -3,52 +3,30 @@
 /**
  * Dashboard Sync Script
  * Pushes current bot stats to the GhostAI Dashboard.
+ * Reads from SQLite (post-history) for accurate, real-time data.
  * 
  * Usage:
  *   node scripts/sync-dashboard.js
  * 
  * Environment:
- *   DASHBOARD_URL=https://your-dashboard.vercel.app (or http://localhost:3001)
+ *   DASHBOARD_URL=https://ghostai-dashboard.vercel.app
  *   DASHBOARD_SECRET=your-secret-token
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { getRecent, getStats } from '../src/post-history.js';
+import { config } from '../src/config.js';
 
 dotenv.config();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.join(__dirname, '..');
-
-const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:3001';
-const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'ghostai-dev-token';
-
-function readJSON(filename) {
-    const filepath = path.join(PROJECT_ROOT, filename);
-    try {
-        if (fs.existsSync(filepath)) {
-            return JSON.parse(fs.readFileSync(filepath, 'utf-8'));
-        }
-    } catch (e) {
-        console.warn(`⚠️ Could not read ${filename}: ${e.message}`);
-    }
-    return null;
-}
+const DASHBOARD_URL = (process.env.DASHBOARD_URL || 'https://ghostai-dashboard.vercel.app').trim().replace(/\/+$/, '');
+const DASHBOARD_SECRET = (process.env.DASHBOARD_SECRET || 'ghostai-dev-token').trim();
 
 function buildDashboardPayload() {
-    // Post history
-    const postHistory = readJSON('.post-history.json') || [];
+    // Read from SQLite (real data)
+    const recentPosts = getRecent(100);
+    const stats = getStats();
     const today = new Date().toISOString().slice(0, 10);
-
-    // Stats
-    const postsToday = postHistory.filter(p =>
-        p.timestamp && p.timestamp.startsWith(today)
-    ).length;
-    const aiGenerated = postHistory.filter(p => p.aiGenerated).length;
-    const videoPosts = postHistory.filter(p => p.hasVideo).length;
-    const imagePosts = postHistory.filter(p => p.hasImage).length;
 
     // Daily post counts (last 14 days)
     const dailyPosts = [];
@@ -56,53 +34,37 @@ function buildDashboardPayload() {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().slice(0, 10);
-        const count = postHistory.filter(p =>
+        const count = recentPosts.filter(p =>
             p.timestamp && p.timestamp.startsWith(dateStr)
         ).length;
         dailyPosts.push({ date: dateStr, count });
     }
 
-    // Pillar metrics
-    const feedback = readJSON('.content-feedback.json');
-    const pillarMetrics = feedback?.pillarMetrics || {};
-
-    // Queue
-    const queueData = readJSON('.content-queue.json') || [];
-    const queue = {
-        pending: queueData.filter(e => e.status === 'pending').length,
-        approved: queueData.filter(e => e.status === 'approved').length,
-        posted: queueData.filter(e => e.status === 'posted').length,
-        rejected: queueData.filter(e => e.status === 'rejected').length,
-    };
-
-    // LinkedIn token status
-    const linkedinToken = readJSON('.linkedin-token.json');
-    const linkedinStatus = linkedinToken?.access_token
-        ? (linkedinToken.expires_at && Date.now() > linkedinToken.expires_at ? 'warning' : 'connected')
-        : 'offline';
-
-    // Platform status (best effort from token/config)
+    // Platform status (derived from recent posts)
     const platforms = {
-        x: { status: 'connected', lastPost: getLastPlatformPost(postHistory, 'x') },
-        linkedin: { status: linkedinStatus, lastPost: getLastPlatformPost(postHistory, 'linkedin') },
-        facebook: { status: 'connected', lastPost: getLastPlatformPost(postHistory, 'facebook') },
-        instagram: { status: 'connected', lastPost: getLastPlatformPost(postHistory, 'instagram') },
+        x: { status: getLastPlatformPost(recentPosts, 'x') ? 'connected' : 'unknown', lastPost: getLastPlatformPost(recentPosts, 'x') },
+        linkedin: { status: getLastPlatformPost(recentPosts, 'linkedin') ? 'connected' : 'unknown', lastPost: getLastPlatformPost(recentPosts, 'linkedin') },
+        facebook: { status: getLastPlatformPost(recentPosts, 'facebook') ? 'connected' : 'unknown', lastPost: getLastPlatformPost(recentPosts, 'facebook') },
+        instagram: { status: getLastPlatformPost(recentPosts, 'instagram') ? 'connected' : 'unknown', lastPost: getLastPlatformPost(recentPosts, 'instagram') },
     };
+
+    // Queue counts (optional — content-queue may not exist)
+    const queue = { pending: 0, approved: 0, posted: stats.totalPosts, rejected: 0 };
 
     return {
         platforms,
-        postHistory: postHistory.slice(-30), // Last 30 posts
-        pillarMetrics,
+        postHistory: recentPosts.slice(-30),
+        pillarMetrics: stats.pillarCounts || {},
         queue,
         stats: {
-            totalPosts: postHistory.length,
-            postsToday,
-            aiGenerated,
-            videoPosts,
-            imagePosts,
+            totalPosts: stats.totalPosts,
+            postsToday: stats.postsToday,
+            aiGenerated: recentPosts.filter(p => p.aiGenerated).length,
+            videoPosts: recentPosts.filter(p => p.hasVideo).length,
+            imagePosts: recentPosts.filter(p => p.hasImage).length,
         },
         dailyPosts,
-        alerts: [], // Could read from an alerts log file
+        alerts: [],
     };
 }
 
@@ -139,7 +101,8 @@ async function sync() {
         const result = await response.json();
         console.log(`✅ Dashboard synced at ${result.synced}`);
         console.log(`   📊 ${payload.stats.totalPosts} total posts, ${payload.stats.postsToday} today`);
-        console.log(`   📋 Queue: ${payload.queue.pending} pending, ${payload.queue.approved} approved`);
+        console.log(`   📋 Queue: ${payload.queue.posted} posted`);
+        console.log(`   🌐 Platforms: X=${payload.platforms.x.status}, LI=${payload.platforms.linkedin.status}, FB=${payload.platforms.facebook.status}, IG=${payload.platforms.instagram.status}`);
     } catch (err) {
         console.error(`❌ Sync failed: ${err.message}`);
         process.exit(1);

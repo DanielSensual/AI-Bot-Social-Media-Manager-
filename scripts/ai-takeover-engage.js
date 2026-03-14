@@ -141,19 +141,44 @@ async function runEngagement(opts = {}) {
         process.exit(1);
     }
 
-    const browser = await chromium.launch({
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-setuid-sandbox',
-            '--single-process',
-            '--no-zygote',
-        ]
-    });
-    const ctx = await browser.newContext({ storageState: SESSION_FILE, viewport: { width: 1400, height: 900 } });
-    const page = await ctx.newPage();
+    // Launch browser with retry for transient network failures
+    const BROWSER_MAX_RETRIES = 3;
+    let browser, ctx, page;
+
+    for (let attempt = 1; attempt <= BROWSER_MAX_RETRIES; attempt++) {
+        try {
+            browser = await chromium.launch({
+                headless: true,
+                args: [
+                    '--no-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-setuid-sandbox',
+                    '--single-process',
+                    '--no-zygote',
+                ]
+            });
+            ctx = await browser.newContext({ storageState: SESSION_FILE, viewport: { width: 1400, height: 900 } });
+            page = await ctx.newPage();
+
+            // Verify connectivity with a simple navigation
+            await page.goto('https://x.com', { waitUntil: 'domcontentloaded', timeout: 20000 });
+            console.log('   ✅ Browser connected to X');
+            break; // success
+        } catch (e) {
+            console.error(`   ❌ Browser launch attempt ${attempt}/${BROWSER_MAX_RETRIES} failed: ${e.message}`);
+            // Clean up failed browser
+            try { if (ctx) await ctx.close(); } catch { }
+            try { if (browser) await browser.close(); } catch { }
+
+            if (attempt >= BROWSER_MAX_RETRIES) {
+                throw new Error(`Browser failed to connect after ${BROWSER_MAX_RETRIES} attempts: ${e.message}`);
+            }
+            const backoff = attempt * 10_000;
+            console.log(`   ⏳ Retrying in ${backoff / 1000}s...`);
+            await new Promise(r => setTimeout(r, backoff));
+        }
+    }
 
     try {
         // Shuffle and pick search queries
@@ -164,7 +189,12 @@ async function runEngagement(opts = {}) {
             console.log(`\n🔍 Searching: "${query}"`);
 
             const encoded = encodeURIComponent(`${query} -is:retweet lang:en`);
-            await page.goto(`https://x.com/search?q=${encoded}&f=live`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+            try {
+                await page.goto(`https://x.com/search?q=${encoded}&f=live`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+            } catch (navErr) {
+                console.error(`   ⚠️ Navigation failed for "${query}": ${navErr.message} — skipping to next query`);
+                continue;
+            }
             await page.waitForTimeout(SCROLL_PAUSE_MS);
 
             // Dismiss cookie consent overlay that blocks all clicks

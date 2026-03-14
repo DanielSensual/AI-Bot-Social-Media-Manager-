@@ -15,10 +15,22 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOGS_DIR = path.join(__dirname, '..', 'logs', 'twitter-replies');
 const REPLIED_FILE = path.join(__dirname, '..', '.x-replied.json');
+const X_BRAIN_PATH = path.join(__dirname, '..', 'x-brain.md');
 
 fs.mkdirSync(LOGS_DIR, { recursive: true });
 
 const WEBSITE = 'https://ghostaisystems.com';
+
+/**
+ * Load x-brain.md memory file for persona context
+ */
+function loadXBrain() {
+    try {
+        return fs.readFileSync(X_BRAIN_PATH, 'utf-8');
+    } catch {
+        return null;
+    }
+}
 
 /**
  * Create authenticated Twitter client
@@ -76,28 +88,20 @@ async function getRecentMentions(client, userId, sinceId) {
 }
 
 /**
- * Generate AI reply to a mention
+ * Generate AI reply to a mention using x-brain.md + Clapback Protocol
  */
 async function generateMentionReply(mention, authorUsername) {
     if (!hasLLMProvider()) return `Thanks for the mention! Check out what we're building 👻 ${WEBSITE}`;
 
-    const prompt = `You are replying to a tweet/mention on X (Twitter) on behalf of @GhostAISystems (Ghost AI Systems — an AI agency that ships production-ready websites in 72 hours with AI voice agents and automation).
+    const xBrain = loadXBrain();
 
-TWEET FROM @${authorUsername}:
-${mention.text}
-
-Generate a witty, engaging reply:
-1. Reference something specific from their tweet
-2. Be sharp, conversational, and confident
-3. 1-2 sentences max (stay under 280 chars)
-4. Match the energy of the original tweet
-5. If they're asking about AI or business — add value
-6. If they're being negative — respond with confidence, not defensiveness
-7. Occasionally mention ghostaisystems.com (not every reply)
-8. DO NOT mention you are AI
-9. Use 1 emoji max
-
-Reply:`;
+    let prompt;
+    if (xBrain) {
+        prompt = `Here is your complete identity and response strategy:\n\n${xBrain}\n\n---\n\nSomeone mentioned you on X. Follow your "Clapback Protocol" response rules from the brain file.\n\n@${authorUsername} said:\n"${mention.text}"\n\nClassify what kind of mention this is (genuine question, compliment, troll, debate, builder question, collaboration offer, or spam) and respond appropriately per your protocol.\n\nRules:\n- 1-2 sentences max, under 280 characters\n- Match the energy of the original tweet\n- Be casual and human, never corporate\n- Only mention your website if they literally asked about your work\n- Output ONLY the reply text, nothing else`;
+    } else {
+        // Fallback if x-brain.md is missing
+        prompt = `You are Daniel Castillo replying to a mention on X. You run Ghost AI Systems \u2014 AI agency, 72-hour websites, voice agents.\n\n@${authorUsername} said:\n"${mention.text}"\n\nReply casually like a real person. 1-2 sentences, under 280 chars. Be sharp and conversational. 1 emoji max. Don't sound like a brand.\n\nReply:`;
+    }
 
     const { text } = await generateText({
         prompt,
@@ -106,7 +110,6 @@ Reply:`;
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 
-    // Trim to 280 chars for X
     let reply = text.trim();
     if (reply.length > 280) reply = reply.substring(0, 277) + '...';
     return reply;

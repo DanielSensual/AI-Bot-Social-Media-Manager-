@@ -1,0 +1,32 @@
+{
+  "create": {
+    "completed_at": null,
+    "created_at": 1770942014,
+    "error": null,
+    "expires_at": null,
+    "id": "video_698e6e3de1f48191ad079b2ae2c1c6e80d28cbfbfdeb7b45",
+    "model": "sora-2",
+    "object": "video",
+    "progress": 0,
+    "prompt": "Primary request: A calm cinematic 4-second shot of an origami paper boat floating on gentle ripples at golden sunset, soft light, shallow depth of field, no people, no logos, no text.",
+    "remixed_from_video_id": null,
+    "seconds": "4",
+    "size": "1280x720",
+    "status": "queued"
+  },
+  "final": {
+    "completed_at": 1770942093,
+    "created_at": 1770942014,
+    "error": null,
+    "expires_at": 1770945693,
+    "id": "video_698e6e3de1f48191ad079b2ae2c1c6e80d28cbfbfdeb7b45",
+    "model": "sora-2",
+    "object": "video",
+    "progress": 100,
+    "prompt": "Primary request: A calm cinematic 4-second shot of an origami paper boat floating on gentle ripples at golden sunset, soft light, shallow depth of field, no people, no logos, no text.",
+    "remixed_from_video_id": null,
+    "seconds": "4",
+    "size": "1280x720",
+    "status": "completed"
+  }
+}

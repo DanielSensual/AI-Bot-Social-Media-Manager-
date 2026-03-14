@@ -1,0 +1,36 @@
+{
+  "create": {
+    "id": "video_69937442710081909e217d813dac390a06ec78703ef89868",
+    "object": "video",
+    "created_at": 1771271234,
+    "status": "queued",
+    "completed_at": null,
+    "error": null,
+    "expires_at": null,
+    "model": "sora-2",
+    "progress": 0,
+    "prompt": "The woman looks directly at the camera with a confident expression and begins speaking passionately, gesturing naturally with her right hand as if explaining an exciting tech breakthrough, subtle head movements, mouth moving naturally as she talks, modern office background stays slightly out of focus with ambient warm lighting, cinematic shallow depth of field, smooth natural motion",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  },
+  "final": {
+    "id": "video_69937442710081909e217d813dac390a06ec78703ef89868",
+    "object": "video",
+    "created_at": 1771271234,
+    "status": "failed",
+    "completed_at": null,
+    "error": {
+      "code": "moderation_blocked",
+      "message": "Your request was blocked by our moderation system."
+    },
+    "expires_at": null,
+    "model": "sora-2",
+    "progress": 0,
+    "prompt": "The woman looks directly at the camera with a confident expression and begins speaking passionately, gesturing naturally with her right hand as if explaining an exciting tech breakthrough, subtle head movements, mouth moving naturally as she talks, modern office background stays slightly out of focus with ambient warm lighting, cinematic shallow depth of field, smooth natural motion",
+    "remixed_from_video_id": null,
+    "seconds": "8",
+    "size": "720x1280"
+  },
+  "baseName": "seedance-model-2026-02-16T1947"
+}

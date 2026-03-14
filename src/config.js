@@ -15,17 +15,17 @@ export const config = {
 
     // Content Pillars with weights (must sum to 100)
     pillars: {
-        value: 30,      // Educational content, tips, insights
-        hotTakes: 20,   // Controversial/provocative content for engagement
-        portfolio: 20,  // Client work showcases
-        bts: 15,        // Behind the scenes, AI agent stories
-        cta: 15,        // Direct calls to action
+        hotTakes: 35,           // Controversial opinions, engagement bait
+        builderLogs: 25,        // What we shipped today, raw and real
+        industryCommentary: 20, // React to AI news fast, have a position
+        subtleFlex: 10,         // Client results, speed records, let numbers talk
+        cta: 10,                // Soft sells only, never more than 1 in 10
     },
 
     // Posting Schedule (EST timezone)
     schedule: {
         timezone: 'America/New_York',
-        times: ['8:00', '12:00', '17:00', '21:00'], // 4x daily
+        times: ['8:00', '12:30', '17:30', '21:00'], // 4x daily — spicy cadence
         enabled: true,
     },
 

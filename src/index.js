@@ -8,16 +8,41 @@ import { testConnection, getMetrics } from './twitter-client.js';
 import { generateTweet } from './content-library.js';
 import { getStats, getRecent } from './post-history.js';
 import { config } from './config.js';
+import { log } from './logger.js';
+import { formatTimestampInTimeZone } from './timezone.js';
 
 dotenv.config();
 
 const args = process.argv.slice(2);
 const command = args[0];
 
+// ── Graceful Shutdown ────────────────────────────────────────────────────────
+export let shuttingDown = false;
+const DRAIN_TIMEOUT_MS = 10_000;
+
+function setupGracefulShutdown() {
+    for (const signal of ['SIGTERM', 'SIGINT']) {
+        process.on(signal, () => {
+            if (shuttingDown) return;
+            shuttingDown = true;
+            log.warn(`Received ${signal}, draining...`, { signal, drain_ms: DRAIN_TIMEOUT_MS });
+            // Give in-flight work time to finish
+            setTimeout(() => {
+                log.info('Drain timeout reached, exiting');
+                process.exit(0);
+            }, DRAIN_TIMEOUT_MS);
+        });
+    }
+}
+
 async function main() {
+    setupGracefulShutdown();
+
+    log.info('GhostAI Bot starting', { version: '3.0.0', command: command || 'scheduler' });
+
     console.log('');
     console.log('👻 ═══════════════════════════════════════');
-    console.log('   G H O S T   A I   B O T   v2.0');
+    console.log('   G H O S T   A I   B O T   v3.0');
     console.log('   Autonomous Multi-Platform System');
     console.log('═══════════════════════════════════════════');
     console.log('');
@@ -25,7 +50,7 @@ async function main() {
     // Test connection first
     const connected = await testConnection();
     if (!connected) {
-        console.error('❌ Cannot connect to X API. Check credentials.');
+        log.error('Cannot connect to X API, check credentials');
         process.exit(1);
     }
 
@@ -39,7 +64,7 @@ async function main() {
     const stats = getStats();
     console.log(`📈 Post history: ${stats.totalPosts} total | ${stats.postsToday} today`);
     if (stats.lastPost) {
-        console.log(`🕐 Last post: ${new Date(stats.lastPost.timestamp).toLocaleString('en-US', { timeZone: config.schedule.timezone })}`);
+        console.log(`🕐 Last post: ${formatTimestampInTimeZone(stats.lastPost.timestamp, config.schedule.timezone)}`);
     }
     console.log('');
 
@@ -47,7 +72,7 @@ async function main() {
     switch (command) {
         case '--dry-run':
             process.env.DRY_RUN = 'true';
-            console.log('🔇 DRY RUN MODE - No tweets will be posted\n');
+            log.info('DRY RUN MODE — no tweets will be posted');
             startScheduler();
             break;
 
@@ -71,7 +96,7 @@ async function main() {
             if (recent.length > 0) {
                 console.log('\n📜 Recent Post History:');
                 for (const post of recent) {
-                    const ts = new Date(post.timestamp).toLocaleString('en-US', { timeZone: config.schedule.timezone });
+                    const ts = formatTimestampInTimeZone(post.timestamp, config.schedule.timezone);
                     console.log(`  [${ts}] ${post.aiGenerated ? '🧠' : '📝'} ${post.hasVideo ? '🎬' : ''} ${post.text?.substring(0, 50)}...`);
                 }
             }
@@ -90,16 +115,10 @@ async function main() {
         default:
             // Start the scheduler
             startScheduler();
-
-            // Keep process running
-            process.on('SIGINT', () => {
-                console.log('\n\n👋 GhostAI Bot shutting down gracefully...');
-                process.exit(0);
-            });
     }
 }
 
 main().catch((error) => {
-    console.error('Fatal error:', error);
+    log.error('Fatal error', { error: error.message, stack: error.stack });
     process.exit(1);
 });
