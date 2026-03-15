@@ -27,3 +27,4 @@ logs/
 .ai-engaged.json
 .x-engaged.json
 .x-session.json
+.env.bak*
