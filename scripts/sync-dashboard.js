@@ -20,7 +20,11 @@ import { config } from '../src/config.js';
 dotenv.config();
 
 const DASHBOARD_URL = (process.env.DASHBOARD_URL || 'https://ghostai-dashboard.vercel.app').trim().replace(/\/+$/, '');
-const DASHBOARD_SECRET = (process.env.DASHBOARD_SECRET || 'ghostai-dev-token').trim();
+const DASHBOARD_SECRET = (process.env.DASHBOARD_SECRET || '').trim();
+if (!DASHBOARD_SECRET) {
+    console.error('❌ DASHBOARD_SECRET env var is required. Set it in .env');
+    process.exit(1);
+}
 
 function buildDashboardPayload() {
     // Read from SQLite (real data)

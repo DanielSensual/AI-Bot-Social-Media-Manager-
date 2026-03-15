@@ -14,7 +14,11 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DASHBOARD_URL = (process.env.DASHBOARD_URL || 'http://localhost:3001').replace(/\/+$/, '');
-const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'ghostai-dev-token';
+const DASHBOARD_SECRET = (process.env.DASHBOARD_SECRET || '').trim();
+if (!DASHBOARD_SECRET) {
+    console.error('❌ DASHBOARD_SECRET env var is required. Set it in .env');
+    process.exit(1);
+}
 const DAILY_LIMIT = Number.parseInt(process.env.LEAD_HUNTER_DAILY_LIMIT || '50', 10) || 50;
 
 const args = process.argv.slice(2);

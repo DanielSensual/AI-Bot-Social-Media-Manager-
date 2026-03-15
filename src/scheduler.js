@@ -265,20 +265,25 @@ async function autonomousPost() {
         }
     }
 
-    // Record to persistent history
-    record({
-        text: content.text,
-        pillar: content.pillar,
-        aiGenerated: useAI,
-        hasVideo: !!videoPath,
-        hasImage: !!imagePath,
-        results: {
-            x: results.x ? `https://x.com/i/status/${results.x.id}` : null,
-            linkedin: results.linkedin ? 'posted' : null,
-            facebook: results.facebook ? 'posted' : null,
-            instagram: results.instagram ? 'posted' : null,
-        },
-    });
+    // Record to persistent history — only if at least one platform succeeded
+    const anySuccess = Object.values(results).some(r => r !== null);
+    if (anySuccess) {
+        record({
+            text: content.text,
+            pillar: content.pillar,
+            aiGenerated: useAI,
+            hasVideo: !!videoPath,
+            hasImage: !!imagePath,
+            results: {
+                x: results.x ? `https://x.com/i/status/${results.x.id}` : null,
+                linkedin: results.linkedin ? 'posted' : null,
+                facebook: results.facebook ? 'posted' : null,
+                instagram: results.instagram ? 'posted' : null,
+            },
+        });
+    } else {
+        console.warn('⚠️ No platforms succeeded — skipping post_history record (content will be retried)');
+    }
 
     // Summary
     console.log(`\n${'─'.repeat(50)}`);

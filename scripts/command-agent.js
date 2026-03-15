@@ -257,7 +257,7 @@ function getCatalog() {
                     cwd: BOT_ROOT,
                     env: {
                         DASHBOARD_URL: process.env.DASHBOARD_URL || 'http://localhost:3000',
-                        DASHBOARD_SECRET: process.env.DASHBOARD_SECRET || 'ghostai-dev-token',
+                        DASHBOARD_SECRET: process.env.DASHBOARD_SECRET || '',
                     },
                 };
             },

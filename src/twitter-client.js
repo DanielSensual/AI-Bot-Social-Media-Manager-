@@ -1,5 +1,6 @@
 /**
  * Twitter/X API Client Wrapper
+ * Includes circuit breaker for credit exhaustion (402)
  */
 
 import { TwitterApi } from 'twitter-api-v2';
@@ -18,12 +19,46 @@ const client = new TwitterApi({
 // Get read-write client
 const rwClient = client.readWrite;
 
+// ═══════════════════════════════════════════════════════════
+//  CIRCUIT BREAKER — stops hammering X API after 402
+// ═══════════════════════════════════════════════════════════
+const BREAKER_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+let breakerTrippedAt = 0;
+
+function isBreakerOpen() {
+    if (breakerTrippedAt === 0) return false;
+    const elapsed = Date.now() - breakerTrippedAt;
+    if (elapsed > BREAKER_COOLDOWN_MS) {
+        breakerTrippedAt = 0; // Reset after cooldown
+        console.log('🔌 X API circuit breaker reset — retrying allowed');
+        return false;
+    }
+    return true;
+}
+
+function tripBreaker() {
+    breakerTrippedAt = Date.now();
+    const resetTime = new Date(breakerTrippedAt + BREAKER_COOLDOWN_MS).toLocaleTimeString();
+    console.error(`⚡ Circuit breaker TRIPPED — all X API calls blocked until ${resetTime}`);
+}
+
+export function getBreakerStatus() {
+    if (!isBreakerOpen()) return { open: false };
+    const remainingMs = BREAKER_COOLDOWN_MS - (Date.now() - breakerTrippedAt);
+    return { open: true, remainingMs, resetAt: new Date(breakerTrippedAt + BREAKER_COOLDOWN_MS).toISOString() };
+}
+
 /**
  * Post a single tweet
  * @param {string} text - Tweet content (max 280 chars)
  * @returns {Promise<object>} Tweet data
  */
 export async function postTweet(text) {
+    if (isBreakerOpen()) {
+        const status = getBreakerStatus();
+        throw new Error(`X API circuit breaker is OPEN — credits exhausted. Resets at ${status.resetAt}`);
+    }
+
     if (text.length > 280) {
         throw new Error(`Tweet exceeds 280 characters (${text.length})`);
     }
@@ -32,12 +67,13 @@ export async function postTweet(text) {
     try {
         tweet = await rwClient.v2.tweet(text);
     } catch (error) {
-        // Surface clear message for billing issues
+        // Surface clear message for billing issues + trip circuit breaker
         if (error.code === 402 || error.data?.status === 402 || /402/.test(error.message)) {
             console.error('💳 ═══════════════════════════════════════');
             console.error('   X API CREDITS EXHAUSTED (HTTP 402)');
             console.error('   Add credits → https://console.x.com');
             console.error('═══════════════════════════════════════════');
+            tripBreaker();
             throw new Error('X API credits exhausted — add credits at https://console.x.com');
         }
         throw error;
