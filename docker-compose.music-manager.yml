@@ -1,0 +1,40 @@
+# Music Manager Bot — Docker Compose
+# Local testing and GCE deployment
+#
+# Usage:
+#   docker-compose -f docker-compose.music-manager.yml up -d
+#   docker-compose -f docker-compose.music-manager.yml logs -f
+
+services:
+  music-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.music-manager
+    container_name: music-manager-bot
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - TZ=America/New_York
+    env_file:
+      - .env
+    volumes:
+      # Persist Chrome login sessions
+      - chrome-profile:/root/.danielsensual-chrome-profile
+      # Persist logs
+      - ./logs:/app/logs
+      # Persist catalog + state data
+      - ./data:/app/data
+      # Persist share URL state
+      - ./.danielsensual-share-url.json:/app/.danielsensual-share-url.json
+    # Memory limit (Chrome is hungry)
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    # SHM size for Chrome
+    shm_size: '1gb'
+
+volumes:
+  chrome-profile:

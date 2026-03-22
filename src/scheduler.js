@@ -14,6 +14,7 @@ import { adaptForAll } from './content-adapter.js';
 import { generateVideo, cleanupCache } from './video-generator.js';
 import { generateImage, cleanupImageCache } from './image-generator.js';
 import { isDuplicate, record } from './post-history.js';
+import { makePostKey, checkAndClaim, releaseKey } from './idempotency.js';
 import { alertPostFailure, alertHealthCheckFailure, recordFailure, clearFailure } from './alerting.js';
 import { getTopPerformingExamples } from './content-feedback.js';
 
@@ -233,6 +234,8 @@ async function autonomousPost() {
     for (const adapter of PLATFORM_ADAPTERS) {
         if (!adapter.enabled) continue;
 
+        let claimedKey = null; // Track what THIS attempt claimed
+
         try {
             // Run platform-specific pre-check (auth, page access, etc.)
             if (adapter.preCheck) {
@@ -240,12 +243,23 @@ async function autonomousPost() {
                 if (!ready) continue;
             }
 
-            console.log(`\n📤 Posting to ${adapter.name}...`);
+            // Claim idempotency key BEFORE posting — prevents duplicate posts
+            // from PM2, Railway, ghost-command, or cron running simultaneously
             const platformText = getText(adapter.key);
+            const idemKey = makePostKey(adapter.key, platformText);
+            if (!checkAndClaim(idemKey)) {
+                console.log(`   ⏭️ ${adapter.name}: already published today (idempotency key claimed)`);
+                continue;
+            }
+            claimedKey = idemKey; // Record that WE claimed this key
+
+            console.log(`\n📤 Posting to ${adapter.name}...`);
 
             // Skip text-only if platform requires media
             if (!videoPath && !imagePath && adapter.requiresMedia) {
                 console.log(`   ⚠️ ${adapter.name} requires media — skipping text-only post`);
+                releaseKey(claimedKey); // Release claim since we didn't actually post
+                claimedKey = null;
                 continue;
             }
 
@@ -260,6 +274,10 @@ async function autonomousPost() {
             clearFailure(adapter.name);
         } catch (error) {
             console.error(`❌ ${adapter.name} post failed: ${error.message}`);
+            // Only release if WE claimed the key — don't release another worker's claim
+            if (claimedKey) {
+                releaseKey(claimedKey);
+            }
             recordFailure(adapter.name);
             alertPostFailure(adapter.name, error).catch(() => { });
         }

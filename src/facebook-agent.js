@@ -16,6 +16,7 @@ import { hasLLMProvider, generateText } from './llm-client.js';
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FB_BRAIN_PATH = path.join(__dirname, '..', 'fb-brain.md');
 const DEFAULT_TIMES = ['09:30', '13:00', '18:30', '21:00'];
 const WEBSITE = 'https://ghostaisystems.com';
 const CTA_LINKS = [
@@ -42,9 +43,23 @@ function injectCTA(caption) {
     return caption;
 }
 
+// ── Day-of-Week Content Themes ──────────────────────────────────────────
+// Maps EST day-of-week (0=Sun) to a content theme from fb-brain.md
+const DAY_THEMES = {
+    0: { id: 'community',   label: 'Community Engagement' },
+    1: { id: 'value',       label: 'Value Bomb' },
+    2: { id: 'friction',    label: 'Friction Engine' },
+    3: { id: 'bts',         label: 'Behind the Scenes' },
+    4: { id: 'portfolio',   label: 'Portfolio Showcase' },
+    5: { id: 'cta',         label: 'CTA & Offer' },
+    6: { id: 'commentary',  label: 'Industry Commentary' },
+};
+
+// Strategies tagged with their theme ID for day-of-week matching
 const STRATEGIES = [
     {
         id: 'myth-breaker',
+        theme: 'value',
         angle: 'Break a common myth about AI in business and replace it with a practical execution framework.',
         cta: 'Ask people to comment their biggest AI bottleneck.',
         fallbackCaption: `Most businesses are using AI backwards.
@@ -63,54 +78,8 @@ Comment "WORKFLOW" and I will share one practical setup.`,
         fallbackVideoPrompt: 'Vertical 9:16 cinematic short-form scene of a business owner overwhelmed by tasks, then smoothly transitioning into a calm AI-driven workflow dashboard with strong visual contrast and fast stop-scroll pacing.',
     },
     {
-        id: 'pain-hook',
-        angle: 'Call out missed revenue from slow lead response and position automation as the solution.',
-        cta: 'Ask followers to choose one area to automate this month.',
-        fallbackCaption: `The hidden cost in most businesses is response speed.
-
-Every missed call, delayed message, and untracked lead leaks revenue.
-
-Agentic automation fixes that:
-- Instant lead follow-up
-- Auto qualification
-- Smart handoff to your team
-
-What is the first thing you want automated this month?`,
-        fallbackVideoPrompt: 'Vertical 9:16 high-energy social clip showing incoming leads piling up, then AI systems instantly replying, sorting, and booking calls, with dynamic camera movement and punchy transitions.',
-    },
-    {
-        id: 'case-style',
-        angle: 'Present a concise transformation narrative: before vs after using AI systems.',
-        cta: 'Invite people to request the blueprint.',
-        fallbackCaption: `Before: random posting, slow follow-up, inconsistent sales pipeline.
-After: one agentic system driving content, lead response, and booking flow.
-
-The difference is not talent.
-The difference is operating rhythm.
-
-When your systems execute daily, growth compounds.
-
-Comment "BLUEPRINT" if you want the exact structure.`,
-        fallbackVideoPrompt: 'Vertical 9:16 before-and-after montage: chaotic business operations transform into clean AI dashboards, booked calendar notifications, and smooth team workflows, cinematic and high-contrast.',
-    },
-    {
-        id: 'conversation-starter',
-        angle: 'Post a high-engagement question that prompts replies from founders and operators.',
-        cta: 'Prompt a simple one-word/one-number answer.',
-        fallbackCaption: `Quick founder poll:
-
-If you could deploy one AI agent today, what should it own?
-
-1) Lead follow-up
-2) Content creation
-3) Customer support
-4) Operations
-
-Reply with a number and I will share the fastest implementation path.`,
-        fallbackVideoPrompt: 'Vertical 9:16 social-first visual with bold kinetic typography-style motion and abstract AI interface backgrounds, optimized for immediate attention and a polling call-to-action feel.',
-    },
-    {
         id: 'viral-ai-stat',
+        theme: 'value',
         angle: 'Share a jaw-dropping AI statistic or prediction that stops scrollers. Frame it as an opportunity, not a threat. Position Ghost AI Systems as the team already building this future.',
         cta: `Link to ${WEBSITE} with a soft CTA.`,
         fallbackCaption: `AI agents will handle 80% of customer interactions by 2027.
@@ -127,7 +96,73 @@ We already build these for businesses.
         fallbackVideoPrompt: 'Vertical 9:16 futuristic AI control room with holographic dashboards, autonomous agents represented as glowing orbs processing requests, dramatic cinematic lighting with deep blue and gold tones.',
     },
     {
+        id: 'ai-hot-take',
+        theme: 'friction',
+        angle: 'Drop a controversial opinion about AI that sparks debate. Be bold. Take a side. Make people feel something — then position Ghost AI as proof of the thesis.',
+        cta: 'Engage commenters and mention the website naturally.',
+        fallbackCaption: `Hot take: 90% of "AI companies" are just API wrappers.
+
+Real AI integration means:
+• Voice agents that book appointments
+• Systems that learn from your data
+• Automation that runs while you sleep
+
+We ship real AI systems, not demos.
+
+Agree or disagree? 👇`,
+        fallbackVideoPrompt: 'Vertical 9:16 dramatic split-screen: left side shows a generic chatbot widget, right side shows a full AI operations center with voice agents, booking flows, and analytics — cinematic reveal.',
+    },
+    {
+        id: 'pain-hook',
+        theme: 'friction',
+        angle: 'Call out missed revenue from slow lead response and position automation as the solution. Make it debatable.',
+        cta: 'Ask followers to choose one area to automate this month.',
+        fallbackCaption: `The hidden cost in most businesses is response speed.
+
+Every missed call, delayed message, and untracked lead leaks revenue.
+
+Agentic automation fixes that:
+- Instant lead follow-up
+- Auto qualification
+- Smart handoff to your team
+
+What is the first thing you want automated this month?`,
+        fallbackVideoPrompt: 'Vertical 9:16 high-energy social clip showing incoming leads piling up, then AI systems instantly replying, sorting, and booking calls, with dynamic camera movement and punchy transitions.',
+    },
+    {
+        id: 'builder-log',
+        theme: 'bts',
+        angle: 'Share a raw behind-the-scenes moment — a late-night deploy, a problem solved, a metric hit. Authenticity over polish.',
+        cta: 'Ask what others shipped this week.',
+        fallbackCaption: `Shipped a client site at 11pm last night.
+
+By midnight their AI receptionist had booked 3 calls.
+By morning: 2 new customers.
+
+This is what "always on" actually means.
+
+What did you ship this week? 👇`,
+        fallbackVideoPrompt: 'Vertical 9:16 atmospheric late-night coding session transitioning to a dashboard lighting up with incoming bookings and AI call notifications, moody cinematic lighting.',
+    },
+    {
+        id: 'case-style',
+        theme: 'portfolio',
+        angle: 'Present a concise transformation narrative: before vs after using AI systems.',
+        cta: 'Invite people to request the blueprint.',
+        fallbackCaption: `Before: random posting, slow follow-up, inconsistent sales pipeline.
+After: one agentic system driving content, lead response, and booking flow.
+
+The difference is not talent.
+The difference is operating rhythm.
+
+When your systems execute daily, growth compounds.
+
+Comment "BLUEPRINT" if you want the exact structure.`,
+        fallbackVideoPrompt: 'Vertical 9:16 before-and-after montage: chaotic business operations transform into clean AI dashboards, booked calendar notifications, and smooth team workflows, cinematic and high-contrast.',
+    },
+    {
         id: 'website-showcase',
+        theme: 'portfolio',
         angle: 'Showcase what Ghost AI Systems ships in 72 hours — a production-ready website with AI integrations, analytics, and security. Make it aspirational.',
         cta: `Direct link to ${WEBSITE}/buy to purchase SiteDrop.`,
         fallbackCaption: `What you get when we build your website:
@@ -146,23 +181,8 @@ All in 72 hours. Not a prototype — a system.
         fallbackVideoPrompt: 'Vertical 9:16 rapid-fire montage of beautiful websites being designed, coded, and deployed — screens lighting up with analytics dashboards, phones ringing with AI voice agents, all set to dynamic electronic music pace.',
     },
     {
-        id: 'ai-hot-take',
-        angle: 'Drop a controversial opinion about AI that sparks debate. Be bold. Take a side. Make people feel something — then position Ghost AI as proof of the thesis.',
-        cta: 'Engage commenters and mention the website naturally.',
-        fallbackCaption: `Hot take: 90% of "AI companies" are just API wrappers.
-
-Real AI integration means:
-• Voice agents that book appointments
-• Systems that learn from your data
-• Automation that runs while you sleep
-
-We ship real AI systems, not demos.
-
-🔗 ${WEBSITE}`,
-        fallbackVideoPrompt: 'Vertical 9:16 dramatic split-screen: left side shows a generic chatbot widget, right side shows a full AI operations center with voice agents, booking flows, and analytics — cinematic reveal.',
-    },
-    {
         id: 'free-audit-offer',
+        theme: 'cta',
         angle: 'Offer a free AI website audit to drive inbound leads. Create urgency with limited spots.',
         cta: `Direct link to ${WEBSITE}/intake for the audit form.`,
         fallbackCaption: `Free for the next 48 hours:
@@ -175,6 +195,39 @@ I will personally audit your website and show you:
 DM "AUDIT" or fill out the form:
 🔗 ${WEBSITE}/intake`,
         fallbackVideoPrompt: 'Vertical 9:16 screen recording style showing a website audit in progress — highlighting conversion issues, then AI improvements being implemented in real-time, satisfying before/after reveal.',
+    },
+    {
+        id: 'ai-news-reaction',
+        theme: 'commentary',
+        angle: 'React to the latest AI industry news with a sharp, contrarian take. Be specific about what it means for small businesses and operators.',
+        cta: 'Ask what people think about the news.',
+        fallbackCaption: `Everyone is talking about the latest AI model releases.
+
+But here is what nobody is asking:
+Does your business actually USE the last model upgrade?
+
+Most companies are 2 years behind on implementation.
+The gap is not capability — it is execution.
+
+What AI tool has actually changed your daily workflow? 👇`,
+        fallbackVideoPrompt: 'Vertical 9:16 news-style kinetic typography with AI headlines flying in, then a calm operator perspective cutting through the noise with practical insights.',
+    },
+    {
+        id: 'conversation-starter',
+        theme: 'community',
+        angle: 'Post a high-engagement question that prompts replies from founders and operators. Zero selling.',
+        cta: 'Prompt a simple one-word/one-number answer.',
+        fallbackCaption: `Quick founder poll:
+
+If you could deploy one AI agent today, what should it own?
+
+1) Lead follow-up
+2) Content creation
+3) Customer support
+4) Operations
+
+Reply with a number and I will share the fastest implementation path.`,
+        fallbackVideoPrompt: 'Vertical 9:16 social-first visual with bold kinetic typography-style motion and abstract AI interface backgrounds, optimized for immediate attention and a polling call-to-action feel.',
     },
 ];
 
@@ -210,7 +263,57 @@ function shouldUse(ratio) {
     return Math.random() * 100 < ratio;
 }
 
-function pickStrategy() {
+/**
+ * Load the fb-brain.md persona file for AI prompt context
+ */
+function loadFBBrain() {
+    try {
+        return fs.readFileSync(FB_BRAIN_PATH, 'utf-8');
+    } catch {
+        console.warn('⚠️ fb-brain.md not found — using fallback prompts');
+        return null;
+    }
+}
+
+/**
+ * Get today's content theme based on the EST day of week.
+ * Returns { id, label } from DAY_THEMES.
+ */
+function getDayTheme(timezone = 'America/New_York') {
+    const now = new Date();
+    // Get the current day of week in the configured timezone
+    const dayOfWeek = Number(
+        new Intl.DateTimeFormat('en-US', { weekday: 'narrow', timeZone: timezone })
+            .formatToParts(now)
+            .find((p) => p.type === 'weekday')?.value
+            // Fallback: parse the locale day name to a number
+    ) || now.toLocaleDateString('en-US', { timeZone: timezone, weekday: 'short' });
+
+    // Map locale weekday short name to day number (0=Sun)
+    const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const dayShort = now.toLocaleDateString('en-US', { timeZone: timezone, weekday: 'short' });
+    const dayNum = dayMap[dayShort] ?? now.getDay();
+
+    return DAY_THEMES[dayNum] || DAY_THEMES[0];
+}
+
+/**
+ * Pick a strategy matching today's day-of-week theme.
+ * Falls back to random if no matching strategy is found.
+ */
+function pickStrategy(timezone = 'America/New_York') {
+    const dayTheme = getDayTheme(timezone);
+    console.log(`📅 Day theme: ${dayTheme.label} (${dayTheme.id})`);
+
+    // Filter strategies that match today's theme
+    const matching = STRATEGIES.filter((s) => s.theme === dayTheme.id);
+
+    if (matching.length > 0) {
+        return matching[Math.floor(Math.random() * matching.length)];
+    }
+
+    // Fallback: random strategy if no match (shouldn't happen with full coverage)
+    console.warn(`   ⚠️ No strategies for theme "${dayTheme.id}", picking random`);
     return STRATEGIES[Math.floor(Math.random() * STRATEGIES.length)];
 }
 
@@ -255,8 +358,18 @@ function safeJsonParse(content) {
 async function generateAICreative(strategy, useReel) {
     if (!hasLLMProvider()) return null;
 
-    const prompt = `You create high-performing Facebook Page content for "Artificial Intelligence Knowledge".
+    // Load fb-brain.md for full persona context
+    const fbBrain = loadFBBrain();
+    const dayTheme = getDayTheme();
+
+    let prompt;
+    if (fbBrain) {
+        prompt = `Here is your complete identity, voice, and content strategy:\n\n${fbBrain}\n\n---\n\nToday is ${dayTheme.label} day (theme: ${dayTheme.id}).\n\nSTRATEGY:\n${strategy.angle}\n\nENGAGEMENT CTA:\n${strategy.cta}\n\nOUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}\n\nRULES:\n- Follow ALL voice rules and hard rules from the brain file above.\n- Caption should match today's theme (${dayTheme.id}).\n- Make the first line a strong hook that stops scrollers.\n- Keep caption between 200 and 600 characters.\n- If the strategy CTA mentions a link, INCLUDE the exact URL.\n- If useReel=true, videoPrompt must describe a cinematic 9:16 scroll-stopping scene.\n\nuseReel=${useReel ? 'true' : 'false'}`;
+    } else {
+        prompt = `You create high-performing Facebook Page content for "Artificial Intelligence Knowledge".
 This page is run by Ghost AI Systems (${WEBSITE}) — an AI agency that ships production-ready websites in 72 hours with AI voice agents, analytics, and automation.
+
+TODAY'S THEME: ${dayTheme.label} (${dayTheme.id})
 
 OBJECTIVE:
 ${strategy.angle}
@@ -283,6 +396,7 @@ RULES:
 - Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.
 
 useReel=${useReel ? 'true' : 'false'}`;
+    }
 
     const { text } = await generateText({
         prompt,
@@ -373,7 +487,7 @@ async function runScheduledCycle(options = {}) {
 
         const useReel = shouldUse(config.reelRatio);
         const useAI = shouldUse(config.aiRatio) && hasLLMProvider();
-        const strategy = pickStrategy();
+        const strategy = pickStrategy(config.timezone);
 
         console.log(`Strategy: ${strategy.id} | ${useReel ? 'reel' : 'text'} | ${useAI ? 'ai' : 'template'}`);
 

@@ -68,7 +68,7 @@ export const config = {
         platforms: {
             x: true,
             linkedin: true,
-            facebook: true,
+            facebook: false, // Owned by dedicated facebook-agent (ecosystem.config.cjs)
             instagram: process.env.INSTAGRAM_ENABLED !== 'false',
         },
         // Health check before each post

@@ -28,3 +28,9 @@ logs/
 .x-engaged.json
 .x-session.json
 .env.bak*
+.instagram-autopilot-state.json
+
+# Mutable runtime databases — never track in git
+*.db
+*.db-wal
+*.db-shm

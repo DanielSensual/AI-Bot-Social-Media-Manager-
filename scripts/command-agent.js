@@ -22,9 +22,9 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BOT_ROOT = path.join(__dirname, '..');
 const PORT = Number.parseInt(process.env.PORT || process.env.COMMAND_AGENT_PORT || '8787', 10);
-const HOST = process.env.COMMAND_AGENT_HOST || '0.0.0.0';
-const AUTH_TOKEN = process.env.COMMAND_AGENT_TOKEN || process.env.DASHBOARD_SECRET || '';
-const CORS_ORIGIN = process.env.COMMAND_AGENT_CORS_ORIGIN || '*';
+const HOST = process.env.COMMAND_AGENT_HOST || '127.0.0.1';
+const AUTH_TOKEN = process.env.COMMAND_AGENT_TOKEN || '';
+const CORS_ORIGIN = process.env.COMMAND_AGENT_CORS_ORIGIN || '';
 
 const MAX_RUNS = 40;
 const MAX_OUTPUT_CHARS = 60000;
@@ -397,7 +397,7 @@ function readJsonBody(req) {
 }
 
 if (!AUTH_TOKEN) {
-    console.error('❌ COMMAND_AGENT_TOKEN (or DASHBOARD_SECRET) is required.');
+    console.error('❌ COMMAND_AGENT_TOKEN is required. Set it as an env var — DASHBOARD_SECRET fallback has been removed for security.');
     process.exit(1);
 }
 

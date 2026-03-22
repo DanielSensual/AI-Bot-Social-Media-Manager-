@@ -1,0 +1,26 @@
+{
+  "videos": [
+    {
+      "url": "https://www.facebook.com/share/r/18ZynhQqRe",
+      "title": "Video 1",
+      "addedAt": "2026-03-21T19:01:39.272Z",
+      "discoveredAt": "2026-03-21T19:01:39.273Z",
+      "shareCount": 0,
+      "lastShared": null,
+      "source": "manual",
+      "active": true
+    },
+    {
+      "url": "https://www.facebook.com/reel",
+      "title": "Video",
+      "addedAt": "2026-03-21T19:02:44.046Z",
+      "discoveredAt": "2026-03-21T19:02:44.047Z",
+      "shareCount": 0,
+      "lastShared": null,
+      "source": "scan",
+      "active": true
+    }
+  ],
+  "lastScan": "2026-03-21T19:02:44.047Z",
+  "lastRotation": "2026-03-21T19:01:48.810Z"
+}

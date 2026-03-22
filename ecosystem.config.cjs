@@ -308,6 +308,133 @@ module.exports = {
             },
         },
 
+        // ── Daniel Sensual Video Group Shares ────────────────────────────
+        {
+            name: 'danielsensual-share-morning',
+            script: 'scripts/danielsensual-share.js',
+            args: '--batch=1',
+            cwd: __dirname,
+            cron_restart: '0 9 * * *', // 9:00 AM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-share-error.log',
+            out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-share-afternoon',
+            script: 'scripts/danielsensual-share.js',
+            args: '--batch=2',
+            cwd: __dirname,
+            cron_restart: '0 13 * * *', // 1:00 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-share-error.log',
+            out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-share-evening',
+            script: 'scripts/danielsensual-share.js',
+            args: '--batch=3',
+            cwd: __dirname,
+            cron_restart: '0 18 * * *', // 6:00 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-share-error.log',
+            out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+
+        // ── Music Manager — Video Catalog ───────────────────────────────
+        {
+            name: 'music-manager-rotate-daily',
+            script: 'scripts/video-catalog.js',
+            args: '--next',
+            cwd: __dirname,
+            cron_restart: '30 8 * * *', // 8:30 AM daily (before 9 AM shares)
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/video-catalog-error.log',
+            out_file: './logs/pm2/video-catalog-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'music-manager-scan-weekly',
+            script: 'scripts/video-catalog.js',
+            args: '--scan',
+            cwd: __dirname,
+            cron_restart: '0 0 * * 0', // Midnight every Sunday
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/video-catalog-error.log',
+            out_file: './logs/pm2/video-catalog-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+
+        // ── Music Manager — Engagement Bot ──────────────────────────────
+        {
+            name: 'music-manager-engage-morning',
+            script: 'scripts/engagement-bot.js',
+            args: '--max-replies=10',
+            cwd: __dirname,
+            cron_restart: '0 11 * * *', // 11:00 AM (2h after morning shares)
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/engagement-bot-error.log',
+            out_file: './logs/pm2/engagement-bot-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'music-manager-engage-afternoon',
+            script: 'scripts/engagement-bot.js',
+            args: '--max-replies=10',
+            cwd: __dirname,
+            cron_restart: '0 15 * * *', // 3:00 PM (2h after afternoon shares)
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/engagement-bot-error.log',
+            out_file: './logs/pm2/engagement-bot-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'music-manager-engage-evening',
+            script: 'scripts/engagement-bot.js',
+            args: '--max-replies=10',
+            cwd: __dirname,
+            cron_restart: '0 20 * * *', // 8:00 PM (2h after evening shares)
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/engagement-bot-error.log',
+            out_file: './logs/pm2/engagement-bot-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+
         // ── ClawBot Log Watcher ─────────────────────────────────────────
         {
             name: 'clawbot-watcher',
@@ -325,6 +452,25 @@ module.exports = {
                 NODE_ENV: 'production',
                 TZ: 'America/New_York',
                 DASHBOARD_URL: 'https://ghostai-dashboard.vercel.app',
+            },
+        },
+
+        // ── GhostAI X Commenter — Browser Engagement ────────────────────
+        {
+            name: 'ghostai-x-commenter',
+            script: 'src/ghostai-x-commenter.js',
+            cwd: __dirname,
+            watch: false,
+            autorestart: true,
+            max_restarts: 5,
+            restart_delay: 60000, // 1 min between restarts
+            error_file: './logs/pm2/x-commenter-error.log',
+            out_file: './logs/pm2/x-commenter-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
             },
         },
     ],

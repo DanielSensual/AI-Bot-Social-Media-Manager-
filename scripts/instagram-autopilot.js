@@ -20,7 +20,7 @@ import { fileURLToPath } from 'url';
 
 import { testInstagramConnection, uploadToTempHost, postInstagramReel, postInstagramStory } from '../src/instagram-client.js';
 import { respondToInstagramComments } from '../src/instagram-responder.js';
-import { generateAITweet } from '../src/content-library.js';
+import { buildInstagramCaption } from '../src/instagram-content.js';
 import { generateVideo, cleanupCache } from '../src/video-generator.js';
 import { generateImage, cleanupImageCache } from '../src/image-generator.js';
 import { generateSoraVideo } from '../src/sora-video-generator.js';
@@ -233,13 +233,13 @@ function parseArgs(argv) {
 
 async function generateCaptionFallback(kind) {
     try {
-        const generated = await generateAITweet({ controversial: false });
-        return truncateCaption(generated?.text || '');
+        const result = await buildInstagramCaption();
+        return truncateCaption(result?.caption || '');
     } catch {
         if (kind === 'reel') {
-            return 'AI workflows that ship faster, cleaner, and with less busywork. What should we automate next?';
+            return 'Nobody handed me a playbook. Just a veteran with a laptop and the audacity to believe AI could change everything. Keep building. 🔥';
         }
-        return 'Built with AI + human taste. More to come.';
+        return 'Built different. Shipping daily. The grind never stops. 👻';
     }
 }
 
