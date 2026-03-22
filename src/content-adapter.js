@@ -75,7 +75,7 @@ Rewritten content:`;
     const { text: adaptedText } = await generateText({
         prompt,
         maxOutputTokens: 800,
-        openaiModel: 'gpt-5.2',
+        openaiModel: 'gpt-5.4-mini',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 
@@ -137,7 +137,7 @@ OUTPUT FORMAT (strict JSON):
         const { text: rawText } = await generateText({
             prompt,
             maxOutputTokens: 2000,
-            openaiModel: 'gpt-5.2',
+            openaiModel: 'gpt-5.4-mini',
             geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
         });
 

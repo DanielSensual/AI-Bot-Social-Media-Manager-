@@ -296,7 +296,7 @@ export async function buildMusicPost(contentType, context = {}) {
                 prompt,
                 provider: 'auto',
                 maxOutputTokens: 600,
-                openaiModel: 'gpt-5.2',
+                openaiModel: 'gpt-5.4-mini',
             });
 
             const parsed = parseJsonObject(text);

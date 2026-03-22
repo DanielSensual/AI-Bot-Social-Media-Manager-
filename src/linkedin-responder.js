@@ -168,7 +168,7 @@ Response:`;
     const { text } = await generateText({
         prompt,
         maxOutputTokens: 500,
-        openaiModel: 'gpt-5.2',
+        openaiModel: 'gpt-5.4-mini',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 

@@ -531,7 +531,7 @@ Write one concise, high-signal comment:
         const { text } = await generateText({
             prompt,
             maxOutputTokens: 90,
-            openaiModel: 'gpt-5.2',
+            openaiModel: 'gpt-5.4-nano',
             geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
         });
 

@@ -142,7 +142,7 @@ async function generateComment(tweetText, tweetAuthor) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const response = await openai.chat.completions.create({
-        model: process.env.GHOST_MODEL || 'gpt-4o-mini',
+        model: process.env.GHOST_MODEL || 'gpt-5.4-nano',
         messages: [
             { role: 'system', content: CONFIG.brand.personality },
             {
