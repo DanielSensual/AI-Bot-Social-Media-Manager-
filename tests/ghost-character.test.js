@@ -32,11 +32,11 @@ describe('ghost-character module', () => {
     describe('GHOST_IDENTITY', () => {
         it('contains the core physical description anchors', () => {
             const identity = mod.GHOST_IDENTITY;
-            assert.ok(identity.includes('dark-skinned Black man'), 'missing skin tone');
-            assert.ok(identity.includes('athletic muscular build'), 'missing build');
+            assert.ok(identity.includes('Black man'), 'missing ethnicity');
+            assert.ok(identity.includes('late 30s'), 'missing age');
             assert.ok(identity.includes('tapered fade'), 'missing hairstyle');
-            assert.ok(identity.includes('full beard'), 'missing facial hair');
-            assert.ok(identity.includes('never smiling'), 'missing expression lock');
+            assert.ok(identity.includes('trimmed beard'), 'missing facial hair');
+            assert.ok(identity.includes('ARRI Alexa'), 'missing camera style');
         });
     });
 
@@ -46,7 +46,7 @@ describe('ghost-character module', () => {
                 sceneIndex: 0,
                 wardrobeIndex: 0,
             });
-            assert.ok(prompt.includes('dark-skinned Black man'), 'identity missing from prompt');
+            assert.ok(prompt.includes('Black man'), 'identity missing from prompt');
             assert.ok(prompt.includes('tapered fade'), 'hairstyle missing from prompt');
         });
 
@@ -55,8 +55,8 @@ describe('ghost-character module', () => {
                 sceneIndex: 0,
                 wardrobeIndex: 0,
             });
-            // Scene 0 is cyberpunk rooftop
-            assert.ok(prompt.includes('rooftop'), 'scene description missing');
+            // Scene 0 is dark studio
+            assert.ok(prompt.includes('Dark studio'), 'scene description missing');
         });
 
         it('includes wardrobe description', () => {
@@ -64,8 +64,8 @@ describe('ghost-character module', () => {
                 sceneIndex: 0,
                 wardrobeIndex: 0,
             });
-            // Wardrobe 0 is the three-piece suit
-            assert.ok(prompt.includes('three-piece suit'), 'wardrobe missing');
+            // Wardrobe 0 is the fitted black tee
+            assert.ok(prompt.includes('black tee'), 'wardrobe missing');
         });
 
         it('includes topic from post text', () => {
@@ -92,7 +92,7 @@ describe('ghost-character module', () => {
                 wardrobeIndex: 0,
                 pillar: 'drill',
             });
-            assert.ok(prompt.includes('drill instructor'), 'drill mood not applied');
+            assert.ok(prompt.includes('commanding'), 'drill mood not applied');
         });
 
         it('works without pillar (no mood clause)', () => {
@@ -101,7 +101,7 @@ describe('ghost-character module', () => {
                 wardrobeIndex: 0,
             });
             // Should still be valid, just no Mood: line
-            assert.ok(prompt.includes('dark-skinned Black man'), 'identity present');
+            assert.ok(prompt.includes('Black man'), 'identity present');
             assert.ok(!prompt.includes('Mood: .'), 'empty mood clause created');
         });
 
@@ -128,7 +128,7 @@ describe('ghost-character module', () => {
                     wardrobeIndex: 0,
                 });
                 assert.ok(prompt.length > 100, `scene ${i} produced empty/short prompt`);
-                assert.ok(prompt.includes('dark-skinned Black man'), `scene ${i} missing identity`);
+                assert.ok(prompt.includes('Black man'), `scene ${i} missing identity`);
             }
         });
 

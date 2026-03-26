@@ -64,16 +64,24 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── Unified LLM caller (Gemini → OpenAI fallback) ───────────────────────────
 
-async function callGemini(prompt, { temperature = 0.7, maxTokens = 1500 } = {}) {
+async function callGemini(prompt, { temperature = 0.7, maxTokens = 1500, useSearch = false } = {}) {
+    const requestBody = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature, maxOutputTokens: maxTokens },
+    };
+
+    // Enable Google Search grounding for real-time news discovery
+    if (useSearch) {
+        requestBody.tools = [{ google_search: {} }];
+        log('   🔎 Search grounding enabled — fetching real-time web results');
+    }
+
     const response = await fetch(
         `${GEMINI_BASE}/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature, maxOutputTokens: maxTokens },
-            }),
+            body: JSON.stringify(requestBody),
         }
     );
     const data = await response.json();
@@ -136,9 +144,10 @@ Return ONLY a JSON object in this exact format:
 }`;
 
 async function discoverTrends() {
-    log('🔍 Discovering AI trends...');
+    log('🔍 Discovering AI trends (web-grounded)...');
 
-    const text = await callLLM(TREND_PROMPT, { temperature: 0.7, maxTokens: 1500 });
+    // Use search grounding for Gemini so it fetches REAL news, not hallucinated
+    const text = await callLLM(TREND_PROMPT, { temperature: 0.7, maxTokens: 1500, useSearch: true });
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Could not parse trend JSON from LLM response');
 
@@ -150,22 +159,22 @@ async function discoverTrends() {
 // ─── 2. Generate Presenter Script ─────────────────────────────────────────────
 
 async function generatePresenterScript(trends) {
-    log('✍️ Generating presenter script...');
+    log('✍️ Generating Ghost presenter script...');
 
-    const scriptPrompt = `You are writing a short script for a beautiful female AI news anchor. She delivers a 15-second Instagram Reel covering today's top AI trends.
+    const scriptPrompt = `You are writing a short script for Ghost — a military veteran turned AI systems architect. He delivers a 15-second Instagram Reel covering today's top AI trends with drill sergeant authority.
 
 Today's stories:
 ${trends.stories.map((s, i) => `${i + 1}. ${s.headline}: ${s.summary}`).join('\n')}
 
 Requirements:
-- Opening hook: "Hey everyone!" or similar natural greeting
-- Cover the top 1-2 stories in simple, exciting language  
-- End with a call to action: "Follow for daily AI updates!" or similar
-- Keep it under 40 words total (it needs to fit in 15 seconds of speech)
-- Speak naturally, like a real influencer — not robotic
-- Use excitement and energy
+- Opening hook: direct, commanding — "Listen up." or "Pay attention."
+- Cover the top 1-2 stories in simple, powerful language
+- End with a call to action: "Follow Ghost AI for the mission brief." or similar
+- Keep it under 40 words total (it needs to fit in 15 seconds)
+- Sound like a drill instructor who codes — not a news anchor
+- Short punchy sentences. No filler words.
 
-Return ONLY the exact script text the presenter will say, nothing else.`;
+Return ONLY the exact script text Ghost will say, nothing else.`;
 
     const raw = await callLLM(scriptPrompt, { temperature: 0.9, maxTokens: 300 });
     const script = raw.replace(/^["']|["']$/g, '');
@@ -199,14 +208,15 @@ Return ONLY the caption text.`;
 
 // ─── 4. Generate Video (Veo 3.1 → Grok fallback) ─────────────────────────────
 
-// ── Ghost Character — consistent face for every Reel ──────────────────────────
-const GHOST_PRESENTER = 'A commanding dark-skinned Black man with a sharp tapered fade and full groomed beard. He has an athletic build and exudes Marine Corps drill instructor authority mixed with genuine warmth. Photorealistic, cinematic lighting, 9:16 vertical format.';
+// ── Ghost Character — cinematic, documentary-style prompts ────────────────────
+const GHOST_PRESENTER = 'A Black man in his late 30s with a tapered fade and trimmed beard. Documentary-style, natural lighting, slight film grain, shot on ARRI Alexa. 9:16 vertical.';
 
 const GHOST_SCENES = [
-    `${GHOST_PRESENTER} He wears a fitted black tactical jacket, standing in a dark luxury studio with holographic AI visualizations floating behind him. He speaks directly to camera with intense energy.`,
-    `${GHOST_PRESENTER} He wears a crisp midnight navy henley, sitting in a sleek modern office with multiple monitors showing code and data dashboards. He leans toward the camera, delivering knowledge.`,
-    `${GHOST_PRESENTER} He wears a premium charcoal bomber jacket, standing on a cyberpunk rooftop at golden hour with Orlando's skyline behind him. He addresses the camera with visionary confidence.`,
-    `${GHOST_PRESENTER} He wears a fitted black crew-neck tee, in a dark high-tech command center with glowing blue UI elements. He briefs the audience like a tactical commander.`,
+    `${GHOST_PRESENTER} He wears a black tee. Dark studio, single key light, a monitor with code behind him. He looks at camera and speaks.`,
+    `${GHOST_PRESENTER} He wears a dark navy henley. Modern office, ambient monitors, warm tungsten light. He leans forward and talks to camera.`,
+    `${GHOST_PRESENTER} He wears a charcoal bomber jacket. City rooftop at dusk, golden backlight, urban skyline soft-focused behind him. He addresses the viewer.`,
+    `${GHOST_PRESENTER} He wears a fitted black crew neck. Dark room, blue monitor glow on his face, minimal set. He delivers a message to camera.`,
+    `${GHOST_PRESENTER} He wears a black jacket over a dark shirt. Walking through a dimly lit hallway, camera tracks with him. Raw, gritty, cinéma vérité feel.`,
 ];
 
 const GHOST_REFERENCE_URL = process.env.GHOST_REFERENCE_IMAGE_URL || '';
@@ -388,24 +398,68 @@ async function postImage(caption, trends) {
     return publishData.id;
 }
 
+// ─── Post Count Guard (2/day max) ────────────────────────────────────────────
+
+const MAX_POSTS_PER_DAY = 2;
+const POST_HISTORY_FILE = path.resolve(__dirname, '..', 'data', 'ai-knowledge-posts.json');
+
+function getTodayPostCount() {
+    try {
+        if (!fs.existsSync(POST_HISTORY_FILE)) return 0;
+        const data = JSON.parse(fs.readFileSync(POST_HISTORY_FILE, 'utf-8'));
+        const today = new Date().toISOString().slice(0, 10);
+        return (data[today] || []).length;
+    } catch { return 0; }
+}
+
+function recordPost(mediaId) {
+    const today = new Date().toISOString().slice(0, 10);
+    let data = {};
+    try {
+        if (fs.existsSync(POST_HISTORY_FILE)) {
+            data = JSON.parse(fs.readFileSync(POST_HISTORY_FILE, 'utf-8'));
+        }
+    } catch { data = {}; }
+    if (!data[today]) data[today] = [];
+    data[today].push({ mediaId, timestamp: new Date().toISOString() });
+    // Keep only last 14 days
+    const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+    for (const key of Object.keys(data)) {
+        if (key < cutoff) delete data[key];
+    }
+    const dir = path.dirname(POST_HISTORY_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(POST_HISTORY_FILE, JSON.stringify(data, null, 2));
+}
+
 // ─── Main Pipeline ────────────────────────────────────────────────────────────
 
 async function main() {
     log('═══════════════════════════════════════════════');
-    log('🤖 AI Knowledge Instagram Poster — Starting');
+    log('👻 Ghost AI Knowledge Poster — Starting');
     log(`   Mode: ${DRY_RUN ? 'DRY RUN' : TEST_POST ? 'TEST POST' : 'LIVE'}`);
     log(`   Video: ${TEXT_ONLY ? 'DISABLED' : 'ENABLED'}`);
     log('═══════════════════════════════════════════════');
 
+    // 2/day post guard
+    if (!DRY_RUN && !TEST_POST) {
+        const todayCount = getTodayPostCount();
+        if (todayCount >= MAX_POSTS_PER_DAY) {
+            log(`⏸️ Already posted ${todayCount}/${MAX_POSTS_PER_DAY} today. Skipping.`);
+            return;
+        }
+        log(`   Posts today: ${todayCount}/${MAX_POSTS_PER_DAY}`);
+    }
+
     try {
-        // 1. Discover trends
+        // 1. Discover trends (web-grounded via Gemini Search)
         const trends = await discoverTrends();
         if (!trends?.stories?.length) {
             log('⚠️ No trends found. Skipping post.');
             return;
         }
 
-        // 2. Generate presenter script (for video)
+        // 2. Generate Ghost presenter script (for video + subtitles)
         const script = TEXT_ONLY ? null : await generatePresenterScript(trends);
 
         // 3. Generate caption
@@ -426,15 +480,29 @@ async function main() {
             videoPath = await generateVideo(script);
         }
 
+        // 4b. Burn subtitles onto video
+        if (videoPath && script) {
+            try {
+                const { burnSubtitles } = await import('../src/subtitle-burner.js');
+                videoPath = await burnSubtitles(videoPath, script);
+            } catch (err) {
+                log(`⚠️ Subtitle burn failed (using raw video): ${err.message}`);
+            }
+        }
+
+        let mediaId = null;
         if (videoPath) {
             // 5. Upload video & post Reel
             const publicUrl = await uploadVideo(videoPath);
-            await postReel(caption, publicUrl);
+            mediaId = await postReel(caption, publicUrl);
         } else {
             // 6. Fallback to image post
             log('⚠️ No video generated — falling back to image post');
-            await postImage(caption, trends);
+            mediaId = await postImage(caption, trends);
         }
+
+        // Record post for 2/day guard
+        if (mediaId) recordPost(mediaId);
 
         log('✅ Pipeline complete!');
     } catch (err) {

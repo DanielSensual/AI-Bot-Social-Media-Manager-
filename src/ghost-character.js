@@ -5,9 +5,8 @@
  * Every Instagram post features this same character to train the
  * algorithm to recognize a single face associated with the brand.
  *
- * Character locked from reference image: dark-skinned Black man,
- * early-to-mid 30s, athletic build, tapered fade, full beard,
- * intense commanding expression.
+ * Character: Black man, late 30s, tapered fade, trimmed beard.
+ * Documentary-style, ARRI Alexa aesthetic, natural lighting.
  */
 
 import fs from 'fs';
@@ -21,71 +20,70 @@ const IMAGE_CACHE_DIR = path.join(__dirname, '..', '.image-cache');
 // CHARACTER IDENTITY — never changes across generations
 // ═══════════════════════════════════════════════════════════════
 export const GHOST_IDENTITY = [
-    'A dark-skinned Black man, early-to-mid 30s, athletic muscular build',
-    'Short tapered fade haircut with natural texture on top',
-    'Close-cropped full beard with sharp jawline',
-    'Intense focused expression with commanding presence, never smiling',
-    'Strong brow, piercing dark brown eyes, confident posture',
+    'A Black man in his late 30s with a tapered fade and trimmed beard',
+    'Natural skin texture, no retouching, no gloss',
+    'Calm intensity in his expression, focused but not forced',
+    'Documentary-style, shot on ARRI Alexa, slight film grain, natural lighting',
 ].join('. ') + '.';
 
 // ═══════════════════════════════════════════════════════════════
 // WARDROBE ROTATION — 6 distinct looks
 // ═══════════════════════════════════════════════════════════════
 const GHOST_WARDROBE = [
-    'Wearing a tailored dark charcoal three-piece suit with a patterned tie and pocket square',
-    'Wearing a black fitted tactical jacket over a dark henley, military-inspired clean look',
-    'Wearing a premium black turtleneck under a dark grey overcoat, executive minimalist',
-    'Wearing a dark navy blazer over a crisp white shirt, no tie, top button undone',
-    'Wearing a matte black bomber jacket over a dark crew-neck tee, gold watch visible',
-    'Wearing an all-black ensemble — black shirt, black pants, sleeves slightly rolled',
+    'Wearing a fitted black tee, clean and minimal',
+    'Wearing a dark navy henley, sleeves pushed up',
+    'Wearing a black crew-neck under a charcoal bomber jacket',
+    'Wearing a dark button-down shirt, top button undone, no tie',
+    'Wearing a fitted black jacket over a dark shirt',
+    'Wearing all black — shirt, pants, watch, subtle and clean',
 ];
 
 // ═══════════════════════════════════════════════════════════════
 // SCENE TEMPLATES — 8 cinematic environments featuring Ghost
 // ═══════════════════════════════════════════════════════════════
 const GHOST_SCENES = [
-    // 0 — Cyberpunk Rooftop
+    // 0 — Dark Studio
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Standing on a rooftop at night overlooking a cyberpunk cityscape with neon signs reflecting off wet surfaces. Futuristic skyscrapers with holographic billboards in the background. Cinematic lighting — deep blues, electric purples, and red neon accents. Shot from a slight low angle, powerful stance. Topic context: "${topic}". Photorealistic, 8K quality, no text in image.`,
+        `${identity} ${wardrobe}. Dark studio, single key light from the left, a monitor with code behind him. He sits at a desk and looks at camera. Topic context: "${topic}". Natural lighting, shallow depth of field, no text in image.`,
 
-    // 1 — Dark Luxury Office
+    // 1 — Modern Office
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Seated in a dark luxury office behind a massive desk. Holographic screens and data visualizations float in the air around him. Floor-to-ceiling windows show a night city view. Ambient lighting from screens casts blue-white glow on his face. The mood is powerful, calculated, AI executive. Topic context: "${topic}". Photorealistic, cinematic color grading, no text.`,
+        `${identity} ${wardrobe}. Modern office, ambient monitors in the background, warm tungsten lighting. He leans forward in his chair, speaking. Topic context: "${topic}". Documentary feel, 35mm lens, no text.`,
 
-    // 2 — Orlando Street Walk
+    // 2 — City Walk
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Walking down a palm-lined Orlando street at golden hour. Warm amber sunlight creates long dramatic shadows. Shot from slightly behind and to the side, candid documentary style. He has AirPods in, looking ahead with purpose. Tropical architecture in the background. Topic context: "${topic}". Natural photography, cinematic depth of field, no text.`,
+        `${identity} ${wardrobe}. Walking down a palm-lined street at golden hour. Warm amber light, long shadows. Shot from slightly behind, candid documentary style. Topic context: "${topic}". Natural photography, no text.`,
 
-    // 3 — Glass Wall Sunset
+    // 3 — Window Light
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Standing at a floor-to-ceiling glass wall in a high-rise, silhouetted against a vivid orange and purple sunset. One hand in pocket, looking out over the city with a reflective expression. The glass reflects the city lights below. Dramatic backlighting, cinematic composition. Topic context: "${topic}". Premium photography, no text.`,
+        `${identity} ${wardrobe}. Standing near a window, natural light on one side of his face. Simple interior, out of focus city view. Contemplative, looking out. Topic context: "${topic}". Portrait, shallow DOF, no text.`,
 
-    // 4 — Late Night Coding
+    // 4 — Late Night Desk
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Seated at a sleek dark desk late at night, face illuminated by the glow of a laptop screen showing code. A cortadito and AirPods case sit nearby. The room is dark except for the screen light and a subtle ambient desk lamp. Moody, focused, shipping at midnight. Topic context: "${topic}". Dramatic single-source lighting, photorealistic, no text.`,
+        `${identity} ${wardrobe}. Seated at a desk late at night, face lit by laptop screen glow. Coffee nearby. Dark room, single-source lighting. Topic context: "${topic}". Moody, cinematic, no text.`,
 
-    // 5 — Stage Speaker
+    // 5 — Stadium/Stage
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Standing on a dark conference stage, a single dramatic spotlight illuminating him from above. Audience silhouettes visible in the foreground. He is mid-speech, one hand gesturing with authority. Large screen behind him glows with abstract AI/tech visuals. The mood is powerful keynote energy. Topic context: "${topic}". Event photography, cinematic lighting, no text.`,
+        `${identity} ${wardrobe}. Standing on a minimal stage, single spotlight from above. Dark background, audience silhouettes. Mid-speech, one hand gesturing. Topic context: "${topic}". Event photography, no text.`,
 
-    // 6 — Night City Car
+    // 6 — Urban Night
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Leaning against a matte black luxury car at night on a city street. Streetlights and neon signs create colorful bokeh in the background. Arms crossed, looking directly at camera with quiet intensity. Wet pavement reflects the lights. The vibe is understated power, not flashy. Topic context: "${topic}". Automotive editorial photography, no text.`,
+        `${identity} ${wardrobe}. On a city street at night, streetlights and soft neon in the background. Arms at his sides, looking at camera. Wet pavement. Topic context: "${topic}". Street photography, no text.`,
 
-    // 7 — Cinematic Portrait
+    // 7 — Hallway Walk
     (identity, wardrobe, topic) =>
-        `${identity} ${wardrobe}. Close-up portrait shot with dramatic Rembrandt side-lighting. Dark moody background with subtle smoke or haze. Half his face is lit, half in shadow. Looking slightly off-camera. Golden rim light catches the edge of his jaw and ear. Intense, magnetic, unforgettable. Topic context: "${topic}". Studio portrait, 85mm lens feel, shallow depth of field, no text.`,
+        `${identity} ${wardrobe}. Walking through a dimly lit concrete hallway, camera tracking alongside him. Raw, gritty, cinéma vérité feel. Topic context: "${topic}". Handheld camera, no text.`,
 ];
 
 // ═══════════════════════════════════════════════════════════════
 // PILLAR MOOD MODIFIERS — emotion layer on top of scene
 // ═══════════════════════════════════════════════════════════════
 const GHOST_PILLAR_MOODS = {
-    drill: 'Marine Corps drill instructor intensity, commanding authority, zero tolerance for excuses',
-    weapons: 'Tactical precision, showing the arsenal, strategic dominance, operational superiority',
-    grit: 'Battle-tested resilience, forged in fire, earned scars, unstoppable force',
-    funnel: 'Visionary recruitment energy, building an army of builders, mission-driven purpose',
-    systems: 'Engineer precision, systems architect mentality, quiet operational power',
+    drill: 'Determined focus, commanding but grounded, speaking with earned authority',
+    weapons: 'Strategic calm, showing capability, operational clarity',
+    grit: 'Weathered resolve, hard-won experience, quiet toughness',
+    funnel: 'Purposeful energy, building something, recruiting with conviction',
+    systems: 'Thoughtful precision, engineering mindset, methodical confidence',
 };
 
 /**
