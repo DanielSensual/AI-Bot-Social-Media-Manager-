@@ -16,10 +16,15 @@ const CACHE_DIR = path.join(__dirname, '..', '.video-cache');
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-generate-preview';
 const VEO_API_KEY = process.env.VEO_API_KEY || process.env.GEMINI_API_KEY || '';
+const VEO_BREAKER_STATE_PATH = path.join(CACHE_DIR, 'veo-breaker.json');
+const VEO_BREAKER_COOLDOWN_MS = Number.parseInt(String(process.env.VEO_BREAKER_COOLDOWN_MS || ''), 10) || 6 * 60 * 60 * 1000;
 
 const XAI_BASE_URL = 'https://api.x.ai/v1';
 const XAI_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
 const GROK_VIDEO_MODEL = process.env.GROK_VIDEO_MODEL || 'grok-imagine-video';
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_VIDEO_MODEL = process.env.OPENAI_VIDEO_MODEL || 'sora';
 
 if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
@@ -27,6 +32,79 @@ if (!fs.existsSync(CACHE_DIR)) {
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readBreakerState(filepath) {
+    try {
+        if (!fs.existsSync(filepath)) return 0;
+        const raw = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+        const trippedAt = Number.parseInt(String(raw?.trippedAt || ''), 10);
+        return Number.isFinite(trippedAt) ? trippedAt : 0;
+    } catch {
+        return 0;
+    }
+}
+
+function writeBreakerState(filepath, trippedAt, cooldownMs) {
+    try {
+        if (!trippedAt) {
+            if (fs.existsSync(filepath)) {
+                fs.unlinkSync(filepath);
+            }
+            return;
+        }
+
+        fs.writeFileSync(filepath, JSON.stringify({
+            trippedAt,
+            resetAt: new Date(trippedAt + cooldownMs).toISOString(),
+        }, null, 2));
+    } catch (error) {
+        console.warn(`⚠️ Failed to persist breaker state (${path.basename(filepath)}): ${error.message}`);
+    }
+}
+
+let veoBreakerTrippedAt = readBreakerState(VEO_BREAKER_STATE_PATH);
+
+function isVeoBreakerOpen() {
+    if (!veoBreakerTrippedAt) return false;
+
+    const elapsed = Date.now() - veoBreakerTrippedAt;
+    if (elapsed > VEO_BREAKER_COOLDOWN_MS) {
+        veoBreakerTrippedAt = 0;
+        writeBreakerState(VEO_BREAKER_STATE_PATH, 0, VEO_BREAKER_COOLDOWN_MS);
+        console.log('🔌 Veo breaker reset — retrying allowed');
+        return false;
+    }
+
+    return true;
+}
+
+function getVeoBreakerStatus() {
+    if (!isVeoBreakerOpen()) return { open: false };
+    const remainingMs = VEO_BREAKER_COOLDOWN_MS - (Date.now() - veoBreakerTrippedAt);
+    return {
+        open: true,
+        remainingMs,
+        resetAt: new Date(veoBreakerTrippedAt + VEO_BREAKER_COOLDOWN_MS).toISOString(),
+    };
+}
+
+function tripVeoBreaker(reason) {
+    veoBreakerTrippedAt = Date.now();
+    writeBreakerState(VEO_BREAKER_STATE_PATH, veoBreakerTrippedAt, VEO_BREAKER_COOLDOWN_MS);
+    const resetTime = new Date(veoBreakerTrippedAt + VEO_BREAKER_COOLDOWN_MS).toLocaleTimeString();
+    console.error(`⚡ Veo breaker TRIPPED — provider blocked until ${resetTime}`);
+    if (reason) {
+        console.error(`   Reason: ${reason}`);
+    }
+}
+
+function isVeoQuotaError(error) {
+    const message = String(error?.message || '');
+    return /\b429\b/.test(message)
+        || /rate limit/i.test(message)
+        || /quota/i.test(message)
+        || /RESOURCE_EXHAUSTED/i.test(message);
 }
 
 function getMimeType(filepath) {
@@ -78,7 +156,8 @@ function getProviderOrder(requestedProvider = 'auto') {
     const mode = String(requestedProvider || process.env.VIDEO_PROVIDER || 'auto').toLowerCase();
     if (mode === 'veo') return ['veo'];
     if (mode === 'grok') return ['grok'];
-    return ['veo', 'grok'];
+    if (mode === 'openai') return ['openai'];
+    return ['veo', 'grok', 'openai'];
 }
 
 async function downloadVideoToCache(videoUrl, generationId) {
@@ -234,6 +313,11 @@ async function generateWithVeo(prompt, options = {}, imagePath = null) {
         throw new Error('VEO_API_KEY or GEMINI_API_KEY not configured in .env');
     }
 
+    if (isVeoBreakerOpen()) {
+        const status = getVeoBreakerStatus();
+        throw new Error(`Veo breaker is OPEN — quota failures recently detected. Retry after ${status.resetAt}`);
+    }
+
     const {
         maxRetries = 2,
         retryDelay = 8000,
@@ -270,6 +354,11 @@ async function generateWithVeo(prompt, options = {}, imagePath = null) {
             lastError = error;
             console.error(`❌ Attempt ${attempt} failed: ${error.message}`);
 
+            if (isVeoQuotaError(error)) {
+                tripVeoBreaker(error.message);
+                break;
+            }
+
             if (attempt < maxRetries) {
                 console.log(`   Retrying in ${Math.round(retryDelay / 1000)}s...`);
                 await sleep(retryDelay);
@@ -296,18 +385,32 @@ async function startGrokGeneration({ prompt, imagePath = null, videoUrl = null, 
 
     const duration = Number.parseInt(String(options.duration ?? process.env.GROK_VIDEO_DURATION ?? ''), 10);
     if (!Number.isNaN(duration) && duration > 0) {
-        body.duration = duration;
+        body.duration = Math.min(Math.max(duration, 1), 15);
     }
 
+    // Resolution & size controls (new API) — default 720p to avoid IG algorithm penalty
+    body.resolution = options.resolution || process.env.GROK_VIDEO_RESOLUTION || '720p';
+    if (options.size) {
+        body.size = options.size; // '848x480' | '1696x960' | '1280x720' | '1920x1080'
+    }
+
+    // Image input — new API expects { url: "..." } object format
     if (imagePath) {
         const resolvedImagePath = normalizeImagePath(imagePath);
-        body.image = `data:${getMimeType(resolvedImagePath)};base64,${toBase64(resolvedImagePath)}`;
+        const base64Data = `data:${getMimeType(resolvedImagePath)};base64,${toBase64(resolvedImagePath)}`;
+        body.image = { url: base64Data };
     } else if (options.imageUrl) {
-        body.image_url = options.imageUrl;
+        body.image = { url: options.imageUrl };
+    }
+
+    // Reference images (R2V) — Ghost character face consistency
+    if (options.referenceImages?.length) {
+        body.reference_images = options.referenceImages.map(url => ({ url }));
+        console.log(`   👻 Reference images: ${options.referenceImages.length} attached for character consistency`);
     }
 
     if (videoUrl) {
-        body.video_url = videoUrl;
+        body.video = { url: videoUrl };
     }
 
     const response = await fetch(`${XAI_BASE_URL}/videos/generations`, {
@@ -330,6 +433,77 @@ async function startGrokGeneration({ prompt, imagePath = null, videoUrl = null, 
     }
 
     return generationId;
+}
+
+/**
+ * Start a Grok video EDIT (dedicated /v1/videos/edits endpoint)
+ */
+async function startGrokEdit({ prompt, videoUrl, options = {} }) {
+    if (!XAI_API_KEY) {
+        throw new Error('XAI_API_KEY / GROK_API_KEY is not configured');
+    }
+    if (!videoUrl) {
+        throw new Error('videoUrl is required for video edit');
+    }
+
+    const body = {
+        model: String(options.grokModel || GROK_VIDEO_MODEL),
+        prompt: normalizePrompt(prompt),
+        video: { url: videoUrl },
+    };
+
+    const response = await fetch(`${XAI_BASE_URL}/videos/edits`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${XAI_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(buildError('Grok video edit request failed', response.status, data));
+    }
+
+    return data?.request_id || data?.id;
+}
+
+/**
+ * Start a Grok video EXTENSION (dedicated /v1/videos/extensions endpoint)
+ */
+async function startGrokExtension({ prompt, videoUrl, options = {} }) {
+    if (!XAI_API_KEY) {
+        throw new Error('XAI_API_KEY / GROK_API_KEY is not configured');
+    }
+    if (!videoUrl) {
+        throw new Error('videoUrl is required for video extension');
+    }
+
+    const extensionDuration = Number.parseInt(String(options.extensionDuration ?? 6), 10);
+
+    const body = {
+        model: String(options.grokModel || GROK_VIDEO_MODEL),
+        prompt: normalizePrompt(prompt),
+        video: { url: videoUrl },
+        duration: Math.min(Math.max(extensionDuration, 1), 10),
+    };
+
+    const response = await fetch(`${XAI_BASE_URL}/videos/extensions`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${XAI_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(buildError('Grok video extension request failed', response.status, data));
+    }
+
+    return data?.request_id || data?.id;
 }
 
 async function fetchGrokGeneration(generationId) {
@@ -360,19 +534,50 @@ async function pollGrokVideoUrl(generationId, maxWaitMs = 6 * 60 * 1000, pollInt
         const data = await fetchGrokGeneration(generationId);
         const elapsed = Math.round((Date.now() - startTime) / 1000);
         const status = data?.status || 'processing';
+        const progress = data?.progress ?? 0;
 
-        const videoUrl = extractGrokVideoUrl(data);
-        if (videoUrl) {
-            process.stdout.write(`\r   Status: completed ${'.'.repeat(4)} (${elapsed}s)\n`);
+        // Done — extract video URL
+        if (status === 'done') {
+            const videoUrl = extractGrokVideoUrl(data);
+
+            // Check moderation
+            if (data?.video?.respect_moderation === false) {
+                throw new Error('Grok generation completed but video was blocked by moderation');
+            }
+
+            if (!videoUrl) {
+                throw new Error('Grok generation completed but no video URL returned');
+            }
+
+            process.stdout.write(`\r   Status: completed [100%] (${elapsed}s)\n`);
+
+            // Log duration and cost if available
+            if (data?.video?.duration) {
+                console.log(`   ⏱️  Duration: ${data.video.duration}s`);
+            }
+            if (data?.usage?.cost_in_usd_ticks) {
+                const costUsd = data.usage.cost_in_usd_ticks / 10_000_000_000;
+                console.log(`   💰 Cost: $${costUsd.toFixed(4)}`);
+            }
+
             return videoUrl;
         }
 
+        // Legacy: check for URL in non-'done' status (backwards compat)
+        const videoUrl = extractGrokVideoUrl(data);
+        if (videoUrl) {
+            process.stdout.write(`\r   Status: completed [100%] (${elapsed}s)\n`);
+            return videoUrl;
+        }
+
+        // Failed — extract structured error
         if (status === 'failed' || status === 'error') {
-            throw new Error(`Grok generation failed: ${data?.error || 'Unknown error'}`);
+            const errorMsg = data?.error?.message || data?.error?.code || data?.error || 'Unknown error';
+            throw new Error(`Grok generation failed: ${errorMsg}`);
         }
 
         dots = (dots + 1) % 4;
-        process.stdout.write(`\r   Status: ${status} ${'.'.repeat(dots + 1).padEnd(4)} (${elapsed}s)`);
+        process.stdout.write(`\r   Status: ${status} [${progress}%] ${'.'.repeat(dots + 1).padEnd(4)} (${elapsed}s)`);
         await sleep(pollIntervalMs);
     }
 
@@ -437,6 +642,133 @@ async function generateWithGrok(prompt, options = {}, inputPath = null) {
     throw new Error(`Video generation failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
+async function generateWithOpenAI(prompt, options = {}, imagePath = null) {
+    if (!OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY not configured in .env');
+    }
+
+    const {
+        maxRetries = 2,
+        retryDelay = 8000,
+        maxWaitMs = Number.parseInt(String(process.env.OPENAI_VIDEO_MAX_WAIT_MS || ''), 10) || 10 * 60 * 1000,
+        pollIntervalMs = Number.parseInt(String(process.env.OPENAI_VIDEO_POLL_INTERVAL_MS || ''), 10) || 5000,
+    } = options;
+
+    const model = String(options.openaiVideoModel || OPENAI_VIDEO_MODEL).trim();
+
+    console.log(`🎬 Generating video${imagePath ? ' from image' : ''} with OpenAI (${model})...`);
+    console.log(`   Prompt: "${String(prompt || '').substring(0, 70)}..."`);
+    console.log(`   Model: ${model}`);
+
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`\n⏳ Starting generation (attempt ${attempt}/${maxRetries})...`);
+
+            const body = {
+                model,
+                input: normalizePrompt(prompt),
+            };
+
+            if (options.aspectRatio) {
+                body.aspect_ratio = options.aspectRatio;
+            }
+
+            const duration = Number.parseInt(String(options.duration ?? ''), 10);
+            if (!Number.isNaN(duration) && duration > 0) {
+                body.duration = duration;
+            }
+
+            if (imagePath) {
+                const resolvedImagePath = normalizeImagePath(imagePath);
+                body.image = {
+                    type: 'base64',
+                    media_type: getMimeType(resolvedImagePath),
+                    data: toBase64(resolvedImagePath),
+                };
+            }
+
+            // Start generation
+            const startResponse = await fetch('https://api.openai.com/v1/videos/generations', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body),
+            });
+
+            const startData = await startResponse.json().catch(() => ({}));
+            if (!startResponse.ok) {
+                throw new Error(buildError('OpenAI video request failed', startResponse.status, startData));
+            }
+
+            const generationId = startData?.id;
+            if (!generationId) {
+                throw new Error('OpenAI API did not return a generation ID');
+            }
+
+            console.log(`   Generation ID: ${generationId}`);
+
+            // Poll for completion
+            const startTime = Date.now();
+            let dots = 0;
+
+            while (Date.now() - startTime < maxWaitMs) {
+                const pollResponse = await fetch(`https://api.openai.com/v1/videos/generations/${encodeURIComponent(generationId)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                    },
+                });
+
+                const pollData = await pollResponse.json().catch(() => ({}));
+                if (!pollResponse.ok) {
+                    throw new Error(buildError('OpenAI generation poll failed', pollResponse.status, pollData));
+                }
+
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                const status = pollData?.status || 'processing';
+
+                if (status === 'completed' || status === 'succeeded') {
+                    const videoUrl = pollData?.output?.url || pollData?.video?.url || pollData?.result?.url;
+                    if (!videoUrl) {
+                        throw new Error('OpenAI generation completed but no video URL returned');
+                    }
+
+                    process.stdout.write(`\r   Status: completed ${'.'.repeat(4)} (${elapsed}s)\n`);
+                    const videoPath = await downloadVideoToCache(videoUrl, generationId);
+
+                    console.log('\n✅ Video generated successfully!');
+                    console.log(`   Path: ${videoPath}`);
+                    return videoPath;
+                }
+
+                if (status === 'failed' || status === 'error') {
+                    throw new Error(`OpenAI generation failed: ${pollData?.error?.message || pollData?.error || 'Unknown error'}`);
+                }
+
+                dots = (dots + 1) % 4;
+                process.stdout.write(`\r   Status: ${status} ${'.'.repeat(dots + 1).padEnd(4)} (${elapsed}s)`);
+                await sleep(pollIntervalMs);
+            }
+
+            throw new Error('OpenAI generation timed out');
+        } catch (error) {
+            lastError = error;
+            console.error(`❌ Attempt ${attempt} failed: ${error.message}`);
+
+            if (attempt < maxRetries) {
+                console.log(`   Retrying in ${Math.round(retryDelay / 1000)}s...`);
+                await sleep(retryDelay);
+            }
+        }
+    }
+
+    throw new Error(`OpenAI video generation failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+}
+
 /**
  * Generate a video from a text prompt.
  * @param {string} prompt
@@ -453,6 +785,7 @@ export async function generateVideo(prompt, options = {}) {
         try {
             if (provider === 'veo') return await generateWithVeo(prompt, options);
             if (provider === 'grok') return await generateWithGrok(prompt, options);
+            if (provider === 'openai') return await generateWithOpenAI(prompt, options);
         } catch (error) {
             lastError = error;
         }
@@ -479,6 +812,7 @@ export async function generateVideoFromImage(imagePath, prompt, options = {}) {
         try {
             if (provider === 'veo') return await generateWithVeo(prompt, options, imagePath);
             if (provider === 'grok') return await generateWithGrok(prompt, options, imagePath);
+            if (provider === 'openai') return await generateWithOpenAI(prompt, options, imagePath);
         } catch (error) {
             lastError = error;
         }
@@ -489,29 +823,112 @@ export async function generateVideoFromImage(imagePath, prompt, options = {}) {
 
 /**
  * Transform an existing video (Edit) using a prompt.
- * @param {string} videoSource - Public URL or local path (if provider supports it)
- * @param {string} prompt
+ * Uses the dedicated /v1/videos/edits endpoint for Grok.
+ * @param {string} videoSource - Public URL of the video to edit
+ * @param {string} prompt - Edit instructions
  * @param {object} options
- * @returns {Promise<string>}
+ * @returns {Promise<string>} Path to edited video
  */
 export async function transformVideo(videoSource, prompt, options = {}) {
     normalizePrompt(prompt);
 
-    // For Grok, if it's a local file, we would need to upload it first.
-    // For now, we assume bridge uploads are handled by the caller or we expect a URL.
+    if (!XAI_API_KEY) {
+        throw new Error('XAI_API_KEY / GROK_API_KEY not configured for video editing');
+    }
 
-    const providers = getProviderOrder(options.provider || 'grok');
+    const {
+        maxRetries = 2,
+        retryDelay = 5000,
+        maxWaitMs = Number.parseInt(String(process.env.GROK_VIDEO_MAX_WAIT_MS || ''), 10) || 6 * 60 * 1000,
+        pollIntervalMs = Number.parseInt(String(process.env.GROK_VIDEO_POLL_INTERVAL_MS || ''), 10) || 3000,
+    } = options;
+
+    console.log(`🎬 Editing video with Grok (dedicated /edits endpoint)...`);
+    console.log(`   Prompt: "${String(prompt || '').substring(0, 70)}..."`);
+    console.log(`   Source: ${videoSource}`);
+
     let lastError = null;
 
-    for (const provider of providers) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            if (provider === 'grok') return await generateWithGrok(prompt, options, videoSource);
+            console.log(`\n⏳ Starting edit (attempt ${attempt}/${maxRetries})...`);
+            const generationId = await startGrokEdit({ prompt, videoUrl: videoSource, options });
+            console.log(`   Generation ID: ${generationId}`);
+
+            const videoUrl = await pollGrokVideoUrl(generationId, maxWaitMs, pollIntervalMs);
+            const videoPath = await downloadVideoToCache(videoUrl, generationId);
+
+            console.log('\n✅ Video edited successfully!');
+            console.log(`   Path: ${videoPath}`);
+            return videoPath;
         } catch (error) {
             lastError = error;
+            console.error(`❌ Attempt ${attempt} failed: ${error.message}`);
+            if (attempt < maxRetries) {
+                console.log(`   Retrying in ${Math.round(retryDelay / 1000)}s...`);
+                await sleep(retryDelay);
+            }
         }
     }
 
-    throw new Error(`Transformation failed: ${lastError?.message || 'No suitable provider'}`);
+    throw new Error(`Video edit failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+}
+
+/**
+ * Extend a video by generating continuation content.
+ * Uses the /v1/videos/extensions endpoint.
+ * Useful for chaining clips to create longer Reels (8s base → extend multiple times).
+ * @param {string} videoSource - Public URL of the video to extend
+ * @param {string} prompt - What should happen next in the video
+ * @param {object} options
+ * @param {number} [options.extensionDuration=6] - Duration of extension (1-10s)
+ * @returns {Promise<string>} Path to extended video
+ */
+export async function extendVideo(videoSource, prompt, options = {}) {
+    normalizePrompt(prompt);
+
+    if (!XAI_API_KEY) {
+        throw new Error('XAI_API_KEY / GROK_API_KEY not configured for video extension');
+    }
+
+    const {
+        maxRetries = 2,
+        retryDelay = 5000,
+        maxWaitMs = Number.parseInt(String(process.env.GROK_VIDEO_MAX_WAIT_MS || ''), 10) || 6 * 60 * 1000,
+        pollIntervalMs = Number.parseInt(String(process.env.GROK_VIDEO_POLL_INTERVAL_MS || ''), 10) || 3000,
+    } = options;
+
+    const extDuration = options.extensionDuration ?? 6;
+
+    console.log(`🎬 Extending video with Grok (+${extDuration}s)...`);
+    console.log(`   Prompt: "${String(prompt || '').substring(0, 70)}..."`);
+    console.log(`   Source: ${videoSource}`);
+
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`\n⏳ Starting extension (attempt ${attempt}/${maxRetries})...`);
+            const generationId = await startGrokExtension({ prompt, videoUrl: videoSource, options });
+            console.log(`   Generation ID: ${generationId}`);
+
+            const videoUrl = await pollGrokVideoUrl(generationId, maxWaitMs, pollIntervalMs);
+            const videoPath = await downloadVideoToCache(videoUrl, generationId);
+
+            console.log('\n✅ Video extended successfully!');
+            console.log(`   Path: ${videoPath}`);
+            return videoPath;
+        } catch (error) {
+            lastError = error;
+            console.error(`❌ Attempt ${attempt} failed: ${error.message}`);
+            if (attempt < maxRetries) {
+                console.log(`   Retrying in ${Math.round(retryDelay / 1000)}s...`);
+                await sleep(retryDelay);
+            }
+        }
+    }
+
+    throw new Error(`Video extension failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
 /**
@@ -539,4 +956,3 @@ export function cleanupCache() {
         console.log(`🧹 Cleaned up ${cleaned} old cached videos`);
     }
 }
-

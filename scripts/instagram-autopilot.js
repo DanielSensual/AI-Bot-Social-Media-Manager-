@@ -257,6 +257,7 @@ async function generateAiReelFile(caption, provider) {
         provider,
         aspectRatio: '9:16',
         duration: 8,
+        resolution: '720p',
     });
 }
 
@@ -347,8 +348,9 @@ async function runStoryCycle(context, slotKey) {
     }
 
     cleanupImageCache();
+    const characterMode = config.characterMode || 'ghost';
     const imagePath = await generateImage(caption, {
-        style: 'cinematic',
+        style: characterMode,
         size: '1024x1536',
     });
     const publicUrl = await uploadToTempHost(imagePath);
@@ -493,6 +495,7 @@ async function main() {
         aiReelsPerDay: toInt(process.env.INSTAGRAM_AUTOPILOT_AI_REELS_PER_DAY, 1, 0, 4),
         aiStoriesPerDay: toInt(process.env.INSTAGRAM_AUTOPILOT_AI_STORIES_PER_DAY, 2, 0, 6),
         aiVideoProvider: String(process.env.INSTAGRAM_AUTOPILOT_AI_VIDEO_PROVIDER || 'auto').toLowerCase(),
+        characterMode: String(process.env.INSTAGRAM_AUTOPILOT_CHARACTER_MODE || 'ghost').toLowerCase(),
     };
 
     if (!['auto', 'veo', 'grok', 'sora'].includes(config.aiVideoProvider)) {

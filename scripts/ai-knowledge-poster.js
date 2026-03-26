@@ -199,31 +199,44 @@ Return ONLY the caption text.`;
 
 // ─── 4. Generate Video (Veo 3.1 → Grok fallback) ─────────────────────────────
 
-const PRESENTER_STYLES = [
-    'A stunning professional female AI news anchor with sleek dark hair and luminous skin, sitting in a futuristic glass studio with holographic displays behind her. She looks directly at the camera with warm confidence, speaking naturally.',
-    'A beautiful young woman with flowing auburn hair in a premium modern broadcast studio with cyan and purple neon accents. She speaks energetically to the camera, gesturing with one hand. Photorealistic, cinematic lighting.',
-    'An elegant female tech journalist with caramel skin and bright eyes, standing in a minimalist white studio with floating UI elements behind her. She delivers the news with charisma and a subtle smile.',
-    'A gorgeous female presenter with platinum blonde hair in a dark, sleek newsroom with glowing AI visualizations on screens behind her. She speaks passionately about technology. Ultra-realistic, 4K quality.',
-    'A radiant Latina woman with dark curly hair, wearing a fitted blazer in a high-tech studio with neural network animations projected behind her. She looks at camera and speaks with infectious enthusiasm.',
+// ── Ghost Character — consistent face for every Reel ──────────────────────────
+const GHOST_PRESENTER = 'A commanding dark-skinned Black man with a sharp tapered fade and full groomed beard. He has an athletic build and exudes Marine Corps drill instructor authority mixed with genuine warmth. Photorealistic, cinematic lighting, 9:16 vertical format.';
+
+const GHOST_SCENES = [
+    `${GHOST_PRESENTER} He wears a fitted black tactical jacket, standing in a dark luxury studio with holographic AI visualizations floating behind him. He speaks directly to camera with intense energy.`,
+    `${GHOST_PRESENTER} He wears a crisp midnight navy henley, sitting in a sleek modern office with multiple monitors showing code and data dashboards. He leans toward the camera, delivering knowledge.`,
+    `${GHOST_PRESENTER} He wears a premium charcoal bomber jacket, standing on a cyberpunk rooftop at golden hour with Orlando's skyline behind him. He addresses the camera with visionary confidence.`,
+    `${GHOST_PRESENTER} He wears a fitted black crew-neck tee, in a dark high-tech command center with glowing blue UI elements. He briefs the audience like a tactical commander.`,
 ];
 
+const GHOST_REFERENCE_URL = process.env.GHOST_REFERENCE_IMAGE_URL || '';
+
 async function generateVideo(script) {
-    log('🎬 Generating video...');
+    log('🎬 Generating Ghost video...');
 
-    const style = PRESENTER_STYLES[Math.floor(Math.random() * PRESENTER_STYLES.length)];
+    const scene = GHOST_SCENES[Math.floor(Math.random() * GHOST_SCENES.length)];
 
-    const videoPrompt = `${style} She says: "${script}" Vertical 9:16 format, cinematic camera, shallow depth of field, warm studio lighting with subtle lens flare. The presenter is the clear focus, centered in frame.`;
+    const videoPrompt = `${scene} He says: "${script}" Cinematic camera, shallow depth of field, warm studio lighting with subtle lens flare. Ghost is the clear focus, centered in frame.`;
 
-    log(`   Prompt style: "${style.substring(0, 60)}..."`);
+    log(`   Scene: "${scene.substring(0, 60)}..."`);
 
     // Import video generator dynamically
     const { generateVideo: genVideo } = await import('../src/video-generator.js');
 
+    const videoOptions = {
+        aspectRatio: '9:16',
+        resolution: '720p',
+        provider: 'auto', // Veo 3.1 → Grok
+    };
+
+    // Reference image for face consistency (R2V)
+    if (GHOST_REFERENCE_URL) {
+        videoOptions.referenceImages = [GHOST_REFERENCE_URL];
+        log(`   👻 Ghost reference image attached for face consistency`);
+    }
+
     try {
-        const videoPath = await genVideo(videoPrompt, {
-            aspectRatio: '9:16',
-            provider: 'auto', // Veo 3.1 → Grok
-        });
+        const videoPath = await genVideo(videoPrompt, videoOptions);
 
         log(`✅ Video generated: ${videoPath}`);
         return videoPath;
