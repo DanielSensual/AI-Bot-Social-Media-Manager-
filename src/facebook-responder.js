@@ -7,8 +7,9 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { hasLLMProvider, generateText } from './llm-client.js';
+import { hasLLMProvider, generateText, generateTextWithMemory } from './llm-client.js';
 import { getResponderProfile } from './facebook-responder-profiles.js';
+import { remember, recall, buildMemoryContext, extractFacts, isMemoryEnabled } from './memory.js';
 
 dotenv.config({ quiet: true });
 
@@ -308,8 +309,9 @@ export function evaluateConversationForReply({ conversation, pageId, respondedSe
 
 /**
  * Generate AI response using configured provider and selected profile.
+ * When memory is enabled, injects conversation history and semantic context.
  */
-export async function generateAIResponse({ senderName, messages, profile, language }, dependencies = {}) {
+export async function generateAIResponse({ senderName, senderId, conversationId, messages, profile, language, memoryContext }, dependencies = {}) {
     const hasLLMProviderFn = dependencies.hasLLMProviderFn || hasLLMProvider;
     const generateTextFn = dependencies.generateTextFn || generateText;
 
@@ -325,15 +327,13 @@ export async function generateAIResponse({ senderName, messages, profile, langua
         ? 'Write the full reply in Spanish with natural conversational tone.'
         : 'Write the full reply in English with natural conversational tone.';
     const guardrails = profile.guardrails.map((rule, index) => `${index + 1}. ${rule}`).join('\n');
-    const prompt = `You are responding to a Facebook Messenger conversation for ${profile.pageDisplayName}.
+
+    const systemPrompt = `You are responding to a Facebook Messenger conversation for ${profile.pageDisplayName}.
 You are assisting ${profile.ownerName}, who represents ${profile.businessSummary}.
 
 The sender is: ${senderName}
 Preferred reply language: ${language === 'es' ? 'Spanish' : 'English'}
 ${languageInstruction}
-
-Recent conversation:
-${conversationContext}
 
 Tone: ${profile.tone}
 Length: ${profile.replyLengthGuidance}
@@ -342,9 +342,32 @@ Language policy: ${profile.languagePolicy}
 Rules:
 ${guardrails}
 Do not mention being an AI.
-Do not use markdown lists or signatures.
+Do not use markdown lists or signatures.${memoryContext ? '\n\nYou have memory of prior conversations with this person. Use it to personalize your response naturally — never mention that you "remember" or have "memory".' : ''}`;
 
-Response:`;
+    // If memory is enabled and we have context, use memory-augmented generation
+    if (memoryContext && isMemoryEnabled()) {
+        try {
+            const memoryHistory = recall('facebook-responder', conversationId, 10);
+            const latestMessage = normalizeText(messages?.[0]?.message || '');
+
+            const { text } = await generateTextWithMemory({
+                systemPrompt,
+                memoryContext,
+                messages: memoryHistory,
+                userMessage: latestMessage || conversationContext,
+                maxOutputTokens: 500,
+                openaiModel: 'gpt-5.4-mini',
+            });
+
+            console.log(`   🧠 Memory-augmented response (${memoryHistory.length} prior messages)`);
+            return normalizeText(text) || fallbackReply;
+        } catch (err) {
+            console.warn(`   ⚠️ Memory-augmented generation failed, falling back: ${err.message}`);
+        }
+    }
+
+    // Standard generation (no memory)
+    const prompt = `${systemPrompt}\n\nRecent conversation:\n${conversationContext}\n\nResponse:`;
 
     const { text } = await generateTextFn({
         prompt,
@@ -555,16 +578,42 @@ export async function respondToFacebookMessages(options = {}, dependencies = {})
         console.log(`   Classification: ${decision.classification} (${decision.reason})`);
         console.log(`   Language: ${language.toUpperCase()}`);
 
+        // Build memory context if enabled
+        let memoryContext = '';
+        if (isMemoryEnabled()) {
+            try {
+                memoryContext = await buildMemoryContext(
+                    'facebook-responder', conv.id, sender.id, lastMessageText
+                );
+                if (memoryContext) console.log('   🧠 Memory context loaded');
+            } catch (err) {
+                console.warn(`   ⚠️ Memory context failed: ${err.message}`);
+            }
+        }
+
         console.log('   🧠 Generating AI response...');
         const aiResponse = await generateAIResponse({
             senderName: sender.name,
+            senderId: sender.id,
+            conversationId: conv.id,
             messages,
             profile,
             language,
+            memoryContext,
         }, dependencies);
         const fullResponse = aiResponse + (profile.disclaimer || '');
 
         console.log(`   Response: "${aiResponse.substring(0, 60)}..."`);
+
+        // Store conversation in memory
+        if (isMemoryEnabled()) {
+            remember('facebook-responder', conv.id, 'user', lastMessageText, {
+                senderName: sender.name, senderId: sender.id, pageId, platform: 'facebook',
+            });
+            remember('facebook-responder', conv.id, 'assistant', aiResponse);
+            // Extract facts asynchronously (non-blocking)
+            extractFacts('facebook-responder', sender.id, lastMessageText).catch(() => {});
+        }
 
         if (dryRun) {
             console.log('   🔒 DRY RUN - Not sending');
@@ -572,6 +621,7 @@ export async function respondToFacebookMessages(options = {}, dependencies = {})
                 ...baseLogEntry,
                 action: 'dry_run',
                 reason: 'inquiry_ready_for_reply',
+                memoryEnabled: isMemoryEnabled(),
             }, { baseDir, pageName, timestamp });
         } else {
             try {
@@ -583,6 +633,7 @@ export async function respondToFacebookMessages(options = {}, dependencies = {})
                     ...baseLogEntry,
                     action: 'sent',
                     reason: 'auto_reply_sent',
+                    memoryEnabled: isMemoryEnabled(),
                 }, { baseDir, pageName, timestamp });
             } catch (error) {
                 console.error(`   ❌ Failed to send: ${error.message}`);

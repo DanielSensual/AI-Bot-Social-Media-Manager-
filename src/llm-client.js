@@ -199,4 +199,73 @@ export async function generateText(options) {
     throw new Error(`No AI provider succeeded: ${lastError?.message || 'Unknown error'}`);
 }
 
-export default { hasLLMProvider, generateText };
+/**
+ * Generate text with a pre-built messages array (for memory-augmented calls).
+ * Injects memory context into the system prompt and passes conversation history.
+ * Falls back to OpenAI only (messages[] format not universal).
+ * 
+ * @param {object} options
+ * @param {string} options.systemPrompt - base system prompt
+ * @param {string} options.memoryContext - memory block to inject
+ * @param {{ role: string, content: string }[]} options.messages - conversation history
+ * @param {string} options.userMessage - the latest user message
+ * @param {number} [options.maxOutputTokens=800]
+ * @returns {{ text: string, provider: string, model: string }}
+ */
+export async function generateTextWithMemory(options) {
+    const {
+        systemPrompt = '',
+        memoryContext = '',
+        messages = [],
+        userMessage = '',
+        maxOutputTokens = 800,
+        openaiModel = DEFAULT_OPENAI_MODEL,
+    } = options || {};
+
+    if (!openaiClient) {
+        throw new Error('OPENAI_API_KEY is required for memory-augmented calls');
+    }
+
+    // Build the full messages array
+    const fullMessages = [];
+
+    // System prompt with memory context injected
+    const enrichedSystem = memoryContext
+        ? `${systemPrompt}\n\n${memoryContext}`
+        : systemPrompt;
+    if (enrichedSystem) {
+        fullMessages.push({ role: 'system', content: enrichedSystem });
+    }
+
+    // Prior conversation history from memory
+    for (const msg of messages) {
+        fullMessages.push({ role: msg.role, content: msg.content });
+    }
+
+    // Latest user message
+    if (userMessage) {
+        fullMessages.push({ role: 'user', content: userMessage });
+    }
+
+    const completion = await openaiClient.chat.completions.create({
+        model: openaiModel,
+        messages: fullMessages,
+        max_completion_tokens: maxOutputTokens,
+    });
+
+    const text = completion.choices?.[0]?.message?.content?.trim();
+    if (!text) {
+        throw new Error('OpenAI returned empty content (memory-augmented)');
+    }
+
+    return {
+        text,
+        provider: 'openai',
+        model: openaiModel,
+        memoryInjected: memoryContext.length > 0,
+        historyMessages: messages.length,
+    };
+}
+
+export default { hasLLMProvider, generateText, generateTextWithMemory };
+
