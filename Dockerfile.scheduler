@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Copy local workspace packages FIRST (needed for file: deps)
+COPY packages/ ./packages/
+
 # Install production dependencies
 # --legacy-peer-deps handles workspace deps like @ghostai/shared
 COPY package.json package-lock.json ./
