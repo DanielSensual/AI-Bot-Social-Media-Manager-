@@ -22,15 +22,16 @@ import {
     loadActiveEvents,
     PILLARS,
 } from '../src/danielsensual-content.js';
-import { resolvePageToken, getGraphApiBase } from '@ghostai/shared/graph-api';
 
 dotenv.config();
 
 const TZ = 'America/New_York';
-const PAGE_ID = process.env.DS_PAGE_ID || process.env.DANIELSENSUAL_PAGE_ID;
-const PAGE_TOKEN = process.env.DS_PAGE_TOKEN || process.env.DANIELSENSUAL_PAGE_TOKEN;
-const PROFILE_ID = process.env.DS_PROFILE_ID || process.env.FACEBOOK_USER_ID;
-const USER_TOKEN = process.env.DS_USER_TOKEN || process.env.FACEBOOK_USER_ACCESS_TOKEN;
+const GRAPH_API = 'https://graph.facebook.com/v21.0';
+
+// Daniel's personal profile token for organic posting
+const USER_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
+// Use 'me' endpoint for personal profile posting
+const PROFILE_TARGET = 'me';
 
 // ─── Post Schedule ──────────────────────────────────────────────
 // Each slot has a cron expression + pillar assignment
@@ -46,17 +47,12 @@ const SCHEDULE = [
 // ─── Facebook Graph API Poster ──────────────────────────────────
 
 async function postToFacebook(caption, pillar) {
-    // Try page first, fall back to profile
-    const token = PAGE_TOKEN || USER_TOKEN;
-    const targetId = PAGE_ID || PROFILE_ID;
-
-    if (!token || !targetId) {
-        console.log('   ⚠️ No Facebook token configured — logging content only');
+    if (!USER_TOKEN) {
+        console.log('   ⚠️ No FACEBOOK_ACCESS_TOKEN — logging content only');
         return { logged: true, posted: false };
     }
 
-    const graphBase = getGraphApiBase();
-    const url = `${graphBase}/${targetId}/feed`;
+    const url = `${GRAPH_API}/${PROFILE_TARGET}/feed`;
 
     try {
         const response = await fetch(url, {
@@ -64,7 +60,7 @@ async function postToFacebook(caption, pillar) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: caption,
-                access_token: token,
+                access_token: USER_TOKEN,
             }),
         });
 
@@ -132,8 +128,8 @@ async function main() {
     console.log('═══════════════════════════════════════════════');
     console.log(`   Timezone: ${TZ}`);
     console.log(`   Posts per day: ${SCHEDULE.length}`);
-    console.log(`   Page ID: ${PAGE_ID || 'not set'}`);
-    console.log(`   Profile ID: ${PROFILE_ID || 'not set'}`);
+    console.log(`   Facebook token: ${USER_TOKEN ? '✅ set' : '❌ not set'}`);
+    console.log(`   Target: Personal profile (${PROFILE_TARGET})`);
     console.log('');
 
     // Schedule all posts
