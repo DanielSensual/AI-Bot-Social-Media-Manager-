@@ -93,6 +93,11 @@ const BOT_CONFIGS = [
         script: 'scripts/facebook-agent.js',
         description: 'AI Knowledge Facebook page (4x daily)',
     },
+    {
+        name: 'danielsensual',
+        script: 'scripts/danielsensual-scheduler.js',
+        description: 'Bachata content — music/dance/events (6x daily)',
+    },
 ];
 
 function startBot(config) {
