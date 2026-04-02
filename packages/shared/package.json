@@ -1,0 +1,16 @@
+{
+    "name": "@ghostai/shared",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "Shared modules for the GhostAI bot ecosystem",
+    "exports": {
+        "./alerts": "./alerts.js",
+        "./logger": "./logger.js",
+        "./graph-api": "./graph-api.js",
+        "./enricher": "./enricher.js",
+        "./analyzer": "./analyzer.js"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.0"
+    }
+}
