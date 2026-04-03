@@ -62,18 +62,8 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV NODE_ENV=production
 ENV TZ=America/New_York
 
-# Chrome profile volume (persist login sessions)
-VOLUME ["/root/.danielsensual-chrome-profile"]
-
-# PM2 logs volume
-VOLUME ["/app/logs"]
-
-# Data volume (catalog, state)
-VOLUME ["/app/data"]
-
-# Health check
-HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
-    CMD pm2 list | grep -q "online" || exit 1
+# Railway handles volumes via service config (chrome-profile, logs, data)
+# DO NOT use VOLUME directive — Railway bans it
 
 # Start PM2 with ecosystem config
 CMD ["pm2-runtime", "ecosystem.config.cjs", "--only", \
