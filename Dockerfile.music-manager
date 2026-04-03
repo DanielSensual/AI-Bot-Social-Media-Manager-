@@ -43,11 +43,12 @@ RUN npm install -g pm2
 # Set working directory
 WORKDIR /app
 
-# Copy package files first for caching
+# Copy package files and local packages for caching
 COPY package*.json ./
+COPY packages/ ./packages/
 
 # Install dependencies
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # Copy entire app
 COPY . .
@@ -76,4 +77,4 @@ HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
 
 # Start PM2 with ecosystem config
 CMD ["pm2-runtime", "ecosystem.config.cjs", "--only", \
-    "music-manager-rotate-daily,danielsensual-share-morning,danielsensual-share-afternoon,danielsensual-share-evening,music-manager-engage-morning,music-manager-engage-afternoon,music-manager-engage-evening,music-manager-scan-weekly"]
+    "music-manager-rotate-daily,danielsensual-share-morning,danielsensual-share-afternoon,danielsensual-share-evening,danielsensual-personal-share-morning,danielsensual-personal-share-afternoon,danielsensual-personal-share-evening,music-manager-engage-morning,music-manager-engage-afternoon,music-manager-engage-evening,music-manager-scan-weekly"]
