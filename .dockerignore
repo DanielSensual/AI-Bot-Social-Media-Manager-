@@ -36,8 +36,8 @@ tmp/
 .ig-engaged.json
 .post-history.json
 
-# PM2 (not used in container)
-ecosystem.config.cjs
+# PM2 ecosystem config — needed for Dockerfile.music-manager
+# ecosystem.config.cjs — DO NOT exclude, PM2 needs it
 
 # Railway (not used in container)
 railway.json
