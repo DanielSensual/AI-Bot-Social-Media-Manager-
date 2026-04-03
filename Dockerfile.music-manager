@@ -65,6 +65,8 @@ ENV TZ=America/New_York
 # Railway handles volumes via service config (chrome-profile, logs, data)
 # DO NOT use VOLUME directive — Railway bans it
 
-# Start PM2 with ecosystem config
-CMD ["pm2-runtime", "ecosystem.config.cjs", "--only", \
-    "music-manager-rotate-daily,danielsensual-share-morning,danielsensual-share-afternoon,danielsensual-share-evening,danielsensual-personal-share-morning,danielsensual-personal-share-afternoon,danielsensual-personal-share-evening,music-manager-engage-morning,music-manager-engage-afternoon,music-manager-engage-evening,music-manager-scan-weekly"]
+# Make startup script executable
+RUN chmod +x scripts/railway-start.sh
+
+# Start via startup script (cleans chrome locks, then starts PM2)
+CMD ["bash", "scripts/railway-start.sh"]
