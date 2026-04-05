@@ -42,5 +42,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 EXPOSE ${PORT:-8787}
 
-# Default entrypoint: the command agent (HTTP worker)
-CMD ["node", "scripts/command-agent.js"]
+# Default entrypoint: unified bot scheduler (runs all bots + health server)
+CMD ["node", "scripts/railway-start.js"]
