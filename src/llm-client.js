@@ -42,7 +42,9 @@ async function callOpenAI({
 
     const messages = [];
     if (systemPrompt) {
-        messages.push({ role: 'system', content: systemPrompt });
+        // o-series reasoning models use 'developer' role instead of 'system'
+        const isOModel = /^o\d/.test(openaiModel);
+        messages.push({ role: isOModel ? 'developer' : 'system', content: systemPrompt });
     }
     messages.push({ role: 'user', content: prompt });
 

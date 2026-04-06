@@ -27,6 +27,16 @@ const __dirname = path.dirname(__filename);
 const DEFAULT_MAX_LENGTH = 1500;
 const COVER_ART_DIR = path.join(__dirname, '..', 'assets', 'bachata-exotica');
 const POST_TRACKER_PATH = path.join(__dirname, '..', 'data', 'bachata-exotica-tracker.json');
+const BRAIN_PATH = path.join(__dirname, '..', 'bachata-brain.md');
+
+// Load brain file once at startup
+let BRAIN_CONTEXT = '';
+try {
+    if (fs.existsSync(BRAIN_PATH)) {
+        BRAIN_CONTEXT = fs.readFileSync(BRAIN_PATH, 'utf-8');
+        console.log(`🧠 [bachata-content] Loaded brain file (${(BRAIN_CONTEXT.length / 1024).toFixed(1)}KB)`);
+    }
+} catch { /* brain file optional */ }
 
 // ─── Content Types ──────────────────────────────────────────────
 
@@ -615,9 +625,10 @@ export async function buildMusicPost(contentType, context = {}) {
             const prompt = buildAIPrompt(contentType, { ...context, song });
             const { text, provider, model } = await generateText({
                 prompt,
+                systemPrompt: BRAIN_CONTEXT,
                 provider: 'auto',
-                maxOutputTokens: 600,
-                openaiModel: 'gpt-5.4-mini',
+                maxOutputTokens: 2000, // extra headroom for thinking tokens
+                openaiModel: 'o4-mini',
             });
 
             const parsed = parseJsonObject(text);
