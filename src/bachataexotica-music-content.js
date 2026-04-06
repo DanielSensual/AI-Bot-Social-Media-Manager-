@@ -628,7 +628,7 @@ export async function buildMusicPost(contentType, context = {}) {
                 systemPrompt: BRAIN_CONTEXT,
                 provider: 'auto',
                 maxOutputTokens: 2000, // extra headroom for thinking tokens
-                openaiModel: 'o4-mini',
+                openaiModel: 'gpt-5.4-thinking',
             });
 
             const parsed = parseJsonObject(text);
