@@ -104,12 +104,14 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        // ── DISABLED: Bachata Exotica page paused (2026-04-06) ──────────
+        /*
         {
             name: 'facebook-responder-bachata-morning',
             script: 'scripts/respond-facebook.js',
             args: '--mode=live --page-id=266552527115323 --profile=bachata_exotica --limit=5',
             cwd: __dirname,
-            cron_restart: '0 9 * * *', // 9:00 AM daily
+            cron_restart: '0 9 * * *',
             watch: false,
             autorestart: false,
             env: {
@@ -122,7 +124,7 @@ module.exports = {
             script: 'scripts/respond-facebook.js',
             args: '--mode=live --page-id=266552527115323 --profile=bachata_exotica --limit=5',
             cwd: __dirname,
-            cron_restart: '0 17 * * *', // 5:00 PM daily
+            cron_restart: '0 17 * * *',
             watch: false,
             autorestart: false,
             env: {
@@ -130,12 +132,15 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        */
+        // ── DISABLED: Bachata Exotica daily post paused (2026-04-06) ─────
+        /*
         {
             name: 'facebook-bachata-daily-post',
             script: 'scripts/bachata-daily-post.js',
             args: '--page-id=266552527115323',
             cwd: __dirname,
-            cron_restart: '0 10 * * *', // 10:00 AM daily
+            cron_restart: '0 10 * * *',
             watch: false,
             autorestart: false,
             env: {
@@ -143,6 +148,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        */
         {
             name: 'facebook-comment-responder',
             script: 'scripts/respond-comments.js',
@@ -172,42 +178,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        {
-            name: 'twitter-responder-morning',
-            script: 'scripts/respond-twitter.js',
-            cwd: __dirname,
-            cron_restart: '0 10 * * *', // 10:00 AM daily
-            watch: false,
-            autorestart: false,
-            env: {
-                NODE_ENV: 'production',
-                TZ: 'America/New_York',
-            },
-        },
-        {
-            name: 'twitter-responder-evening',
-            script: 'scripts/respond-twitter.js',
-            cwd: __dirname,
-            cron_restart: '0 18 * * *', // 6:00 PM daily
-            watch: false,
-            autorestart: false,
-            env: {
-                NODE_ENV: 'production',
-                TZ: 'America/New_York',
-            },
-        },
-        {
-            name: 'x-engagement-bot',
-            script: 'scripts/engage-x.js',
-            cwd: __dirname,
-            cron_restart: '0 9,13,18 * * *', // 9:00 AM, 1:00 PM, 6:00 PM daily
-            watch: false,
-            autorestart: false,
-            env: {
-                NODE_ENV: 'production',
-                TZ: 'America/New_York',
-            },
-        },
+
         {
             name: 'danielsensual-daily',
             script: 'scripts/danielsensual-agent.js',
@@ -224,11 +195,13 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        // ── DISABLED: Bachata Exotica music post paused (2026-04-06) ─────
+        /*
         {
             name: 'bachataexotica-music-daily',
             script: 'scripts/bachataexotica-music-post.js',
             cwd: __dirname,
-            cron_restart: '0 14 * * *', // 2:00 PM daily
+            cron_restart: '0 14 * * *',
             watch: false,
             autorestart: false,
             error_file: './logs/pm2/bachataexotica-music-error.log',
@@ -240,6 +213,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        */
         {
             name: 'ai-takeover-daily',
             script: 'scripts/ai-takeover-post.js',
@@ -256,57 +230,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        {
-            name: 'ai-takeover-engage-morning',
-            script: 'scripts/ai-takeover-engage.js',
-            args: '--limit=8',
-            cwd: __dirname,
-            cron_restart: '0 10 * * *', // 10:00 AM daily
-            watch: false,
-            autorestart: false,
-            error_file: './logs/pm2/ai-takeover-engage-error.log',
-            out_file: './logs/pm2/ai-takeover-engage-out.log',
-            merge_logs: true,
-            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-            env: {
-                NODE_ENV: 'production',
-                TZ: 'America/New_York',
-            },
-        },
-        {
-            name: 'ai-takeover-engage-afternoon',
-            script: 'scripts/ai-takeover-engage.js',
-            args: '--limit=8',
-            cwd: __dirname,
-            cron_restart: '0 14 * * *', // 2:00 PM daily
-            watch: false,
-            autorestart: false,
-            error_file: './logs/pm2/ai-takeover-engage-error.log',
-            out_file: './logs/pm2/ai-takeover-engage-out.log',
-            merge_logs: true,
-            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-            env: {
-                NODE_ENV: 'production',
-                TZ: 'America/New_York',
-            },
-        },
-        {
-            name: 'ai-takeover-engage-evening',
-            script: 'scripts/ai-takeover-engage.js',
-            args: '--limit=8',
-            cwd: __dirname,
-            cron_restart: '0 19 * * *', // 7:00 PM daily
-            watch: false,
-            autorestart: false,
-            error_file: './logs/pm2/ai-takeover-engage-error.log',
-            out_file: './logs/pm2/ai-takeover-engage-out.log',
-            merge_logs: true,
-            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-            env: {
-                NODE_ENV: 'production',
-                TZ: 'America/New_York',
-            },
-        },
+
 
         // ── Daniel Sensual Video Group Shares ────────────────────────────
         {
@@ -353,6 +277,127 @@ module.exports = {
             autorestart: false,
             error_file: './logs/pm2/danielsensual-share-error.log',
             out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-share-latenight',
+            script: 'scripts/danielsensual-share.js',
+            args: '--batch=4',
+            cwd: __dirname,
+            cron_restart: '0 23 * * *', // 11:00 PM EST (peak LATAM time)
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-share-error.log',
+            out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-share-earlybird',
+            script: 'scripts/danielsensual-share.js',
+            args: '--batch=5',
+            cwd: __dirname,
+            cron_restart: '0 7 * * *', // 7:00 AM EST — Orlando locals + Europe evening
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-share-error.log',
+            out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-share-creators',
+            script: 'scripts/danielsensual-share.js',
+            args: '--batch=6',
+            cwd: __dirname,
+            cron_restart: '0 10 * * *', // 10:00 AM EST — Content creators + filmmakers
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-share-error.log',
+            out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-share-extended',
+            script: 'scripts/danielsensual-share.js',
+            args: '--batch=7',
+            cwd: __dirname,
+            cron_restart: '0 16 * * *', // 4:00 PM EST — Extended LATAM + International
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-share-error.log',
+            out_file: './logs/pm2/danielsensual-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+
+        // ── Daniel Sensual Personal Profile Group Shares ──────────────────
+        {
+            name: 'danielsensual-personal-share-morning',
+            script: 'scripts/danielsensual-personal-share.js',
+            args: '--batch=1',
+            cwd: __dirname,
+            cron_restart: '0 8 * * *', // 8:00 AM daily — personal post rollout before page shares
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-personal-share-error.log',
+            out_file: './logs/pm2/danielsensual-personal-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-personal-share-afternoon',
+            script: 'scripts/danielsensual-personal-share.js',
+            args: '--batch=2',
+            cwd: __dirname,
+            cron_restart: '0 12 * * *', // 12:00 PM daily — core city/dance groups
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-personal-share-error.log',
+            out_file: './logs/pm2/danielsensual-personal-share-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'danielsensual-personal-share-evening',
+            script: 'scripts/danielsensual-personal-share.js',
+            args: '--batch=3',
+            cwd: __dirname,
+            cron_restart: '0 17 * * *', // 5:00 PM daily — international prime-time window
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/danielsensual-personal-share-error.log',
+            out_file: './logs/pm2/danielsensual-personal-share-out.log',
             merge_logs: true,
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
             env: {
@@ -455,17 +500,66 @@ module.exports = {
             },
         },
 
-        // ── GhostAI X Commenter — Browser Engagement ────────────────────
+
+
+        // ── DanielSensual Threads Bot ────────────────────────────────────
         {
-            name: 'ghostai-x-commenter',
-            script: 'src/ghostai-x-commenter.js',
+            name: 'threads-bot-morning',
+            script: 'scripts/threads-bot.js',
+            args: '--once',
+            cwd: __dirname,
+            cron_restart: '0 10 * * *', // 10:00 AM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/threads-bot-error.log',
+            out_file: './logs/pm2/threads-bot-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'threads-bot-afternoon',
+            script: 'scripts/threads-bot.js',
+            args: '--once --troll-only',
+            cwd: __dirname,
+            cron_restart: '0 14 * * *', // 2:00 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/threads-bot-error.log',
+            out_file: './logs/pm2/threads-bot-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'threads-bot-evening',
+            script: 'scripts/threads-bot.js',
+            args: '--once --category=controversial',
+            cwd: __dirname,
+            cron_restart: '0 19 * * *', // 7:00 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/threads-bot-error.log',
+            out_file: './logs/pm2/threads-bot-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+
+        // ── Ghost Command Center — Orchestrator & Self-Healer ───────────
+        // Always-on daemon that monitors, schedules, and heals the fleet.
+        // Coexists safely with PM2 cron_restart — ghost-command has its own
+        // idempotency layer (cronRan state) to prevent double-fires.
+        {
+            name: 'ghost-command',
+            script: '../scripts/ghost-command.mjs',
             cwd: __dirname,
             watch: false,
             autorestart: true,
-            max_restarts: 5,
-            restart_delay: 60000, // 1 min between restarts
-            error_file: './logs/pm2/x-commenter-error.log',
-            out_file: './logs/pm2/x-commenter-out.log',
+            max_restarts: 10,
+            restart_delay: 10000,
+            error_file: './logs/pm2/ghost-command-error.log',
+            out_file: './logs/pm2/ghost-command-out.log',
             merge_logs: true,
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
             env: {
@@ -475,3 +569,6 @@ module.exports = {
         },
     ],
 };
+
+// NOTE: Add these entries to the apps array for the Lana campaign:
+// (Added via append - will need manual merge into apps array)
