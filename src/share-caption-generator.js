@@ -19,8 +19,9 @@ dotenv.config();
 // ─── Streaming Links ────────────────────────────────────────────
 
 const STREAMING_LINKS = {
-    spotify: 'https://open.spotify.com/artist/1rmQe04pnNw4tlXWGAkdRK',
-    appleMusic: 'https://music.apple.com/artist/daniel-sensual',
+    spotify: 'https://open.spotify.com/album/23lMQH9zN7UXY4SBFUxTnk',   // Bachata Sensual single
+    appleMusic: 'https://music.apple.com/us/album/bachata-sensual-single/1889991063', // Bachata Sensual single
+    youtube: 'https://www.youtube.com/watch?v=NhXWEuRXqbU',               // Bachata Sensual video
 };
 
 // ─── Locale Detection ───────────────────────────────────────────
@@ -192,10 +193,10 @@ export async function generateGroupCaption(options = {}) {
  */
 export function generateStreamingComment(locale = 'en') {
     const comments = {
-        en: `🎵 Listen on Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}`,
-        es: `🎵 Escúchalo en Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}`,
-        fr: `🎵 Écoutez sur Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}`,
-        de: `🎵 Auf Spotify hören: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}`,
+        en: `🎵 "Bachata Sensual" out now!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
+        es: `🎵 "Bachata Sensual" ¡ya disponible!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
+        fr: `🎵 "Bachata Sensual" disponible maintenant!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
+        de: `🎵 "Bachata Sensual" jetzt draußen!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
     };
     return comments[locale] || comments.en;
 }
