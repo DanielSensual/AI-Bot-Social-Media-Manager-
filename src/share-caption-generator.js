@@ -1,14 +1,15 @@
 /**
- * Music Manager — Group Share Caption Generator
+ * Music Manager — Group Share Caption Generator v2
  *
- * Generates unique, locale-aware captions for each group share.
- * Uses GPT to create varied, engaging captions that don't look spammy.
+ * Generates natural, human-sounding captions for Facebook group shares.
+ * Designed to sound like a real artist sharing their music, NOT a bot.
  *
- * Features:
- * - Locale detection from group name (EN/ES/FR/DE/PT)
- * - @everyone tag for reach
- * - Varied caption styles (question, hype, invitation, story)
- * - Streaming links (Spotify / Apple Music)
+ * v2 Changes:
+ * - REMOVED @everyone (instant spam flag in most groups)
+ * - Natural bilingual tone matching Daniel Sensual's brand
+ * - Contextual captions that reference the group's city/vibe
+ * - Varied formats: personal, conversational, casual
+ * - Streaming comment is softer, less aggressive
  */
 
 import { generateText, hasLLMProvider } from './llm-client.js';
@@ -19,9 +20,9 @@ dotenv.config();
 // ─── Streaming Links ────────────────────────────────────────────
 
 const STREAMING_LINKS = {
-    spotify: 'https://open.spotify.com/album/23lMQH9zN7UXY4SBFUxTnk',   // Bachata Sensual single
-    appleMusic: 'https://music.apple.com/us/album/bachata-sensual-single/1889991063', // Bachata Sensual single
-    youtube: 'https://www.youtube.com/watch?v=NhXWEuRXqbU',               // Bachata Sensual video
+    spotify: 'https://open.spotify.com/album/23lMQH9zN7UXY4SBFUxTnk',
+    appleMusic: 'https://music.apple.com/us/album/bachata-sensual-single/1889991063',
+    youtube: 'https://www.youtube.com/watch?v=NhXWEuRXqbU',
 };
 
 // ─── Locale Detection ───────────────────────────────────────────
@@ -59,95 +60,143 @@ function getLocaleName(locale) {
     return names[locale] || 'English';
 }
 
-// ─── Caption Styles ─────────────────────────────────────────────
+// ─── Extract City / Region from Group Name ──────────────────────
+
+function extractCity(groupName) {
+    const cities = [
+        'Orlando', 'Miami', 'Tampa', 'Jacksonville', 'Chicago', 'Houston',
+        'Dallas', 'San Jose', 'San Francisco', 'Bay Area', 'LA', 'Los Angeles',
+        'New York', 'NYC', 'Atlanta', 'Denver', 'Phoenix', 'Austin', 'DC',
+        'Baltimore', 'London', 'Paris', 'Berlin', 'Hamburg', 'Connecticut',
+        'South Florida', 'Central Florida', 'North Carolina',
+    ];
+    for (const city of cities) {
+        if (groupName.toLowerCase().includes(city.toLowerCase())) return city;
+    }
+    return null;
+}
+
+// ─── Caption Styles (more natural variety) ──────────────────────
 
 const CAPTION_STYLES = [
-    'question',      // "Who else is addicted to this bachata?"
-    'hype',          // "This one hits DIFFERENT 🔥"
-    'invitation',    // "Come dance with us, watch this"
-    'story',         // "Recorded this after an amazing night..."
-    'community',     // "Our bachata community is growing 🌍"
-    'challenge',     // "Tag someone who needs to learn this"
-    'appreciation',  // "So grateful for this dance family"
-    'teaser',        // "Wait for the ending... 🔥"
+    'personal',      // "Been working on this one for weeks..."
+    'casual',        // "Had to share this with y'all 💃"
+    'curious',       // "What do you think of this vibe?"
+    'grateful',      // "Love sharing music with this community"
+    'excited',       // "Yo this one came out way better than expected"
+    'storytelling',  // "Made this after a crazy night dancing..."
+    'bilingual',     // Spanglish mix — natural for Daniel's brand
+    'minimal',       // Short and clean, 1 sentence
 ];
 
-// ─── Template Fallbacks (no AI needed) ──────────────────────────
+// ─── Template Fallbacks (sound like a PERSON, not a bot) ────────
 
 const TEMPLATE_CAPTIONS = {
     en: [
-        "@everyone Who else can't stop watching this? 🔥",
-        "@everyone This mashup hits too hard 🎶 New music out now!",
-        "@everyone When the bachata flow is just right... Watch this 💃",
-        "@everyone Our latest track just dropped! What do you think? 🎵",
-        "@everyone Tag someone who NEEDS to hear this 🔥",
-        "@everyone This is why we love bachata ❤️ New video out now",
-        "@everyone Can't stop replaying this one 🔄 Turn your volume up!",
-        "@everyone The vibe is unmatched 🌊 Check out our new music",
+        "Had to share this one with y'all 💃",
+        "This beat has been stuck in my head all week",
+        "Who's feeling this vibe? 🎶",
+        "Just dropped something new — let me know what you think",
+        "Late night studio session turned into this 🔥",
+        "The bachata never stops 💃 new music",
+        "Been wanting to share this with the community",
+        "This one's for the dancers 🎵",
+        "What do you guys think of this?",
+        "Can't stop listening to this one honestly",
+        "Weekend mood right here 🌊",
+        "New track just went live — genuinely curious what y'all think",
     ],
     es: [
-        "@everyone ¿Quién más está enganchado con este tema? 🔥",
-        "@everyone Este mashup pega demasiado fuerte 🎶 ¡Música nueva ya!",
-        "@everyone Cuando el flow de bachata está perfecto... Mira esto 💃",
-        "@everyone ¡Nuestro nuevo track acaba de salir! ¿Qué opinan? 🎵",
-        "@everyone Etiqueta a alguien que NECESITA escuchar esto 🔥",
-        "@everyone Por esto amamos la bachata ❤️ Nuevo video disponible",
-        "@everyone No puedo parar de escuchar este tema 🔄 ¡Súbele el volumen!",
-        "@everyone La vibra no tiene comparación 🌊 Escucha nuestra nueva música",
+        "Tenía que compartir esto con ustedes 💃",
+        "Este ritmo no me sale de la cabeza",
+        "¿Quién siente esta vibra? 🎶",
+        "Salió algo nuevo — díganme qué les parece",
+        "Sesión de estudio de madrugada y salió esto 🔥",
+        "La bachata nunca para 💃 música nueva",
+        "Quería compartir esto con la comunidad",
+        "Este va pa' los que bailan 🎵",
+        "¿Qué opinan de esto?",
+        "No puedo dejar de escuchar este tema la verdad",
+        "Vibra del fin de semana 🌊",
+        "Nuevo tema — me interesa saber qué piensan",
     ],
     fr: [
-        "@everyone Qui d'autre ne peut pas arrêter de regarder ça? 🔥",
-        "@everyone Ce morceau frappe trop fort 🎶 Nouvelle musique dispo!",
-        "@everyone Quand le flow de bachata est parfait... Regardez ça 💃",
-        "@everyone Notre nouveau morceau vient de sortir! Qu'en pensez-vous? 🎵",
+        "Il fallait que je partage ça avec vous 💃",
+        "Ce rythme me reste en tête depuis des jours",
+        "Qui ressent cette vibe? 🎶",
+        "Nouveau morceau — dites-moi ce que vous en pensez",
     ],
     de: [
-        "@everyone Wer kann auch nicht aufhören, das anzuschauen? 🔥",
-        "@everyone Dieser Track geht einfach zu hart 🎶 Neue Musik jetzt draußen!",
-        "@everyone Wenn der Bachata-Flow einfach passt... Schaut euch das an 💃",
-        "@everyone Unser neuester Track ist da! Was meint ihr? 🎵",
+        "Musste das einfach mit euch teilen 💃",
+        "Dieser Beat geht mir nicht mehr aus dem Kopf",
+        "Wer fühlt diesen Vibe? 🎶",
+        "Neuer Track — sagt mir was ihr denkt",
     ],
 };
 
-function getTemplateCaption(locale) {
+function getTemplateCaption(locale, groupName) {
     const templates = TEMPLATE_CAPTIONS[locale] || TEMPLATE_CAPTIONS.en;
-    return templates[Math.floor(Math.random() * templates.length)];
+    let caption = templates[Math.floor(Math.random() * templates.length)];
+
+    // Occasionally add city reference for personalization (30% chance)
+    const city = extractCity(groupName);
+    if (city && Math.random() < 0.3) {
+        const cityPrefixes = {
+            en: [`${city} fam —`, `Shoutout ${city} 🙌`, `${city}!`],
+            es: [`${city} familia —`, `Saludos ${city} 🙌`],
+        };
+        const prefixes = cityPrefixes[locale] || cityPrefixes.en;
+        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+        caption = `${prefix} ${caption}`;
+    }
+
+    return caption;
 }
 
 // ─── AI Caption Generation ──────────────────────────────────────
 
 function buildCaptionPrompt({ groupName, locale, style, videoContext }) {
     const langName = getLocaleName(locale);
+    const city = extractCity(groupName);
 
-    return `You generate short, engaging Facebook group post captions for Daniel Sensual — a bachata music artist & dancer.
+    return `You are Daniel Sensual, a bachata artist and dancer based in Orlando. Write a caption to share your new song "Bachata Sensual" in a Facebook dance group.
 
 GROUP: "${groupName}"
 LANGUAGE: ${langName}
-STYLE: ${style}
+TONE: ${style}
+${city ? `CITY: ${city}` : ''}
 
 ═══ RULES ═══
-1. Write the caption in ${langName}
-2. Start with "@everyone" to tag all group members
-3. Keep it SHORT — 1-3 sentences max (under 200 characters ideal)
-4. Sound natural and human, NOT like a bot or marketer
-5. Match the vibe of the group — dance groups get dance energy, music groups get music energy
-6. Vary your style: sometimes ask a question, sometimes just hype, sometimes tell a mini story
-7. Use 1-2 emojis max (🔥 💃 🎶 ❤️ 🌊 🎵)
-8. Do NOT include any links or URLs
-9. Do NOT mention Spotify or Apple Music
-10. Do NOT use hashtags
+1. Write in ${langName}. You can mix in a little Spanish naturally if writing in English (Spanglish is your vibe)
+2. Do NOT start with "@everyone" — that's spammy
+3. Keep it SHORT — 1-2 sentences max, under 150 characters ideal
+4. Sound like a REAL PERSON sharing music they're proud of, NOT a marketer
+5. Never use phrases like "out now!", "check this out!", "new music alert!", "don't miss" — those are bot tells
+6. Be conversational — like you're texting a friend in the group
+7. Use 0-1 emojis max. Less is more
+8. Do NOT include links, URLs, hashtags, or platform names
+9. Vary tone: sometimes chill, sometimes excited, sometimes just drop the video with a short line
+10. Reference the group's city/vibe naturally when it makes sense
 ${videoContext ? `11. Video context: ${videoContext}` : ''}
 
-Return ONLY the caption text, nothing else. No quotes, no JSON, just the caption.`;
+Good examples:
+- "Been working on this for a minute, finally dropped it"
+- "Orlando nights made this one 🌙"
+- "Este tema me tiene loco, had to share"
+- "What do y'all think?"
+- "For the late night dancers"
+
+Bad examples (DO NOT write like this):
+- "🔥🔥🔥 NEW MUSIC ALERT! Check out my latest track!"
+- "@everyone Tag someone who needs to hear this!"
+- "This one hits DIFFERENT 🔥💃🎶"
+- "New music just dropped! Stream now!"
+
+Return ONLY the caption text. No quotes, no JSON.`;
 }
 
 /**
  * Generate a unique caption for a group share.
- *
- * @param {object} options
- * @param {string} options.groupName - Name of the target group
- * @param {string} [options.videoContext] - Optional description of the video being shared
- * @returns {Promise<{caption: string, locale: string, style: string, source: string}>}
  */
 export async function generateGroupCaption(options = {}) {
     const { groupName = '', videoContext = '' } = options;
@@ -161,18 +210,20 @@ export async function generateGroupCaption(options = {}) {
             const { text } = await generateText({
                 prompt,
                 provider: 'auto',
-                maxOutputTokens: 200,
+                maxOutputTokens: 150,
                 openaiModel: 'gpt-5.4-nano',
             });
 
-            const caption = (text || '').trim().replace(/^["']|["']$/g, '');
+            let caption = (text || '').trim().replace(/^["']|["']$/g, '');
             if (caption && caption.length > 5) {
-                // Ensure @everyone is included
-                const finalCaption = caption.startsWith('@everyone')
-                    ? caption
-                    : `@everyone ${caption}`;
+                // Strip @everyone if AI added it anyway
+                caption = caption.replace(/^@everyone\s*/i, '');
+                // Strip hashtags if AI added them
+                caption = caption.replace(/#\w+/g, '').trim();
+                // Strip trailing emoji spam (more than 2 consecutive)
+                caption = caption.replace(/([\u{1F600}-\u{1F9FF}\u{2600}-\u{27BF}]\s*){3,}$/gu, '').trim();
 
-                return { caption: finalCaption, locale, style, source: 'ai' };
+                return { caption, locale, style, source: 'ai' };
             }
         } catch (err) {
             console.log(`   ⚠️ AI caption failed: ${err.message}, using template`);
@@ -181,7 +232,7 @@ export async function generateGroupCaption(options = {}) {
 
     // Fallback to template
     return {
-        caption: getTemplateCaption(locale),
+        caption: getTemplateCaption(locale, groupName),
         locale,
         style: 'template',
         source: 'template',
@@ -190,13 +241,14 @@ export async function generateGroupCaption(options = {}) {
 
 /**
  * Generate the comment text with streaming links.
+ * Softer tone — not aggressive promo.
  */
 export function generateStreamingComment(locale = 'en') {
     const comments = {
-        en: `🎵 "Bachata Sensual" out now!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
-        es: `🎵 "Bachata Sensual" ¡ya disponible!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
-        fr: `🎵 "Bachata Sensual" disponible maintenant!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
-        de: `🎵 "Bachata Sensual" jetzt draußen!\n🟢 Spotify: ${STREAMING_LINKS.spotify}\n🍎 Apple Music: ${STREAMING_LINKS.appleMusic}\n▶️ YouTube: ${STREAMING_LINKS.youtube}`,
+        en: `Full track on streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
+        es: `Tema completo en streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
+        fr: `Morceau complet en streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
+        de: `Ganzer Track im Streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
     };
     return comments[locale] || comments.en;
 }
