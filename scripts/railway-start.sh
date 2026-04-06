@@ -1,36 +1,87 @@
 #!/bin/bash
 # ==============================================================================
-# Railway Startup Script — Clean Chrome locks, then start PM2
+# Railway Startup Script — Full Fleet
+# Runs ALL bots from ecosystem.config.cjs on Railway
 # ==============================================================================
 
+echo ""
+echo "👻 ═══════════════════════════════════════════"
+echo "   G H O S T A I   B O T   F L E E T"
+echo "   Railway Full Deployment — $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo "═══════════════════════════════════════════════"
+echo ""
+
+# ── Clean stale Chrome locks ─────────────────────────────────────────────────
 echo "🔧 [startup] Cleaning stale Chrome profile locks..."
+for PROFILE_DIR in /root/.danielsensual-chrome-profile /root/.chrome-profile /app/.danielsensual-chrome-profile; do
+    if [ -d "$PROFILE_DIR" ]; then
+        rm -f "$PROFILE_DIR/SingletonLock" \
+              "$PROFILE_DIR/SingletonCookie" \
+              "$PROFILE_DIR/SingletonSocket" 2>/dev/null
+        echo "  ✅ Cleaned $PROFILE_DIR"
+    fi
+done
 
-# Remove Chrome profile lock files (left over from previous container)
-CHROME_PROFILE_DIR="/root/.danielsensual-chrome-profile"
-if [ -d "$CHROME_PROFILE_DIR" ]; then
-    rm -f "$CHROME_PROFILE_DIR/SingletonLock" \
-          "$CHROME_PROFILE_DIR/SingletonCookie" \
-          "$CHROME_PROFILE_DIR/SingletonSocket" 2>/dev/null
-    echo "✅ [startup] Chrome locks cleaned"
-else
-    echo "⚠️ [startup] Chrome profile dir not found (first boot)"
-    mkdir -p "$CHROME_PROFILE_DIR"
-fi
+# ── Restore LinkedIn/session tokens from env vars (base64-encoded) ───────────
+echo "🔑 [startup] Restoring session tokens from env..."
 
-ONLY_SERVICES="music-manager-rotate-daily,danielsensual-share-morning,danielsensual-share-afternoon,danielsensual-share-evening,danielsensual-personal-share-morning,danielsensual-personal-share-afternoon,danielsensual-personal-share-evening,music-manager-engage-morning,music-manager-engage-afternoon,music-manager-engage-evening,music-manager-scan-weekly"
+restore_token() {
+    local ENV_KEY="$1"
+    local FILENAME="$2"
+    local VALUE=$(eval echo "\$$ENV_KEY")
+    if [ -n "$VALUE" ]; then
+        echo "$VALUE" | base64 -d > "/app/$FILENAME" 2>/dev/null
+        if [ $? -eq 0 ]; then
+            echo "  ✅ Restored $FILENAME"
+        else
+            echo "  ⚠️  Failed to restore $FILENAME"
+        fi
+    fi
+}
 
-echo "🚀 [startup] Starting PM2 with services: $ONLY_SERVICES"
+restore_token "LINKEDIN_TOKEN_JSON" ".linkedin-token.json"
+restore_token "LINKEDIN_TOKEN_DANIEL_JSON" ".linkedin-token-daniel.json"
+restore_token "LINKEDIN_COOKIES_JSON" ".linkedin-cookies.json"
+restore_token "INSTAGRAM_SESSION_JSON" ".instagram-session.json"
+restore_token "X_SESSION_JSON" ".x-session.json"
 
-# Use pm2 start (not pm2-runtime) since all processes are cron-based
-# pm2-runtime exits when 0 apps are online, but cron jobs fire on schedule
-pm2 start ecosystem.config.cjs --only "$ONLY_SERVICES"
+# ── Create necessary directories ─────────────────────────────────────────────
+mkdir -p /app/logs/pm2 /app/logs/danielsensual-shares /app/data /app/.image-cache /app/.video-cache
 
-echo "✅ [startup] PM2 processes registered. Entering keep-alive loop..."
-echo "📋 [startup] Current PM2 status:"
+# ── Exclude ghost-command (path ../scripts/ is outside container scope) ───────
+# Everything else in ecosystem.config.cjs can run
+EXCLUDE_SERVICES="ghost-command"
+
+echo ""
+echo "🚀 [startup] Starting PM2 fleet (ALL bots except: $EXCLUDE_SERVICES)..."
+echo ""
+
+# Start all processes from ecosystem.config.cjs
+pm2 start ecosystem.config.cjs
+
+# Delete processes that can't run in Docker (paths outside container scope)
+pm2 delete "$EXCLUDE_SERVICES" 2>/dev/null || true
+
+echo ""
+echo "📋 [startup] PM2 Status:"
 pm2 list
 
-# Keep the container alive — PM2 cron jobs fire on schedule
-# Log heartbeat every 5 minutes so Railway knows the container is healthy
+# Count total processes
+TOTAL=$(pm2 jlist 2>/dev/null | node -e "
+    let d='';process.stdin.on('data',c=>d+=c);
+    process.stdin.on('end',()=>{
+        try{const a=JSON.parse(d);
+        console.log(a.length + ' processes registered');
+        }catch(e){console.log('error');}
+    });
+")
+echo ""
+echo "✅ [startup] $TOTAL — Fleet is operational."
+echo ""
+
+# ── Keep-alive loop with heartbeat logging ───────────────────────────────────
+# PM2 cron jobs fire on schedule, daemons stay running
+# Heartbeat every 5 minutes so Railway knows container is healthy
 while true; do
     sleep 300
     ONLINE=$(pm2 jlist 2>/dev/null | node -e "
@@ -39,7 +90,8 @@ while true; do
             try{const a=JSON.parse(d);
             const o=a.filter(p=>p.pm2_env.status==='online').length;
             const s=a.filter(p=>p.pm2_env.status==='stopped').length;
-            console.log(o+' online, '+s+' stopped/waiting');
+            const e=a.filter(p=>p.pm2_env.status==='errored').length;
+            console.log(o+' online, '+s+' stopped/waiting, '+e+' errored');
             }catch(e){console.log('error');}
         });
     ")
