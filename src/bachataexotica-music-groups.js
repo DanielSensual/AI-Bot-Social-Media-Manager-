@@ -6,7 +6,7 @@
  * 
  * - music         → for song drops, BTS, all music content
  * - dance         → for music tied to social dancing
- * - local_fl      → for event-tied music (pool party, workshops)
+ * - local_fl      → for Orlando dance scene promotion
  * - industry      → for AI music / music production communities
  */
 
