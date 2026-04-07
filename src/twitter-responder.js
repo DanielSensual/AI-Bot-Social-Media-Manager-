@@ -1,6 +1,6 @@
 /**
- * X (Twitter) Mention Auto-Responder
- * AI-powered replies to mentions and replies on X
+ * X (Twitter) Mention Auto-Responder — Ghost AI SMMA
+ * AI-powered replies powered by Brand Intelligence System.
  */
 
 import dotenv from 'dotenv';
@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { hasLLMProvider, generateText } from './llm-client.js';
 import { TwitterApi } from 'twitter-api-v2';
+import { loadBrand, getBrandPrompt, getNeverSayList } from './brand-loader.js';
 
 dotenv.config();
 
@@ -93,14 +94,27 @@ async function getRecentMentions(client, userId, sinceId) {
 async function generateMentionReply(mention, authorUsername) {
     if (!hasLLMProvider()) return `Thanks for the mention! Check out what we're building 👻 ${WEBSITE}`;
 
-    const xBrain = loadXBrain();
-
     let prompt;
-    if (xBrain) {
-        prompt = `Here is your complete identity and response strategy:\n\n${xBrain}\n\n---\n\nSomeone mentioned you on X. Follow your "Clapback Protocol" response rules from the brain file.\n\n@${authorUsername} said:\n"${mention.text}"\n\nClassify what kind of mention this is (genuine question, compliment, troll, debate, builder question, collaboration offer, or spam) and respond appropriately per your protocol.\n\nRules:\n- 1-2 sentences max, under 280 characters\n- Match the energy of the original tweet\n- Be casual and human, never corporate\n- Only mention your website if they literally asked about your work\n- Output ONLY the reply text, nothing else`;
-    } else {
-        // Fallback if x-brain.md is missing
-        prompt = `You are Daniel Castillo replying to a mention on X. You run Ghost AI Systems \u2014 AI agency, 72-hour websites, voice agents.\n\n@${authorUsername} said:\n"${mention.text}"\n\nReply casually like a real person. 1-2 sentences, under 280 chars. Be sharp and conversational. 1 emoji max. Don't sound like a brand.\n\nReply:`;
+
+    // Priority 1: Brand Intelligence System
+    try {
+        const brand = loadBrand('ghost-ai');
+        const brandPrompt = getBrandPrompt(brand, 'x');
+        const neverSay = getNeverSayList(brand);
+        const neverSayBlock = neverSay.length > 0
+            ? `\nNEVER USE: ${neverSay.slice(0, 6).map(p => `"${p}"`).join(', ')}`
+            : '';
+
+        prompt = `${brandPrompt}\n\nPLATFORM: X (Twitter) — 280 char limit\n${neverSayBlock}\n\nSomeone mentioned you on X. Classify the mention (question, compliment, troll, debate, collab offer, spam) and respond naturally.\n\n@${authorUsername} said:\n"${mention.text}"\n\nRules:\n- 1-2 sentences max, under 280 characters\n- Match the energy of the original tweet\n- Be casual and human, never corporate\n- Only mention your website if they literally asked about your work\n- 1 emoji max\n- Output ONLY the reply text`;
+    } catch {
+        // Priority 2: x-brain.md
+        const xBrain = loadXBrain();
+        if (xBrain) {
+            prompt = `Here is your identity and response strategy:\n\n${xBrain}\n\n---\n\n@${authorUsername} said:\n"${mention.text}"\n\nFollow your Clapback Protocol. 1-2 sentences, under 280 chars. Output ONLY the reply.`;
+        } else {
+            // Priority 3: inline fallback
+            prompt = `You are Daniel Castillo replying to a mention on X. You run Ghost AI Systems — AI agency, 72-hour websites, voice agents.\n\n@${authorUsername} said:\n"${mention.text}"\n\nReply casually like a real person. 1-2 sentences, under 280 chars. Be sharp and conversational. 1 emoji max. Don't sound like a brand.\n\nReply:`;
+        }
     }
 
     const { text } = await generateText({

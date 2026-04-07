@@ -1,14 +1,13 @@
 /**
- * Daniel Facebook caption builder.
+ * Daniel Facebook caption builder — Ghost AI SMMA
  * AI-first with deterministic template fallback.
- *
- * v2 — Rewired for ENGAGEMENT. No more LinkedIn energy.
- * Gritty, motivational, trending, controversial.
+ * Powered by Brand Intelligence System.
  */
 
 import dotenv from 'dotenv';
 import { generateText, hasLLMProvider } from './llm-client.js';
 import { humanizeCaption } from './caption-utils.js';
+import { loadBrand, getNeverSayList } from './brand-loader.js';
 
 dotenv.config();
 
@@ -233,9 +232,21 @@ function buildPrompt({ theme, tone, pillar, maxLength }) {
         year: 'numeric',
     });
 
-    return `You write daily Facebook posts for Daniel Castillo — a military veteran turned AI agency founder in Orlando, FL.
+    // Load brand context dynamically
+    let brandIntro = 'You write daily Facebook posts for Daniel Castillo — a military veteran turned AI agency founder in Orlando, FL.\n\nHe runs Ghost AI Systems (AI voice agents, lead gen, SaaS) and MediaGeekz (cinematic video production).';
+    let neverSayBlock = '';
+    try {
+        const brand = loadBrand('ghost-ai');
+        const id = brand.identity || {};
+        const v = brand.voice || {};
+        brandIntro = `You write daily Facebook posts for ${brand.displayName}.\n\n${id.background}\nVoice: ${v.tone}\nPersonality: ${(v.personality || []).map(p => p.trait).join(', ')}`;
+        const neverSay = getNeverSayList(brand);
+        if (neverSay.length > 0) {
+            neverSayBlock = `\nNEVER USE THESE PHRASES: ${neverSay.slice(0, 8).map(p => `"${p}"`).join(', ')}`;
+        }
+    } catch { /* use inline defaults */ }
 
-He runs Ghost AI Systems (AI voice agents, lead gen, SaaS) and MediaGeekz (cinematic video production).
+    return `${brandIntro}
 
 TODAY IS: ${today}
 
@@ -245,6 +256,7 @@ Theme: ${theme}
 Tone: ${tone}
 
 AUDIENCE: Small business owners, hustlers who respect action over talk, people curious about AI, veterans building something new, Orlando business community.
+${neverSayBlock}
 
 ═══ FORMATTING RULES (CRITICAL — FOLLOW EXACTLY) ═══
 
@@ -262,24 +274,6 @@ Facebook flags robotic-looking posts. Your output MUST look like a real person w
 10. First line = scroll-stopper. But VARY the type across posts: sometimes a question, sometimes a bold claim, sometimes mid-story ("So I'm sitting at my desk at midnight...").
 11. End with a question or a hard-hitting closer line. Not both.
 12. Aim for comments and shares, not likes.
-
-BAD (robotic, will get flagged):
-"🚀 AI is changing the game!
-
-→ Voice agents that answer phones
-→ Lead gen that runs 24/7
-→ Automation that never sleeps
-
-Are you ready? Comment below! 👇🔥"
-
-GOOD (human, natural):
-"I shipped a client site at 11pm last night.
-
-By midnight their AI receptionist had booked 3 calls. By morning, 2 new customers.
-
-This is what 'always on' actually means.
-
-What did you ship this week?"
 
 ${pillar === 'trending' ? `TRENDING CONTEXT: Reference a REAL, RECENT development in AI/tech/business. React with a strong opinion — don't just report it.` : ''}
 ${pillar === 'friction' ? `FRICTION: Take a position people will disagree with. Spark debate. Be honest, not mean.` : ''}
