@@ -30,133 +30,107 @@ export const PILLARS = ['music', 'dance', 'event'];
 // ─── AI Music Templates ────────────────────────────────────────
 
 const MUSIC_TEMPLATES = [
-    () => `🎵 New track alert! Daniel Sensual just dropped another one 🔥
+    () => `Just finished this track at 2am and honestly can't stop playing it back.
 
-This one hits different — pure bachata vibes with that AI production edge. Listen and let me know what you think in the comments.
+Something about this melody just sits right. The guitar line alone is worth the listen.
 
-Save it for your next social dance night 💃🕺
+If you love bachata that actually makes you feel something, save this one.
 
-#DanielSensual #BachataMusic #AIMusic #BachataVibes #LatinMusic`,
+#bachata #danielsensual #newmusic`,
 
-    () => `🎶 Behind the scenes of creating bachata music with AI 🤖
+    () => `I've been sitting on this one for a while. Finally let it go.
 
-Most people don't believe this is AI-generated until they hear it. The technology is evolving fast and the music is getting better every day.
+This is what happens when you stop overthinking the production and just let the music breathe.
 
-Drop a 🔥 if this hits your soul.
+#danielsensual #bachatamusic #orlando`,
 
-#DanielSensual #AIMusic #Bachata #MusicProduction #OrlandoArtist`,
+    () => `Made this one after a long night of social dancing. Came home, opened the laptop, and this just poured out.
 
-    () => `💿 Daniel Sensual music session 🎧
+Sometimes the best tracks write themselves.
 
-Late night studio vibes. New bachata track in the works — AI-assisted production meets real Dominican roots.
+#bachata #danielsensual #musicproduction`,
 
-Who wants a sneak peek? Comment below 👇
+    () => `Quick story — I played this for a friend who doesn't even listen to bachata. She asked me to send it to her.
 
-#DanielSensual #BachataMusica #AIGeneratedMusic #LatinVibes`,
+That's when you know it hits different.
 
-    () => `🎵 This is what happens when you mix bachata tradition with AI innovation 🚀
+#danielsensual #bachata #aimusic`,
 
-Daniel Sensual is pushing the boundaries of what bachata music can sound like. Every track tells a story.
+    () => `New one up. Not gonna overthink the caption on this one.
 
-Share this with someone who loves bachata 💜
+Just press play and let me know what you think.
 
-#DanielSensual #Bachata #AIMusic #Innovation #LatinMusic`,
-
-    () => `🔊 New Daniel Sensual track just dropped!
-
-Pure bachata energy — made with AI but feels 100% real. Save this one for the dance floor 💃
-
-Link to stream in the comments 👇
-
-#DanielSensual #BachataNew #AIMusic #OrlandoBachata`,
+#danielsensual #bachata #newtrack`,
 ];
 
 // ─── Social Dance Templates ────────────────────────────────────
 
 const DANCE_TEMPLATES = [
-    () => `💃🕺 Social dance nights hit different when the music is right and the partner connects.
+    () => `Connection over patterns. Every single time.
 
-Nothing beats the feeling of a clean body wave into a turn pattern that just flows.
+The best social dancers I've seen aren't the ones doing the flashiest combos — they're the ones who make their partner feel safe from step one.
 
-Who's dancing this weekend? Tag your dance partner! 👇
+Practice your basics. Everything else follows.
 
-#Bachata #SocialDance #BachataSensual #OrlandoDance #DanceLife`,
+#bachata #socialdance #orlando`,
 
-    () => `🔥 Quick bachata tip:
+    () => `Sometimes you get a dance at a social that reminds you why you fell in love with bachata in the first place.
 
-Connection > Patterns. Every time.
+No agenda. No filming. Just two people feeling the music. That's the whole point.
 
-The best social dancers aren't the ones doing the most moves — they're the ones who make their partner feel comfortable from the very first step.
+#bachatadance #socialdancing #dancelife`,
 
-Practice your basics. The fancy stuff comes later.
+    () => `Orlando's bachata scene right now is something else. The level of dancing, the energy at every social — it's real.
 
-#BachataTips #SocialDancing #DanceTips #BachataOrlando #LatinDance`,
+Grateful to be part of this community.
 
-    () => `💃 Orlando's bachata scene is on fire right now 🔥
+#orlandobachata #socialdance #centralflorida`,
 
-So many incredible dancers, events, and energy in Central Florida. Grateful to be part of this community.
+    () => `Real talk — if you're just starting bachata, the best thing you can do is go social dancing. Like tonight.
 
-Where's your favorite spot to social dance? Drop it below 👇
+You learn more in one night out than a month of YouTube tutorials. Get uncomfortable. That's where growth lives.
 
-#OrlandoBachata #BachataScene #CentralFloridaDance #SocialDance`,
+#bachatadance #dancetips #socialdance`,
 
-    () => `🕺 This is why we dance.
+    () => `There's a difference between dancing AT someone and dancing WITH someone. You can feel it immediately.
 
-Not for the Instagram likes. Not for the perfect video. For the feeling.
+The best partners make you forget anyone else is in the room.
 
-That moment when the music hits, your partner follows, and everything just clicks. That's bachata.
-
-#BachataLove #SocialDance #DanceIsLife #BachataSensual #OrlandoDancers`,
-
-    () => `💃 Practice makes progress, not perfection.
-
-Every social dance night is a chance to get 1% better. Don't worry about looking perfect — just enjoy the music and the connection.
-
-See you on the dance floor 🔥
-
-#BachataTips #DanceMotivation #SocialDancing #OrlandoBachata`,
+#bachata #connection #socialdance`,
 ];
 
 // ─── Event Templates ────────────────────────────────────────────
 
 const EVENT_TEMPLATES = [
-    (event) => `🚨 EVENT ALERT! ${event.name} 🎉
+    (event) => `${event.name} is coming up and I'm genuinely excited about this one.
 
-📅 ${event.date}
-⏰ ${event.time}
-📍 ${event.venue}
-💰 ${event.price}
-
-${event.description || 'Come dance with us! This is going to be an incredible night of bachata, good vibes, and amazing people.'}
-
-Drop a comment or DM me for details! 💃🕺
-
-${event.hashtags || '#BachataEvent #OrlandoDance #BachataParty #CentralFloridaDance'}`,
-
-    (event) => `🎉 Who's ready for ${event.name}?! 🔥
-
-We're bringing the best vibes to ${event.venue} on ${event.date}!
-
+${event.date} at ${event.venue}
 ${event.time} · ${event.price}
 
-This is going to be one of the best bachata events in Central Florida. Don't miss it!
+${event.description || 'Good music, good people, good vibes. Come dance.'}
 
-Tag someone you want to bring! 👇
+DM me if you need details.
 
-${event.hashtags || '#BachataOrlando #DanceEvent #LatinParty #OrlandoNightlife'}`,
+${event.hashtags || '#bachata #orlandodance #danceevents'}`,
 
-    (event) => `💃 SAVE THE DATE 💃
+    (event) => `Mark your calendar — ${event.name}
 
-${event.name}
-📅 ${event.date} · ${event.time}
-📍 ${event.venue}
-🎟️ ${event.price}
+${event.date} · ${event.time}
+${event.venue}
+${event.price}
 
-Bring your swimsuits, sunnies, and your BEST dance moves! This is going to be epic 🔥
+This one's going to be special. Who's coming?
 
-Comment "IN" if you're coming! 
+${event.hashtags || '#bachata #danceevent #orlandonights'}`,
 
-${event.hashtags || '#BachataPoolParty #OrlandoEvents #LatinDance #BachataVibes'}`,
+    (event) => `${event.name}
+
+${event.date} at ${event.venue}
+${event.time} · ${event.price}
+
+No big speech. Just come dance. You'll thank yourself later.
+
+${event.hashtags || '#bachata #dancenight #orlando'}`,
 ];
 
 // ─── Group-Specific Adapters ────────────────────────────────────
@@ -174,12 +148,12 @@ const GROUP_CATEGORY_ADAPTERS = {
     },
     LATIN_MUSIC: {
         music: (base) => base, // perfect fit
-        dance: (base) => `${base}\n\n🎵 Check out Daniel Sensual's bachata tracks too!`,
+        dance: (base) => base,
         event: (base) => base,
     },
     LATINO_COMMUNITY: {
-        music: (base) => base.replace(/#DanielSensual/g, '#DanielSensual #OrlandoLatino'),
-        dance: (base) => base.replace(/#OrlandoDance/g, '#OrlandoLatino #OrlandoDance'),
+        music: (base) => base.replace(/#danielsensual/g, '#danielsensual #orlandolatino'),
+        dance: (base) => base,
         event: (base) => base, // events are great for community groups
     },
     AI_MUSIC: {
@@ -260,46 +234,62 @@ export function loadActiveEvents() {
 
 function buildAIPrompt(pillar, context = {}) {
     const pillarPrompts = {
-        music: `You write Facebook posts for Daniel Sensual, a bachata artist who creates AI-generated bachata music.
+        music: `You write Facebook posts for Daniel Sensual — a bachata music artist in Orlando who creates AI-produced bachata tracks.
 
-Post about: a new AI bachata song drop or music update.
-Tone: excited but authentic, Dominican bachata culture vibes.
-Include: emojis, hashtags, call-to-action (comment, share, save).
-`,
-        dance: `You write Facebook posts for Daniel Sensual, a bachata dancer and instructor in Orlando, FL.
+Write about: a new song drop, studio session, or music update.
+Vibe: genuine excitement, Dominican bachata culture, personal.`,
 
-Post about: social dancing, bachata tips, dance community vibes.
-Tone: warm, encouraging, community-focused.
-Include: emojis, hashtags, call-to-action (tag partner, comment, share).
-`,
-        event: `You write Facebook posts for Daniel Sensual, promoting a bachata/Latin dance event in Orlando.
+        dance: `You write Facebook posts for Daniel Sensual — a bachata dancer in Orlando, FL.
 
-Event details:
-- Name: ${context.name || 'Bachata Event'}
-- Date: ${context.date || 'TBA'}
-- Time: ${context.time || 'TBA'}
-- Venue: ${context.venue || 'TBA'}
-- Price: ${context.price || 'See details'}
+Write about: social dancing, bachata tips, the Orlando dance scene, or a personal dance moment.
+Vibe: warm, real, community-first.`,
 
-Tone: hype, exciting, FOMO-inducing but genuine.
-Include: emojis, hashtags, all event details, call-to-action.
-`,
+        event: `You write Facebook posts for Daniel Sensual, promoting an upcoming bachata event.
+
+Event info:
+${context.name || 'Bachata Event'} — ${context.date || 'TBA'}
+${context.time || 'TBA'} at ${context.venue || 'TBA'}
+${context.price || 'See details'}
+
+Vibe: hype and FOMO but genuine — like telling your friend about a party, not writing an ad.`,
     };
 
     return `${pillarPrompts[pillar] || pillarPrompts.dance}
 
+═══ FORMATTING RULES (CRITICAL — READ CAREFULLY) ═══
+
+You are writing for Facebook, where robotic-looking posts get buried or flagged.
+
+1. Write like a REAL PERSON typing on their phone — not a marketer, not a bot.
+2. Use SHORT paragraphs (1-3 sentences each). Separate with a single blank line.
+3. VARY your sentence length — mix short punchy lines ("That's it.") with longer thoughts.
+4. Do NOT start every line with an emoji. Use 2-4 emojis total, placed naturally.
+5. Do NOT use bullet lists (→ • ✓). Write in flowing paragraphs instead.
+6. Keep hashtags to 3-4 max, at the very end.
+7. First line should be a hook — but vary the type (question, bold claim, mid-story, emotional).
+8. Do NOT use markdown (no **bold**, no _italic_, no headers).
+9. Under 1000 characters total.
+10. Sound like Daniel — a veteran who dances bachata, not a LinkedIn influencer.
+
+BAD EXAMPLE (too structured, too robotic):
+"🎵 New track alert! Daniel Sensual just dropped another one 🔥
+This one hits different — pure bachata vibes.
+Save it for your next social dance night 💃🕺
+#DanielSensual #BachataMusic"
+
+GOOD EXAMPLE (human, natural):
+"Just finished this track at 2am and I can't stop playing it back.
+
+Something about this melody hits different. The guitar line alone is worth the listen.
+
+If you love bachata that actually makes you FEEL something, save this one 🔥
+
+#bachata #danielsensual #bachatadance"
+
 Return strict JSON only:
 {
   "caption": "post text"
-}
-
-Rules:
-- Keep it authentic and high-energy
-- Use emojis naturally (not every line)
-- Include relevant hashtags at the end
-- 3-8 paragraphs
-- Under 1200 characters
-- No markdown formatting`;
+}`;
 }
 
 // ─── Main Content Builder ───────────────────────────────────────

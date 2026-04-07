@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseDanielFacebookManagerArgs } from '../scripts/danieldigital/facebook-manager.js';
+import {
+    isDanielFacebookManagerDirectRun,
+    parseDanielFacebookManagerArgs,
+} from '../scripts/danieldigital/facebook-manager.js';
 
 test('parseDanielFacebookManagerArgs defaults are correct', () => {
     const parsed = parseDanielFacebookManagerArgs([]);
@@ -33,4 +36,15 @@ test('parseDanielFacebookManagerArgs rejects unknown args', () => {
         () => parseDanielFacebookManagerArgs(['--nope']),
         (error) => error?.code === 'ERR_USAGE' && /Unknown argument/i.test(error.message),
     );
+});
+
+test('isDanielFacebookManagerDirectRun supports pm2 exec path fallback', () => {
+    const direct = isDanielFacebookManagerDirectRun(
+        ['node', '/pm2/ProcessContainerFork.js'],
+        {
+            pm_exec_path: '/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/scripts/danieldigital/facebook-manager.js',
+        },
+    );
+
+    assert.equal(direct, true);
 });

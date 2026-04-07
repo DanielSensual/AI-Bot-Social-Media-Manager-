@@ -40,8 +40,11 @@ const flags = {
     dryRun: args.includes('--dry-run'),
     joinPending: args.includes('--join-pending'),
     myGroups: args.includes('--my-groups'),
+    latam: args.includes('--latam'),
+    report: args.includes('--report'),
     help: args.includes('--help'),
     maxJoin: parseInt(getFlag('max-join') || '10', 10),
+    minMembers: parseInt(getFlag('min-members') || '500', 10),
 };
 
 // Search terms to find bachata/dance groups worldwide
@@ -61,6 +64,31 @@ const SEARCH_TERMS = [
     'bachata colombia',
     'bachata españa',
     'kizomba bachata',
+];
+
+// LATAM-focused search terms (per Daniel's 2022 playbook)
+// The audience is 90%+ LATAM — these are the money groups
+const LATAM_SEARCH_TERMS = [
+    'bachata venezuela',
+    'bachata argentina',
+    'bachata brasil',
+    'bachata colombia',
+    'bachata dominicana',
+    'bachata republica dominicana',
+    'baile latino',
+    'musica latina',
+    'reggaeton y bachata',
+    'bachata romantica',
+    'salsa y bachata latina',
+    'grupos de bachata',
+    'bachata en español',
+    'latin dance community',
+    'bachata world',
+    'bachata mexico',
+    'bachata peru',
+    'bachata chile',
+    'bachata caribbean',
+    'caribbean dance',
 ];
 
 function ensureDir(dir) {
@@ -341,9 +369,11 @@ async function main() {
         console.log('═'.repeat(55));
         console.log('  --my-groups              List all groups you\'re in');
         console.log('  --search="bachata"       Search for specific term');
+        console.log('  --latam                  Search LATAM-focused terms only');
         console.log('  --dry-run                Discover but don\'t join');
         console.log('  --max-join=10            Max groups to join (default: 10)');
-        console.log('  --join-pending           View pending join requests\n');
+        console.log('  --min-members=500        Skip groups with fewer members (default: 500)');
+        console.log('  --report                 Show discovery stats\n');
         return;
     }
 
@@ -374,6 +404,37 @@ async function main() {
 
     const discovery = loadDiscovered();
 
+    // ── Mode: Report ──
+    if (flags.report) {
+        await browser.close();
+        const total = discovery.groups.length;
+        const members = discovery.groups.filter(g => g.status === 'member').length;
+        const requested = discovery.groups.filter(g => g.status === 'requested').length;
+        const discovered = discovery.groups.filter(g => g.status === 'discovered').length;
+
+        console.log('📊 Discovery Report');
+        console.log('═'.repeat(55));
+        console.log(`   Total discovered:  ${total}`);
+        console.log(`   Member:            ${members}`);
+        console.log(`   Join requested:    ${requested}`);
+        console.log(`   Discovered only:   ${discovered}`);
+        if (discovery.lastScan) {
+            console.log(`   Last scan:         ${new Date(discovery.lastScan).toLocaleString('en-US', { timeZone: 'America/New_York' })}`);
+        }
+
+        // Top groups by member count
+        const sorted = [...discovery.groups].filter(g => g.members > 0).sort((a, b) => (b.members || 0) - (a.members || 0));
+        if (sorted.length > 0) {
+            console.log('\n🏆 Top 10 by member count:');
+            for (let i = 0; i < Math.min(10, sorted.length); i++) {
+                const g = sorted[i];
+                console.log(`   ${i + 1}. ${g.name} — ${g.members?.toLocaleString()} members [${g.status}]`);
+            }
+        }
+        console.log('');
+        return;
+    }
+
     // ── Mode: My Groups ──
     if (flags.myGroups) {
         const myGroups = await scrapeMyGroups(page);
@@ -396,7 +457,15 @@ async function main() {
     }
 
     // ── Mode: Search & Join ──
-    const searches = flags.search ? [flags.search] : SEARCH_TERMS;
+    let searches;
+    if (flags.search) {
+        searches = [flags.search];
+    } else if (flags.latam) {
+        searches = LATAM_SEARCH_TERMS;
+        console.log('🌎 LATAM mode — searching Latin American dance groups\n');
+    } else {
+        searches = [...SEARCH_TERMS, ...LATAM_SEARCH_TERMS];
+    }
     const allFound = [];
     const alreadyKnown = new Set(discovery.groups.map(g => g.slug));
 
@@ -421,25 +490,31 @@ async function main() {
 
     console.log(`\n📊 Total new groups discovered: ${allFound.length}`);
 
-    if (allFound.length === 0) {
-        console.log('No new groups found. All known.\n');
+    // Filter by minimum member count
+    const sizable = allFound.filter(g => !flags.minMembers || (g.members || 0) >= flags.minMembers);
+    if (sizable.length < allFound.length) {
+        console.log(`   Filtered to ${sizable.length} with ${flags.minMembers}+ members (skipped ${allFound.length - sizable.length} small groups)`);
+    }
+
+    if (sizable.length === 0) {
+        console.log('No qualifying groups found.\n');
         await browser.close();
         return;
     }
 
     // Sort by member count (biggest first)
-    allFound.sort((a, b) => (b.members || 0) - (a.members || 0));
+    sizable.sort((a, b) => (b.members || 0) - (a.members || 0));
 
     // Display top groups
     console.log('\n🏆 Top groups by member count:');
-    for (let i = 0; i < Math.min(20, allFound.length); i++) {
-        const g = allFound[i];
+    for (let i = 0; i < Math.min(20, sizable.length); i++) {
+        const g = sizable[i];
         console.log(`   ${i + 1}. ${g.name} — ${g.members?.toLocaleString() || '?'} members ${g.privacy || ''}`);
     }
 
     // Join groups (up to maxJoin)
     if (!flags.dryRun) {
-        const toJoin = allFound.slice(0, flags.maxJoin);
+        const toJoin = sizable.slice(0, flags.maxJoin);
         console.log(`\n🔗 Joining ${toJoin.length} groups...\n`);
 
         let joined = 0;
@@ -473,7 +548,7 @@ async function main() {
     } else {
         console.log('\n🔒 DRY RUN — not joining any groups');
         // Still save discoveries
-        for (const g of allFound) {
+        for (const g of sizable) {
             discovery.groups.push({
                 ...g,
                 source: 'search',

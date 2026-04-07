@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { buildGhostPrompt } from './ghost-character.js';
 import OpenAI from 'openai';
 
 dotenv.config();
@@ -167,6 +168,11 @@ function buildImagePrompt(postText, style, pillar) {
         .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
         .trim()
         .substring(0, 150);
+
+    // Ghost character mode — consistent AI influencer
+    if (style === 'ghost') {
+        return buildGhostPrompt(postText, { pillar });
+    }
 
     // Special named styles override the concept rotation
     const namedStyles = {

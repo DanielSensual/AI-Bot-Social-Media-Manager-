@@ -12,6 +12,7 @@ import { testFacebookConnection, postToFacebook, postToFacebookWithVideo } from 
 import { generateVideo, cleanupCache } from './video-generator.js';
 import { isDuplicate, record } from './post-history.js';
 import { hasLLMProvider, generateText } from './llm-client.js';
+import { humanizeCaption } from './caption-utils.js';
 
 dotenv.config();
 
@@ -333,9 +334,7 @@ function getFacebookAgentConfig() {
 }
 
 function normalizeText(text) {
-    return String(text || '')
-        .replace(/\r\n/g, '\n')
-        .trim();
+    return humanizeCaption(text);
 }
 
 function safeJsonParse(content) {
@@ -364,38 +363,20 @@ async function generateAICreative(strategy, useReel) {
 
     let prompt;
     if (fbBrain) {
-        prompt = `Here is your complete identity, voice, and content strategy:\n\n${fbBrain}\n\n---\n\nToday is ${dayTheme.label} day (theme: ${dayTheme.id}).\n\nSTRATEGY:\n${strategy.angle}\n\nENGAGEMENT CTA:\n${strategy.cta}\n\nOUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}\n\nRULES:\n- Follow ALL voice rules and hard rules from the brain file above.\n- Caption should match today's theme (${dayTheme.id}).\n- Make the first line a strong hook that stops scrollers.\n- Keep caption between 200 and 600 characters.\n- If the strategy CTA mentions a link, INCLUDE the exact URL.\n- If useReel=true, videoPrompt must describe a cinematic 9:16 scroll-stopping scene.\n\nuseReel=${useReel ? 'true' : 'false'}`;
+        prompt = `Here is your complete identity, voice, and content strategy:\n\n${fbBrain}\n\n---\n\nToday is ${dayTheme.label} day (theme: ${dayTheme.id}).\n\nSTRATEGY:\n${strategy.angle}\n\nENGAGEMENT CTA:\n${strategy.cta}\n\nOUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}\n\n═══ ANTI-BOT FORMATTING (OVERRIDE ALL OTHER STYLE RULES) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. You MUST write like a real human.\n\n1. Write like you're texting a friend. NOT writing marketing copy.\n2. SHORT paragraphs (1-3 sentences). One blank line between them.\n3. VARY sentence length — mix "That's it." with longer flowing thoughts.\n4. Do NOT start with an emoji. Max 1-2 emojis total, placed naturally.\n5. Do NOT use bullet lists, arrow lists (→ • ✓), or numbered lists. Natural paragraphs only.\n6. Do NOT use markdown (no **bold**, no _italic_).\n7. Max 2 hashtags, only if absolutely necessary.\n8. Vary your hook type — don't always start with "Hot take:" or a statistic.\n9. End with either a question OR a closing line. Not both.\n\nBAD (robotic):\n"🚀 AI is revolutionizing business!\n→ Voice agents\n→ Lead gen\n→ Automation\nComment below! 👇🔥"\n\nGOOD (human):\n"I shipped a client site at 11pm last night.\n\nBy midnight their AI receptionist had booked 3 calls.\n\nThis is what 'always on' actually means.\n\nWhat did you ship this week?"\n\nuseReel=${useReel ? 'true' : 'false'}`;
     } else {
         prompt = `You create high-performing Facebook Page content for "Artificial Intelligence Knowledge".
 This page is run by Ghost AI Systems (${WEBSITE}) — an AI agency that ships production-ready websites in 72 hours with AI voice agents, analytics, and automation.
 
 TODAY'S THEME: ${dayTheme.label} (${dayTheme.id})
 
-OBJECTIVE:
-${strategy.angle}
+OBJECTIVE:\n${strategy.angle}
 
-ENGAGEMENT CTA:
-${strategy.cta}
+ENGAGEMENT CTA:\n${strategy.cta}
 
-OUTPUT FORMAT:
-Return strict JSON only:
-{
-  "caption": "facebook caption text",
-  "videoPrompt": "only if useReel=true, otherwise empty string"
-}
+OUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}
 
-RULES:
-- Caption should be concise, scannable, and compelling.
-- Use short paragraphs and line breaks.
-- No hashtags unless absolutely necessary (max 3).
-- No markdown.
-- Make the first line a strong hook that stops scrollers.
-- Keep caption between 200 and 600 characters.
-- If the strategy CTA mentions a link, INCLUDE the exact URL in the caption.
-- If useReel=true, videoPrompt must describe a cinematic 9:16 scroll-stopping scene.
-- Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.
-
-useReel=${useReel ? 'true' : 'false'}`;
+═══ FORMATTING RULES (CRITICAL — FOLLOW EXACTLY) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. Your caption MUST look like a real person wrote it on their phone.\n\n1. Write like you're texting — not presenting at a conference, not writing a LinkedIn post.\n2. SHORT paragraphs (1-3 sentences max per block). One blank line between blocks.\n3. VARY sentence length — mix short punchy lines with longer flowing thoughts.\n4. Do NOT start with an emoji. Do NOT start every line with an emoji.\n5. Max 1-2 emojis TOTAL in the caption, placed naturally mid-sentence or at the end.\n6. Do NOT use bullet lists, numbered lists, or arrow lists (→ • ✓ 1. 2. 3.). Write flowing paragraphs.\n7. No markdown (**bold**, _italic_, headers). Plain text only.\n8. No hashtags unless absolutely necessary (max 2).\n9. First line = scroll-stopper. Vary the type: question, bold claim, mid-story opener.\n10. Keep caption between 200 and 600 characters.\n11. If the strategy CTA mentions a link, INCLUDE the exact URL naturally in the text.\n12. End with a question or a powerful closer — NOT both.\n13. Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.\n\nBAD (robotic, will get flagged):\n"🚀 5 ways AI is changing business in 2026!\n\n1. Voice agents\n2. Lead generation\n3. Content automation\n4. Customer support\n5. Analytics\n\nAre you ready? Drop a comment! 👇🔥💯"\n\nGOOD (human, natural):\n"The hidden cost in most businesses is response speed.\n\nEvery missed call leaks revenue. Every slow follow-up loses trust.\n\nWe built an AI system that answers in under 2 seconds, qualifies the lead, and books the call. All while the owner sleeps.\n\nWhat's the first thing you'd automate?"\n\nuseReel=${useReel ? 'true' : 'false'}`;
     }
 
     const { text } = await generateText({

@@ -29,35 +29,34 @@ const DEFAULT_CURRENT_EVENT_GRACE_DAYS = 30;
 
 const HISTORY_POST_TEMPLATES = [
     // ── Cultural History ─────────────────────────────────────
-    'Bachata history minute \u{1F483}\n\nBachata was born in the Dominican Republic and evolved from bolero and son influences into a social dance that now connects communities worldwide.\n\nWhat style of bachata do you love most right now: traditional, moderna, or sensual?',
-    'Did you know? \u{1F1E9}\u{1F1F4}\n\nBachata started as guitar-driven storytelling music in the barrios of the Dominican Republic in the 1960s. It was dismissed by the upper class as "m\u00fasica de amargue" \u2014 music of bitterness.\n\nNow it fills dance floors in every major city on the planet. Never let someone tell you your art doesn\'t belong.',
-    'Bachata culture spotlight \u{1F334}\n\nWhat began in neighborhood gatherings in the Dominican Republic became one of the most loved social dances on the planet.\n\nRespect the roots, train the fundamentals, and enjoy the connection.',
-    'History lesson \u{1F4DA}\n\nJuan Luis Guerra\'s "Bachata Rosa" (1990) was the turning point \u2014 it proved bachata could win Grammys and fill stadiums. Before him, this music was banned from radio stations.\n\nWho\'s your favorite bachata artist of all time? Drop it below \u{1F447}',
-    '\u{1F1E9}\u{1F1F4} Bachata fact of the day:\n\nThe g\u00fcira, the bongo, and the bass guitar \u2014 that\'s the holy trinity of bachata rhythm. Every other element is built on top of those three.\n\nNext time you dance, try to isolate each instrument with your body. Game changer.',
+    'Bachata started in the barrios of the Dominican Republic in the 1960s. It evolved from bolero and son into a social dance that now connects people in every major city on the planet.\n\nWhat style do you love most right now — traditional, moderna, or sensual?',
+    'Quick history: bachata was literally called "música de amargue" — music of bitterness. The upper class dismissed it. Radio stations banned it.\n\nNow it fills dance floors worldwide. Never let anyone tell you your art doesn\'t belong.',
+    'What started in neighborhood gatherings in the Dominican Republic became one of the most loved social dances in the world.\n\nRespect the roots. Train the fundamentals. Enjoy the connection.',
+    'Juan Luis Guerra\'s "Bachata Rosa" in 1990 changed everything. It proved bachata could win Grammys and fill stadiums.\n\nBefore him, this music was banned from radio. Who\'s your favorite bachata artist of all time?',
+    'The güira, the bongo, and the bass guitar — that\'s the holy trinity of bachata rhythm. Everything else is built on top of those three.\n\nNext time you dance, try to isolate each instrument with your body. It changes everything.',
 
     // ── Technique & Tips ─────────────────────────────────────
-    'Bachata roots check \u2705\n\nThe foundation of great bachata is timing, weight transfer, and listening to the music before chasing flashy patterns.\n\nWant us to post more bachata history + technique breakdowns?',
-    'Quick bachata tip \u{1F525}\n\nYour basic step IS your style. The way you hit that 4-count, the weight in your step, the way your body grooves \u2014 that\'s what makes people want to dance with you.\n\nPatterns come and go. Musicality is forever.',
-    'Connection > Combos. Every single time. \u{1F4AF}\n\nThe best leaders in bachata don\'t force patterns \u2014 they listen. They feel where their partner is, read the music, and create something together.\n\nThat\'s the magic. That\'s why we dance.',
+    'The foundation of great bachata is timing, weight transfer, and actually listening to the music before chasing patterns.\n\nSounds simple. Most people skip it.',
+    'Your basic step IS your style. The way you hit that 4-count, the weight in your step, how your body grooves — that\'s what makes people want to dance with you.\n\nPatterns come and go. Musicality stays.',
+    'The best leaders in bachata don\'t force patterns. They listen. They feel where their partner is, read the music, and create something together.\n\nThat\'s the magic. That\'s why we dance.',
 
     // ── Debate / Engagement ──────────────────────────────────
-    'Hot take time \u{1F525}\u{1F525}\n\nSensual vs. Traditional vs. Moderna \u2014 which style of bachata do you think takes the MOST skill to master?\n\nDefend your pick in the comments. Let\'s hear it \u{1F447}',
-    'POLL: What makes a GREAT social dancer? \u{1F914}\n\n\u{1F170}\uFE0F Smooth basics and clean footwork\n\u{1F171}\uFE0F Musicality \u2014 hitting every accent\n\u{1F172} Connection \u2014 making your partner feel comfortable\n\u{1F173} All of the above\n\nComment your pick!',
+    'Sensual vs. Traditional vs. Moderna — which style takes the most skill to master?\n\nDefend your pick. I want to hear real answers.',
+    'What makes a great social dancer?\n\nA) Clean basics and footwork\nB) Musicality — hitting every accent\nC) Connection — making your partner feel safe\nD) All of the above\n\nHonest answer only.',
 
     // ── Weekend Hooks ────────────────────────────────────────
-    'This weekend vibes only \u{1F334}\u{1F483}\n\nWherever you\'re dancing this weekend \u2014 put on your favorite bachata playlist, find a great partner, and just enjoy the moment.\n\nTag who you\'re dancing with this weekend! \u{1F447}',
-    'Weekend plans? \u{1F525}\n\nStep 1: Pick your outfit\nStep 2: Put on bachata\nStep 3: Hit the social\nStep 4: Dance until they turn the lights on\n\nWho\'s going out this weekend? Drop your city below \u{1F4CD}',
+    'Wherever you\'re dancing this weekend — put on your favorite playlist, find a good partner, and just be present.\n\nThat\'s it. That\'s the whole plan.',
+    'Weekend formula:\n\n1. Pick your outfit\n2. Put on bachata\n3. Hit the social\n4. Dance until they turn the lights on\n\nWho\'s going out? Drop your city.',
 ];
 
 const DANIEL_SENSUAL_SONG_TEMPLATES = [
-    'Daniel Sensual song pick of the day \u{1F3B5}\n\nPut this on, grab your partner, and give yourself one clean-song practice round tonight.\n\nGood music + good basics = better socials.',
-    'Bachata music recommendation by Daniel Sensual \u{1F3A7}\n\nUse this track for musicality drills: listen for the accents, then match your body movement to the phrasing.',
-    'Today\'s Daniel Sensual bachata vibe \u{1F525}\n\nIf this song hits your soul, share it with your dance partner and save it for your next social.',
-    '\u{1F3B5} Vibe check: Daniel Sensual edition\n\nThis track is built for that slow, connected, musical bachata. The kind where the music does the work and you just flow with it.\n\nHit save. You\'ll thank me at the next social \u{1F483}',
-    'Late night bachata mood \u{1F319}\u{1F3B6}\n\nDaniel Sensual makes the kind of music that sounds even better at 1AM on a warm night with the right person.\n\nWhat\'s your go-to late night bachata track? Drop it below \u{1F447}',
-    'Practice session starter \u{1F3A7}\n\nBefore you go to the social tonight \u2014 put on a Daniel Sensual track and practice your body movement in the mirror for 5 minutes.\n\nSmall reps = big results on the floor.',
-    '\u{1F50A} Daniel Sensual \u2014 AI-produced bachata that actually sounds like bachata.\n\nNo gimmicks. Just real Dominican guitar tones, clean rhythms, and tracks made for the dance floor.\n\nSave this for your next practice session \u{1F525}',
-    'M\u00fasica pa\' sentirla \u{1F49C}\n\nDaniel Sensual just hits different when you\'re in that zone \u2014 lights low, music up, partner close.\n\nTag someone who needs to hear this tonight \u{1F3B5}',
+    'Put this on, grab your partner, and give yourself one clean-song practice round tonight.\n\nGood music + good basics = better socials.',
+    'Use this track for musicality drills — listen for the accents, then match your body movement to the phrasing.\n\nSmall reps, big results on the floor.',
+    'This track is built for that slow, connected, musical bachata. The kind where the music does the work and you just flow with it.\n\nSave it. You\'ll thank me at the next social.',
+    'Daniel Sensual makes the kind of music that sounds even better at 1am on a warm night with the right person.\n\nWhat\'s your go-to late night bachata track?',
+    'Before you go to the social tonight — put on a Daniel Sensual track and practice your body movement in the mirror for 5 minutes.\n\nSmall reps = big results on the floor.',
+    'AI-produced bachata that actually sounds like bachata. No gimmicks. Just real Dominican guitar tones, clean rhythms, and tracks made for the dance floor.',
+    'Música pa\' sentirla. Daniel Sensual just hits different when you\'re in that zone — lights low, music up, partner close.',
 ];
 
 function normalizeText(value) {
@@ -230,7 +229,7 @@ export function pickCandidate(candidates, now = new Date(), isDuplicateFn = isDu
 
     return {
         ...first,
-        caption: `${first.caption}\n\n#BachataExoticaDaily ${formatDateIso(now).replace(/-/g, '')}`,
+        caption: `${first.caption}\n\n${formatDateIso(now)}`,
         reason: `${first.reason || 'All candidates were duplicates.'} Duplicate override tag appended to force a unique post.`,
         dedupeBypassed: true,
     };

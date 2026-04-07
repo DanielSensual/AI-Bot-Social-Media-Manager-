@@ -13,18 +13,21 @@
 
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { createHash } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { generateGroupCaption, generateStreamingComment, detectLocale } from './share-caption-generator.js';
+import { recordGroupFailure, recordGroupShare } from './danielsensual-groups.js';
 
 dotenv.config();
 puppeteer.use(StealthPlugin());
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const USER_DATA_DIR = path.join(process.env.HOME, '.danielsensual-chrome-profile');
+const DEFAULT_USER_DATA_DIR = path.join(process.env.HOME || '/root', '.danielsensual-chrome-profile');
 const LOGS_DIR = path.join(__dirname, '..', 'logs', 'danielsensual-shares');
+let activeLockFile = null;
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -65,26 +68,130 @@ function screenshotOnError(page, label) {
     return page.screenshot({ path: file, fullPage: false }).catch(() => {});
 }
 
+function normalizeIdentityMode(mode) {
+    return String(mode || '').toLowerCase() === 'profile' ? 'profile' : 'page';
+}
+
+export function resolveShareRuntime(options = {}) {
+    const identityMode = normalizeIdentityMode(options.identityMode || process.env.DS_SHARE_IDENTITY_MODE);
+    const userDataDir = options.userDataDir || process.env.DANIELSENSUAL_SHARE_USER_DATA_DIR || DEFAULT_USER_DATA_DIR;
+
+    const lockFile = options.lockFile ||
+        process.env.DANIELSENSUAL_SHARE_LOCK_FILE ||
+        `/tmp/.danielsensual-share-${createHash('sha1').update(path.resolve(userDataDir)).digest('hex').slice(0, 12)}.lock`;
+
+    const entryScript = options.entryScript ||
+        process.env.DS_SHARE_ENTRY_SCRIPT ||
+        'scripts/danielsensual-share.js';
+
+    const botLabel = options.botLabel ||
+        process.env.DS_SHARE_BOT_NAME ||
+        (identityMode === 'profile' ? 'Daniel Sensual Personal' : 'Daniel Sensual');
+
+    const loginCommand = options.loginCommand ||
+        process.env.DS_SHARE_LOGIN_COMMAND ||
+        `node ${entryScript} --login`;
+
+    return {
+        identityMode,
+        userDataDir,
+        lockFile,
+        botLabel,
+        loginCommand,
+    };
+}
+
+// ─── Lockfile (Singleton Guard) ────────────────────────────────
+
+function isProcessAlive(pid) {
+    try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+export function acquireLock(force = false, options = {}) {
+    const { lockFile } = resolveShareRuntime(options);
+
+    if (fs.existsSync(lockFile)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(lockFile, 'utf-8'));
+            if (!force && isProcessAlive(data.pid)) {
+                const age = Math.round((Date.now() - data.startedAt) / 1000);
+                console.log(`\n🔒 Another sharing instance is running (PID ${data.pid}, ${age}s ago)`);
+                console.log(`   Use --force to override.\n`);
+                return false;
+            }
+            // Stale lock — process is dead, clean up
+            console.log(`🪓 Cleaning up stale lock (PID ${data.pid} is dead)`);
+        } catch {
+            // Corrupt lock file, overwrite
+        }
+    }
+    fs.writeFileSync(lockFile, JSON.stringify({
+        pid: process.pid,
+        startedAt: Date.now(),
+        startedAtISO: new Date().toISOString(),
+    }));
+    activeLockFile = lockFile;
+    return true;
+}
+
+export function releaseLock() {
+    try {
+        if (activeLockFile && fs.existsSync(activeLockFile)) {
+            const data = JSON.parse(fs.readFileSync(activeLockFile, 'utf-8'));
+            // Only release our own lock
+            if (data.pid === process.pid) {
+                fs.unlinkSync(activeLockFile);
+            }
+        }
+    } catch { /* best effort */ }
+}
+
+// Auto-release lock on exit
+process.on('exit', releaseLock);
+process.on('SIGINT', () => { releaseLock(); process.exit(1); });
+process.on('SIGTERM', () => { releaseLock(); process.exit(0); });
+
 // ─── Browser Session ─────────────────────────────────────────────
 
-async function launchBrowser(headless = true) {
-    return puppeteer.launch({
-        headless: headless ? 'new' : false,
+async function launchBrowser(headless = true, options = {}) {
+    const { userDataDir } = resolveShareRuntime(options);
+
+    // When DISPLAY is set (Xvfb), run headed to avoid Facebook's headless detection
+    const useHeadless = headless && !process.env.DISPLAY;
+
+    // Detect system Chrome — Puppeteer's bundled browser may not be installed on VMs
+    const systemChrome = ['/usr/bin/google-chrome-stable', '/usr/bin/chromium-browser', '/usr/bin/chromium']
+        .find(p => { try { return fs.existsSync(p); } catch { return false; } });
+
+    const launchOpts = {
+        headless: useHeadless ? 'new' : false,
+        protocolTimeout: 300_000, // 5 min protocol timeout — Facebook SPA is slow
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            `--user-data-dir=${USER_DATA_DIR}`,
+            `--user-data-dir=${userDataDir}`,
             '--disable-notifications',
             '--disable-blink-features=AutomationControlled',
+            // VM hardening
+            '--disable-gpu',
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--disable-background-networking',
         ],
         defaultViewport: { width: 1280, height: 900 },
-    });
+    };
+
+    if (systemChrome) {
+        launchOpts.executablePath = systemChrome;
+    }
+
+    return puppeteer.launch(launchOpts);
 }
 
 async function isLoggedIn(page) {
     try {
         await page.goto('https://www.facebook.com/', {
-            waitUntil: 'networkidle2',
+            waitUntil: 'domcontentloaded',
             timeout: 30000,
         });
         const url = page.url();
@@ -99,17 +206,18 @@ async function isLoggedIn(page) {
  * Session persists in ~/.danielsensual-chrome-profile/
  */
 export async function saveSession() {
+    const runtime = resolveShareRuntime();
     console.log('');
-    console.log('🔐 Daniel Sensual — Facebook Session Saver');
+    console.log(`🔐 ${runtime.botLabel} — Facebook Session Saver`);
     console.log('═'.repeat(50));
     console.log('');
     console.log('A browser will open. Please:');
-    console.log('1. Log in to YOUR personal Facebook (Daniel Sensual)');
+    console.log(`1. Log in to the Facebook account for ${runtime.botLabel}`);
     console.log('2. Complete any 2FA verification');
     console.log('3. Once logged in, press Enter in this terminal');
     console.log('');
 
-    const browser = await launchBrowser(false);
+    const browser = await launchBrowser(false, runtime);
     const page = await browser.newPage();
     await page.goto('https://www.facebook.com/login');
 
@@ -122,7 +230,7 @@ export async function saveSession() {
     if (loggedIn) {
         console.log('');
         console.log('✅ Session saved!');
-        console.log(`   Profile stored in: ${USER_DATA_DIR}`);
+        console.log(`   Profile stored in: ${runtime.userDataDir}`);
     } else {
         console.log('⚠️ Login not detected. Please try again.');
     }
@@ -137,117 +245,290 @@ export async function saveSession() {
  * Posts an AI-generated caption, then adds the video URL
  * + streaming links as a comment for cleaner engagement.
  */
-async function shareToGroup(page, { postUrl, groupUrl, groupName, caption = '', commentText = '', dryRun = false }) {
-    // Navigate to the group
-    await page.goto(groupUrl, { waitUntil: 'networkidle2', timeout: 45000 });
-    await randomDelay(2000, 4000);
+async function shareToGroup(page, {
+    postUrl,
+    groupUrl,
+    groupName,
+    caption = '',
+    commentText = '',
+    dryRun = false,
+    owned = false,
+    identityMode = 'page',
+}) {
+    // Disable nav timeout BEFORE goto — Facebook SPA does constant internal navigations
+    // that would otherwise cause Puppeteer to timeout (link preview fetches, frame swaps, etc.)
+    page.setDefaultNavigationTimeout(0);
+    await page.goto(groupUrl, { waitUntil: 'domcontentloaded' });
+    await randomDelay(3000, 5000);
 
     // ── Early detection: dead/banned/unavailable pages ──
-    const pageStatus = await page.evaluate(() => {
-        const bodyText = document.body?.textContent || '';
-        const url = window.location.href;
+    // BYPASS for owned groups — admin view renders differently and
+    // triggers false-positive "unavailable" detection
+    if (!owned) {
+        const pageStatus = await page.evaluate(() => {
+            const bodyText = document.body?.textContent || '';
+            const url = window.location.href;
 
-        if (bodyText.includes("This content isn't available right now") ||
-            bodyText.includes('This content is not available') ||
-            bodyText.includes("this page isn't available")) {
-            return 'unavailable';
-        }
-        if (url.includes('/login') || url.includes('/checkpoint')) {
-            return 'login_required';
-        }
+            if (bodyText.includes("This content isn't available right now") ||
+                bodyText.includes('This content is not available') ||
+                bodyText.includes("this page isn't available")) {
+                return 'unavailable';
+            }
+            if (url.includes('/login') || url.includes('/checkpoint')) {
+                return 'login_required';
+            }
 
-        const btns = Array.from(document.querySelectorAll('div[role="button"]'));
-        const joinBtn = btns.find(b => {
-            const label = b.getAttribute('aria-label') || '';
-            const txt = b.textContent?.trim() || '';
-            return label === 'Join group' || txt === 'Join group' || txt === 'Cancel request';
+            const btns = Array.from(document.querySelectorAll('div[role="button"]'));
+            const joinBtn = btns.find(b => {
+                const label = b.getAttribute('aria-label') || '';
+                const txt = b.textContent?.trim() || '';
+                return label === 'Join group' || txt === 'Join group' || txt === 'Cancel request';
+            });
+            if (joinBtn) return 'not_member';
+            return 'ok';
         });
-        if (joinBtn) return 'not_member';
-        return 'ok';
-    });
 
-    if (pageStatus === 'unavailable') throw new Error('Group unavailable (deleted/banned/restricted)');
-    if (pageStatus === 'login_required') throw new Error('Login required — session may have expired');
-    if (pageStatus === 'not_member') throw new Error('Not a member of this group');
+        if (pageStatus === 'unavailable') throw new Error('Group unavailable (deleted/banned/restricted)');
+        if (pageStatus === 'login_required') throw new Error('Login required — session may have expired');
+        if (pageStatus === 'not_member') throw new Error('Not a member of this group');
+    } else {
+        console.log(`   👑 Owned group — skipping availability check`);
+        // Still check for login redirect
+        const isLoginPage = page.url().includes('/login') || page.url().includes('/checkpoint');
+        if (isLoginPage) throw new Error('Login required — session may have expired');
+    }
 
     // ── Click the "Write something..." composer ──
-    const composerSelectors = [
-        'div[role="button"] span::-p-text(Write something)',
-        'div[role="button"] span::-p-text(write something)',
-        'div[role="button"] span::-p-text(What\'s on your mind)',
-    ];
-
-    let composerClicked = false;
-    for (const sel of composerSelectors) {
-        try {
-            const el = await page.waitForSelector(sel, { timeout: 5000 });
-            if (el) { await el.click(); composerClicked = true; break; }
-        } catch { /* next */ }
-    }
-
-    if (!composerClicked) {
-        await page.evaluate(() => {
-            const candidates = Array.from(document.querySelectorAll('div[role="button"]'));
-            const prompt = candidates.find(el => {
-                const txt = el.textContent?.toLowerCase() || '';
-                return txt.includes('write something') || txt.includes("what's on your mind");
-            });
-            if (prompt) prompt.click();
-            else throw new Error('No composer found');
+    // Use page.evaluate to handle Facebook's SPA frame destruction during dialog open
+    const composerOpened = await page.evaluate(() => {
+        const candidates = Array.from(document.querySelectorAll('div[role="button"]'));
+        const prompt = candidates.find(el => {
+            const txt = el.textContent?.toLowerCase() || '';
+            return txt.includes('write something') || txt.includes("what's on your mind");
         });
-    }
+        if (prompt) { prompt.click(); return true; }
+        return false;
+    });
 
-    await randomDelay(2000, 4000);
+    if (!composerOpened) throw new Error('No composer found');
 
-    // ── Find the text editor ──
-    const editorSelectors = [
-        'div[role="dialog"] div[contenteditable="true"][role="textbox"]',
-        'div[role="dialog"] div[contenteditable="true"]',
-        'div[contenteditable="true"][data-lexical-editor="true"]',
-        'div[contenteditable="true"][role="textbox"]',
-    ];
-
-    let editor = null;
-    for (const sel of editorSelectors) {
+    // Wait for the dialog to appear — poll because frame may be recreated
+    await randomDelay(2000, 3000);
+    let dialogReady = false;
+    for (let poll = 0; poll < 10; poll++) {
         try {
-            editor = await page.waitForSelector(sel, { timeout: 5000 });
-            if (editor) break;
-        } catch { /* next */ }
+            dialogReady = await page.evaluate(() => {
+                return !!document.querySelector('div[role="dialog"] div[contenteditable="true"][role="textbox"]');
+            });
+            if (dialogReady) break;
+        } catch { /* frame detached — wait and retry */ }
+        await new Promise(r => setTimeout(r, 1000));
+    }
+    if (!dialogReady) throw new Error('Composer dialog did not appear');
+
+    // ── Identity switch temporarily disabled — destroys the composer dialog DOM ──
+    // TODO: Fix identity switch to reopen composer after switching
+    if (identityMode === 'page' && false) {
+        try {
+            const PAGE_NAME = 'Daniel Sensual';
+            const switchResult = await page.evaluate((pageName) => {
+                const dialog = document.querySelector('div[role="dialog"]');
+                if (!dialog) return { status: 'no_dialog', buttons: [] };
+
+                const allButtons = Array.from(dialog.querySelectorAll('div[role="button"]'));
+
+                const buttonInfo = allButtons.slice(0, 20).map((btn, i) => ({
+                    i,
+                    aria: btn.getAttribute('aria-label') || '',
+                    text: (btn.textContent?.trim() || '').substring(0, 80),
+                    hasImg: !!btn.querySelector('img, image, svg'),
+                }));
+
+                let switcher = allButtons.find(btn => {
+                    const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+                    return ariaLabel.includes('posting') ||
+                        ariaLabel.includes('identity') ||
+                        ariaLabel.includes('switch') ||
+                        ariaLabel.includes('as your');
+                });
+
+                if (!switcher) {
+                    switcher = allButtons.find(btn => {
+                        const hasImage = btn.querySelector('img, image');
+                        const rect = btn.getBoundingClientRect();
+                        const dialogRect = dialog.getBoundingClientRect();
+                        return hasImage && (rect.top - dialogRect.top) < 80;
+                    });
+                }
+
+                if (!switcher) {
+                    const topElements = allButtons.filter(btn => {
+                        const rect = btn.getBoundingClientRect();
+                        const dialogRect = dialog.getBoundingClientRect();
+                        return (rect.top - dialogRect.top) < 100;
+                    });
+                    switcher = topElements.find(btn => btn.querySelector('img, image, svg'));
+                }
+
+                if (switcher) {
+                    switcher.click();
+                    return { status: 'clicked', buttons: buttonInfo };
+                }
+
+                return { status: 'not_found', buttons: buttonInfo };
+            }, PAGE_NAME);
+
+            if (switchResult.status === 'not_found' || switchResult.status === 'no_dialog') {
+                console.log('   ℹ️  No page switcher found — posting as personal profile');
+                if (switchResult.buttons.length > 0) {
+                    console.log('   📋 Dialog buttons for diagnostics:');
+                    for (const b of switchResult.buttons.slice(0, 8)) {
+                        console.log(`      [${b.i}] aria="${b.aria}" text="${b.text}" img=${b.hasImg}`);
+                    }
+                }
+                await page.screenshot({
+                    path: path.join(LOGS_DIR, `composer_dialog_${Date.now()}.png`),
+                    fullPage: false,
+                }).catch(() => {});
+            }
+
+            if (switchResult.status === 'clicked') {
+                await randomDelay(1500, 2500);
+
+                const selected = await page.evaluate((pageName) => {
+                    const candidates = Array.from(document.querySelectorAll(
+                        'div[role="menuitem"], div[role="option"], div[role="radio"], div[role="listbox"] div, div[role="menu"] div[role="button"], div[role="dialog"] div[role="button"]'
+                    ));
+
+                    let pageOption = candidates.find(el => {
+                        const text = el.textContent?.trim() || '';
+                        return text === pageName || text.startsWith(pageName + '\n') || text.startsWith(pageName + ' ');
+                    });
+
+                    if (!pageOption) {
+                        const allElements = Array.from(document.querySelectorAll('span, div[role="button"]'));
+                        pageOption = allElements.find(el => (el.textContent?.trim() || '') === pageName);
+                        if (pageOption) {
+                            const btn = pageOption.closest('div[role="button"], div[role="menuitem"], div[role="option"]');
+                            if (btn) {
+                                btn.click();
+                                return 'selected';
+                            }
+                            pageOption.click();
+                            return 'selected';
+                        }
+                    }
+
+                    if (pageOption) {
+                        pageOption.click();
+                        return 'selected';
+                    }
+
+                    const visible = candidates.slice(0, 10).map(el => el.textContent?.trim().substring(0, 60));
+                    return `page_not_found:${visible.join(' | ')}`;
+                }, PAGE_NAME);
+
+                if (selected === 'selected') {
+                    console.log(`   🏷️  Switched to post as "${PAGE_NAME}"`);
+                    await randomDelay(1500, 2500);
+                } else {
+                    console.log(`   ⚠️ Could not find "${PAGE_NAME}" in switcher — posting as personal`);
+                    console.log(`   📋 Visible options: ${selected}`);
+                }
+            }
+        } catch (switchErr) {
+            console.log(`   ⚠️ Page switch failed: ${switchErr.message} — posting as personal`);
+        }
+    } else {
+        console.log('   🙋 Posting as personal profile');
     }
 
-    if (!editor) throw new Error('Could not find post text editor');
+    // ── Find the text editor (after identity switch which may recreate dialog) ──
+    let editorFound = false;
+    for (let poll = 0; poll < 15; poll++) {
+        try {
+            editorFound = await page.evaluate(() => {
+                const tb = document.querySelector('div[role="dialog"] div[contenteditable="true"][role="textbox"]')
+                    || document.querySelector('div[contenteditable="true"][role="textbox"]');
+                if (tb) { tb.focus(); tb.click(); return true; }
+                return false;
+            });
+            if (editorFound) break;
+        } catch { /* frame detached — wait and retry */ }
+        await new Promise(r => setTimeout(r, 1000));
+    }
 
-    // ── V2: Post caption ONLY (no URL in body) ──
-    await editor.click();
+    if (!editorFound) throw new Error('Could not find post text editor');
     await randomDelay(400, 800);
 
-    // Caption only — URL goes in comment
-    const postText = caption || postUrl;
+    // Only put caption in post body — including the URL triggers Facebook SPA
+    // re-navigation (link preview fetch) that fatally conflicts with Puppeteer
+    const postText = caption || `🎬 Check this out! 🔥`;
 
     const textInserted = await page.evaluate((text) => {
         const textbox = document.querySelector(
             'div[role="dialog"] div[contenteditable="true"][role="textbox"]'
         ) || document.querySelector('div[contenteditable="true"][role="textbox"]');
-        if (!textbox) return false;
+        if (!textbox) return 'no_textbox';
         textbox.focus();
 
-        const dataTransfer = new DataTransfer();
-        dataTransfer.setData('text/plain', text);
-        const pasteEvent = new ClipboardEvent('paste', {
-            clipboardData: dataTransfer,
+        // Method 1: Lexical-compatible InputEvent (Facebook's editor framework)
+        const beforeInput = new InputEvent('beforeinput', {
+            inputType: 'insertText',
+            data: text,
             bubbles: true,
             cancelable: true,
+            composed: true,
         });
-        const handled = textbox.dispatchEvent(pasteEvent);
-        if (handled && textbox.textContent.trim().length === 0) {
-            document.execCommand('insertText', false, text);
-        }
-        return textbox.textContent.trim().length > 0;
+        textbox.dispatchEvent(beforeInput);
+        // Also dispatch the actual input event
+        textbox.dispatchEvent(new InputEvent('input', {
+            inputType: 'insertText',
+            data: text,
+            bubbles: true,
+        }));
+        if (textbox.textContent.trim().length > 0) return 'lexical';
+
+        // Method 2: execCommand
+        const cmd = document.execCommand('insertText', false, text);
+        if (cmd && textbox.textContent.trim().length > 0) return 'execCommand';
+
+        // Method 3: DataTransfer paste
+        const dt = new DataTransfer();
+        dt.setData('text/plain', text);
+        textbox.dispatchEvent(new ClipboardEvent('paste', {
+            clipboardData: dt, bubbles: true, cancelable: true
+        }));
+        if (textbox.textContent.trim().length > 0) return 'paste';
+
+        return 'failed';
     }, postText);
 
-    if (!textInserted) {
-        console.log('   ⚠️ Paste failed, falling back to keyboard.type...');
-        await page.keyboard.type(postText, { delay: 15 });
+    if (textInserted === 'no_textbox') {
+        throw new Error('Could not find post text editor in dialog');
+    }
+
+    if (textInserted === 'failed') {
+        // Last resort: use page.type on the focused element
+        // Wrap in try-catch because this may trigger SPA page navigations
+        console.log('   ⚠️ In-page methods failed, trying page.type...');
+        try {
+            const sel = 'div[role="dialog"] div[contenteditable="true"][role="textbox"]';
+            await page.type(sel, postText, { delay: 5 });
+            console.log('   📝 Text inserted via page.type');
+        } catch (typeErr) {
+            // If page.type triggered a navigation/timeout, the text might still be there
+            console.log(`   ⚠️ page.type interrupted: ${typeErr.message.substring(0, 60)}`);
+            await randomDelay(2000, 3000);
+            const hasText = await page.evaluate(() => {
+                const tb = document.querySelector('div[role="dialog"] div[contenteditable="true"][role="textbox"]');
+                return tb?.textContent?.trim().length > 0;
+            }).catch(() => false);
+            if (!hasText) throw new Error('All text insertion methods failed');
+            console.log('   📝 Text present after interrupted type');
+        }
+    } else {
+        console.log(`   📝 Text inserted via ${textInserted}`);
     }
 
     await randomDelay(2000, 3000);
@@ -384,6 +665,7 @@ export async function shareToAllGroups(options = {}) {
         dryRun = false,
         headless = true,
     } = options;
+    const runtime = resolveShareRuntime(options);
 
     if (!postUrl) {
         throw new Error('postUrl is required — provide a Facebook video/reel URL');
@@ -402,9 +684,10 @@ export async function shareToAllGroups(options = {}) {
     }
 
     console.log('');
-    console.log('🎬 Music Manager Bot — Group Video Sharer V2');
+    console.log(`🎬 ${runtime.botLabel} — Group Video Sharer V2`);
     console.log('═'.repeat(55));
     console.log(`   Mode:      ${dryRun ? 'DRY RUN' : '🔴 LIVE'}`);
+    console.log(`   Identity:  ${runtime.identityMode === 'profile' ? 'Personal profile' : 'Daniel Sensual page'}`);
     console.log(`   Video:     ${postUrl.substring(0, 70)}...`);
     console.log(`   Groups:    ${targetGroups.length}${batch ? ` (batch ${batch})` : ''}`);
     console.log(`   Captions:  AI-generated (locale-aware)`);
@@ -412,14 +695,17 @@ export async function shareToAllGroups(options = {}) {
     console.log(`   Time:      ${timestamp()}`);
     console.log('');
 
-    const browser = await launchBrowser(headless);
+    const browser = await launchBrowser(headless, runtime);
     const page = await browser.newPage();
+    // Set generous timeouts — Facebook SPA never truly stops loading
+    page.setDefaultNavigationTimeout(0);
+    page.setDefaultTimeout(120000);
 
     try {
         // Verify login
         const loggedIn = await isLoggedIn(page);
         if (!loggedIn) {
-            console.log('❌ Not logged in. Run: node scripts/danielsensual-share.js --login');
+            console.log(`❌ Not logged in. Run: ${runtime.loginCommand}`);
             await browser.close();
             return { success: false, error: 'Not logged in', posted: 0, failed: 0, skipped: 0 };
         }
@@ -451,14 +737,38 @@ export async function shareToAllGroups(options = {}) {
 
                 console.log(`   🤖 Caption (${captionResult.locale}/${captionResult.source}): "${captionResult.caption.substring(0, 60)}..."`);
 
-                await shareToGroup(page, {
-                    postUrl,
-                    groupUrl: group.url,
-                    groupName: group.name,
-                    caption: captionResult.caption,
-                    commentText: streamingComment,
-                    dryRun,
-                });
+                // Retry logic — 1 retry with 10s backoff for transient failures
+                let lastErr = null;
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        await shareToGroup(page, {
+                            postUrl,
+                            groupUrl: group.url,
+                            groupName: group.name,
+                            caption: captionResult.caption,
+                            commentText: streamingComment,
+                            dryRun,
+                            owned: group.owned || false,
+                            identityMode: runtime.identityMode,
+                        });
+                        lastErr = null;
+                        break; // success
+                    } catch (retryErr) {
+                        lastErr = retryErr;
+                        const isTransient = retryErr.message.includes('timeout') ||
+                            retryErr.message.includes('Timed out') ||
+                            retryErr.message.includes('Navigation timeout') ||
+                            retryErr.message.includes('detached Frame') ||
+                            retryErr.message.includes('frame was detached') ||
+                            retryErr.message.includes('Target closed');
+                        if (attempt === 0 && isTransient) {
+                            console.log(`   🔄 Transient failure, retrying in 10s...`);
+                            await new Promise(r => setTimeout(r, 10000));
+                        }
+                    }
+                }
+
+                if (lastErr) throw lastErr;
 
                 console.log(`   ✅ ${dryRun ? 'Would share' : 'Shared'} successfully`);
                 logResult({
@@ -470,6 +780,9 @@ export async function shareToAllGroups(options = {}) {
                     captionSource: captionResult.source,
                     batch: batch || null,
                 });
+                if (!dryRun) {
+                    recordGroupShare(group.name, postUrl);
+                }
                 posted++;
             } catch (error) {
                 console.log(`   ❌ Failed: ${error.message}`);
@@ -481,6 +794,8 @@ export async function shareToAllGroups(options = {}) {
                     postUrl: postUrl.substring(0, 100),
                     batch: batch || null,
                 });
+                // Track failure for auto-disable
+                recordGroupFailure(group.name, error.message);
                 failed++;
             }
 

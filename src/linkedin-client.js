@@ -578,7 +578,7 @@ export function getAuthUrl(profileName = 'default', options = {}) {
         throw new Error(`Missing Client ID for profile: ${profileName}`);
     }
 
-    const scope = 'openid profile email w_member_social w_organization_social r_organization_social';
+    const scope = 'openid profile email w_member_social';
 
     const params = new URLSearchParams({
         response_type: 'code',

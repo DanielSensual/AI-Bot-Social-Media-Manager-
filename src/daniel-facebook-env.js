@@ -15,10 +15,16 @@ const ENV_KEYS = {
  */
 export function assertDanielFacebookCredentials(env = process.env) {
     const hasToken = Boolean(env[ENV_KEYS.pageToken] || env[ENV_KEYS.userToken]);
+    const hasPageId = Boolean(env[ENV_KEYS.pageId]);
+
     if (!hasToken) {
         throw new Error(
             'Missing Daniel Facebook credentials. Set DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN or DANIEL_FACEBOOK_ACCESS_TOKEN.',
         );
+    }
+
+    if (!hasPageId) {
+        throw new Error('Missing Daniel Facebook page target. Set DANIEL_FACEBOOK_PAGE_ID.');
     }
 }
 

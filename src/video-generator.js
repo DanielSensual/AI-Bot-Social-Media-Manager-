@@ -17,14 +17,14 @@ const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-generate-preview';
 const VEO_API_KEY = process.env.VEO_API_KEY || process.env.GEMINI_API_KEY || '';
 const VEO_BREAKER_STATE_PATH = path.join(CACHE_DIR, 'veo-breaker.json');
-const VEO_BREAKER_COOLDOWN_MS = Number.parseInt(String(process.env.VEO_BREAKER_COOLDOWN_MS || ''), 10) || 6 * 60 * 60 * 1000;
+const VEO_BREAKER_COOLDOWN_MS = Number.parseInt(String(process.env.VEO_BREAKER_COOLDOWN_MS || ''), 10) || 24 * 60 * 60 * 1000;
 
 const XAI_BASE_URL = 'https://api.x.ai/v1';
-const XAI_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
+const XAI_API_KEY = process.env.XAI_VIDEO_API_KEY || process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
 const GROK_VIDEO_MODEL = process.env.GROK_VIDEO_MODEL || 'grok-imagine-video';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const OPENAI_VIDEO_MODEL = process.env.OPENAI_VIDEO_MODEL || 'sora';
+const OPENAI_VIDEO_MODEL = process.env.OPENAI_VIDEO_MODEL || 'sora-2';
 
 if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });

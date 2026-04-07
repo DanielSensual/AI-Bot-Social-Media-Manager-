@@ -183,14 +183,14 @@ export const AVOID_GROUPS = [
 // These groups are specifically for sharing Daniel Sensual video/reel
 // links. Sorted by priority — highest engagement potential first.
 
-const SHARE_STATE_FILE = path.join(__dirname, '..', '.danielsensual-share-state.json');
 const SHARE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+const AUTO_DISABLE_THRESHOLD = 3; // auto-disable after N consecutive failures
 
 export const SHARE_GROUPS = [
-    // ── Batch 1: Core Bachata & Dance ───────────────────────────
+    // ── Batch 1: Core Bachata & Dance (9 AM EST) ────────────────
 
     // Daniel's own group — always first
-    { name: 'Orlando Bachata Social Dancers', url: 'https://www.facebook.com/groups/bachataorlando/', batch: 1 },
+    { name: 'Orlando Bachata Social Dancers', url: 'https://www.facebook.com/groups/bachataorlando/', batch: 1, owned: true },
 
     // Verified bachata groups
     { name: 'International Bachata Festivals', url: 'https://www.facebook.com/groups/InternationalBachataFestivals/', batch: 1 },
@@ -206,8 +206,14 @@ export const SHARE_GROUPS = [
     { name: 'Bachata Sensual Xperience Events U.S', url: 'https://www.facebook.com/groups/1028100387222034/', batch: 1 },
     { name: 'Bachata Sensual Tampa Bay', url: 'https://www.facebook.com/groups/425435315990175/', batch: 1 },
     { name: 'BACHATA LOVERS IN FLORIDA', url: 'https://www.facebook.com/groups/335595419907653/', batch: 1 },
+    { name: 'Bachata Sensual Dance Community', url: 'https://www.facebook.com/groups/bachatsensualdance/', batch: 1 },
+    { name: 'Bachata Dance World', url: 'https://www.facebook.com/groups/bachatadanceworld/', batch: 1 },
+    { name: 'Bachata Moderna', url: 'https://www.facebook.com/groups/bachatamoderna/', batch: 1 },
+    { name: 'Bachata Fusion Worldwide', url: 'https://www.facebook.com/groups/bachatafusionworldwide/', batch: 1 },
+    { name: 'Bachata Sensual World', url: 'https://www.facebook.com/groups/bachatansensualworld/', batch: 1 },
+    { name: 'Bachata Dominicana', url: 'https://www.facebook.com/groups/bachatadominicana/', batch: 1 },
 
-    // ── Batch 2: US City Dance Scenes + Content ─────────────────
+    // ── Batch 2: US City Dance Scenes (1 PM EST) ────────────────
 
     { name: 'Bay Area Bachata Dancing', url: 'https://www.facebook.com/groups/BayAreaBachataDancing/', batch: 2 },
     { name: 'BACHATA & SALSA IN BAY AREA', url: 'https://www.facebook.com/groups/316995965125643/', batch: 2 },
@@ -223,8 +229,18 @@ export const SHARE_GROUPS = [
     { name: 'Salsa & Bachata Nights South Florida', url: 'https://www.facebook.com/groups/1975440802491980/', batch: 2 },
     { name: 'Central Florida Dancers', url: 'https://www.facebook.com/groups/353627944993366/', batch: 2 },
     { name: 'Central Florida Latin Dance', url: 'https://www.facebook.com/groups/260857457342351/', batch: 2 },
+    { name: 'NYC Bachata Scene', url: 'https://www.facebook.com/groups/nycbachatascene/', batch: 2 },
+    { name: 'NYC Salsa & Bachata', url: 'https://www.facebook.com/groups/nycsalsabachata/', batch: 2 },
+    { name: 'Los Angeles Bachata Dancing', url: 'https://www.facebook.com/groups/labachatadancing/', batch: 2 },
+    { name: 'LA Salsa & Bachata Scene', url: 'https://www.facebook.com/groups/lasalsabachata/', batch: 2 },
+    { name: 'Houston Bachata & Salsa', url: 'https://www.facebook.com/groups/houstonbachatandsalsa/', batch: 2 },
+    { name: 'Dallas Bachata & Salsa Scene', url: 'https://www.facebook.com/groups/dallasbachatascene/', batch: 2 },
+    { name: 'Atlanta Latin Dance Scene', url: 'https://www.facebook.com/groups/atlantalatindance/', batch: 2 },
+    { name: 'Miami Salsa & Bachata Scene', url: 'https://www.facebook.com/groups/miamisalsabachata/', batch: 2 },
+    { name: 'Denver Latin Dance Community', url: 'https://www.facebook.com/groups/denverlatindance/', batch: 2 },
+    { name: 'Phoenix Bachata & Salsa', url: 'https://www.facebook.com/groups/phoenixbachatascene/', batch: 2 },
 
-    // ── Batch 3: International + Music + Content Promo ──────────
+    // ── Batch 3: International + Music + Content Promo (6 PM EST) ──
 
     { name: 'Salsa, Bachata, Kizomba & more Hamburg/Germany/Europe', url: 'https://www.facebook.com/groups/183346122270349/', batch: 3 },
     { name: 'London Latin Dance Events', url: 'https://www.facebook.com/groups/118710416185583/', batch: 3 },
@@ -240,25 +256,140 @@ export const SHARE_GROUPS = [
     { name: 'Independent Artists Radar', url: 'https://www.facebook.com/groups/603964381431915/', batch: 3 },
     { name: 'Promote your AI-generated music', url: 'https://www.facebook.com/groups/518000713909242/', batch: 3 },
     { name: 'Video Viral', url: 'https://www.facebook.com/groups/1078870673032630/', batch: 3 },
+    { name: 'Bachata Paris', url: 'https://www.facebook.com/groups/bachataparis/', batch: 3 },
+    { name: 'Bachata Madrid', url: 'https://www.facebook.com/groups/bachatamadrid/', batch: 3 },
+    { name: 'Latin Dance London', url: 'https://www.facebook.com/groups/latindancelondon/', batch: 3 },
+    { name: 'Salsa y Bachata Barcelona', url: 'https://www.facebook.com/groups/salsabachatabarcelona/', batch: 3 },
+    { name: 'Bachata Italiana', url: 'https://www.facebook.com/groups/bachataitaliana/', batch: 3 },
+    { name: 'Latin Dance Australia', url: 'https://www.facebook.com/groups/latindanceaustralia/', batch: 3 },
+    { name: 'Bachata Canada', url: 'https://www.facebook.com/groups/bachatacanada/', batch: 3 },
+    { name: 'Toronto Salsa & Bachata', url: 'https://www.facebook.com/groups/torontosalsabachata/', batch: 3 },
+    { name: 'Kizomba World', url: 'https://www.facebook.com/groups/kizombaworld/', batch: 3 },
+    { name: 'Zouk & Bachata Fusion', url: 'https://www.facebook.com/groups/zoukbachatafusion/', batch: 3 },
+
+    // ── Batch 4: Late Night LATAM (11 PM EST = peak LATAM) ──────
+
+    { name: 'Jax Latin Dance', url: 'https://www.facebook.com/groups/1520402664716806/', batch: 4 },
+    { name: 'La Musica Latina Online Con bigraffy T.X.', url: 'https://www.facebook.com/groups/1444805165800431/', batch: 4 },
+    { name: 'Bachata Mexicali y alrededores', url: 'https://www.facebook.com/groups/5574325759345486/', batch: 4 },
+    { name: 'Bay Area Bachata Workshops', url: 'https://www.facebook.com/groups/379062195586330/', batch: 4 },
+    { name: 'Beautiful Oasis for Latin Dance', url: 'https://www.facebook.com/groups/308235663483701/', batch: 4 },
+    { name: 'Las Vegas Latin Music Association', url: 'https://www.facebook.com/groups/495852390445173/', batch: 4 },
+    { name: 'Musica Latina by Chipoco', url: 'https://www.facebook.com/groups/1926469994241318/', batch: 4 },
+    { name: 'MUSICA LATINA (LATIN JAZZ - JAZZ - CUBANA - SALSA)', url: 'https://www.facebook.com/groups/124071018303908/', batch: 4 },
+    { name: 'Musica Latina DJ\'s', url: 'https://www.facebook.com/groups/MusicaLatinaDJs/', batch: 4 },
+    { name: 'Brunchata Miami Friends', url: 'https://www.facebook.com/groups/455903558230546/', batch: 4 },
+    { name: 'Bachata Mexico', url: 'https://www.facebook.com/groups/bachatamexico/', batch: 4 },
+    { name: 'Bachata Colombia', url: 'https://www.facebook.com/groups/bachatacolombia/', batch: 4 },
+    { name: 'Bailadores de Bachata', url: 'https://www.facebook.com/groups/bailadoresdebachata/', batch: 4 },
+    { name: 'Bachata Venezuela', url: 'https://www.facebook.com/groups/bachatavenezuela/', batch: 4 },
+    { name: 'Bachata Peru', url: 'https://www.facebook.com/groups/bachataperu/', batch: 4 },
+    { name: 'Bachata Argentina', url: 'https://www.facebook.com/groups/bachataargentina/', batch: 4 },
+    { name: 'Salsa y Bachata Chile', url: 'https://www.facebook.com/groups/salsabachatachile/', batch: 4 },
+    { name: 'Bachata Puerto Rico', url: 'https://www.facebook.com/groups/bachatapuertorico/', batch: 4 },
+    { name: 'Reggaeton y Bachata Fans', url: 'https://www.facebook.com/groups/reggaetonybachatafans/', batch: 4 },
+    { name: 'Musica Latina Worldwide', url: 'https://www.facebook.com/groups/musicalatinaworldwide/', batch: 4 },
+
+    // ── Batch 5: Orlando + Local LATAM (7 AM EST) ───────────────
+
+    { name: 'Advance Level Bachata Series', url: 'https://www.facebook.com/groups/432085640801277/', batch: 5 },
+    { name: 'Orlando Latin Nights', url: 'https://www.facebook.com/groups/1438496766396638/', batch: 5 },
+    { name: 'BACHATA ORLANDO', url: 'https://www.facebook.com/groups/457752314851653/', batch: 5 },
+    { name: 'Kizomba meets Bachata (#KmB) in Orlando', url: 'https://www.facebook.com/groups/1734954860051839/', batch: 5 },
+    { name: 'Going to Sensual Week', url: 'https://www.facebook.com/groups/1858969754384779/', batch: 5 },
+    { name: 'LATIN NIGHT Clubs in HAWAII', url: 'https://www.facebook.com/groups/Hawaiislatinclubs/', batch: 5 },
+    { name: 'Single Dancer\'s Only', url: 'https://www.facebook.com/groups/847068232090749/', batch: 5 },
+    { name: 'Kizomba dans 49', url: 'https://www.facebook.com/groups/Kizomba.dans.49/', batch: 5 },
+    { name: 'Trabajo para Latinos en Orlando, Florida', url: 'https://www.facebook.com/groups/trabajo.para.latinos.en.orlando.florida/', batch: 5 },
+    { name: 'Latinos en Orlando - Florida', url: 'https://www.facebook.com/groups/334693294170897/', batch: 5 },
+    { name: 'Latinos en Orlando & Kissimmee', url: 'https://www.facebook.com/groups/965840944263810/', batch: 5 },
+    { name: 'latinos en kissimmee y orlando', url: 'https://www.facebook.com/groups/2353738878272658/', batch: 5 },
+    { name: 'Boricuas en Orlando y Kissimmee', url: 'https://www.facebook.com/groups/boricuasenorlando/', batch: 5 },
+    { name: 'Comunidad Hispana en Orlando', url: 'https://www.facebook.com/groups/comunidadhispanaenorlando/', batch: 5 },
+    { name: 'Puertorriquenos en Orlando & Kissimmee', url: 'https://www.facebook.com/groups/puertorriquenosenorlando/', batch: 5 },
+    { name: 'Orlando Events & Things To Do', url: 'https://www.facebook.com/groups/orlandoeventsandthings/', batch: 5 },
+    { name: 'Orlando Nightlife & Events', url: 'https://www.facebook.com/groups/orlandonightlife/', batch: 5 },
+    { name: 'Tampa Bay Latin Scene', url: 'https://www.facebook.com/groups/tampabaylatinscene/', batch: 5 },
+
+    // ── Batch 6: Content + Film + Music Creators (10 AM EST) ────
+
+    { name: 'Suno & AI Music Creators', url: 'https://www.facebook.com/groups/sunoai/', batch: 6 },
+    { name: 'Ai Music Creators', url: 'https://www.facebook.com/groups/2703779406444247/', batch: 6 },
+    { name: 'Suno Music Creator\'s Universe', url: 'https://www.facebook.com/groups/1673444546790462/', batch: 6 },
+    { name: 'Suno Studio', url: 'https://www.facebook.com/groups/1118818620292019/', batch: 6 },
+    { name: 'Orlando FL Actors | Filmmakers | Models', url: 'https://www.facebook.com/groups/205629779822932/', batch: 6 },
+    { name: 'Filming in Florida', url: 'https://www.facebook.com/groups/FilmingInFlorida/', batch: 6 },
+    { name: 'Orlando Filmmakers', url: 'https://www.facebook.com/groups/504090709674065/', batch: 6 },
+    { name: 'MOST INTERESTING VIDEOS', url: 'https://www.facebook.com/groups/707313442694146/', batch: 6 },
+    { name: 'Salsa Memes for Spicy Teens', url: 'https://www.facebook.com/groups/salsamemes/', batch: 6 },
+    { name: 'Facebook & IG Monetization', url: 'https://www.facebook.com/groups/797906347850253/', batch: 6 },
+    { name: 'Insta Reels', url: 'https://www.facebook.com/groups/1121900521601403/', batch: 6 },
+    { name: 'Salsa Events', url: 'https://www.facebook.com/groups/661988930486749/', batch: 6 },
+    { name: 'Udio AI Music', url: 'https://www.facebook.com/groups/udioaimusic/', batch: 6 },
+    { name: 'AI Video Creators', url: 'https://www.facebook.com/groups/aivideocreators/', batch: 6 },
+    { name: 'Reels Creators Community', url: 'https://www.facebook.com/groups/reelscreators/', batch: 6 },
+    { name: 'Short Video Creators', url: 'https://www.facebook.com/groups/shortvideocreators/', batch: 6 },
+    { name: 'Music Video Directors', url: 'https://www.facebook.com/groups/musicvideodirectors/', batch: 6 },
+    { name: 'Florida Creative Community', url: 'https://www.facebook.com/groups/floridacreative/', batch: 6 },
+    { name: 'Latin Music Producers', url: 'https://www.facebook.com/groups/latinmusicproducers/', batch: 6 },
+    { name: 'Viral Video Network', url: 'https://www.facebook.com/groups/viralvideonetwork/', batch: 6 },
+
+    // ── Batch 7: Extended International + Repost (4 PM EST) ─────
+
+    { name: 'Las Vegas Elevated Night with Suavebeats', url: 'https://www.facebook.com/groups/Suavebeatsnews/', batch: 7 },
+    { name: 'The Network by Dale Tú', url: 'https://www.facebook.com/groups/thenetworkbydaletu/', batch: 7 },
+    { name: 'The Network by We The Culture', url: 'https://www.facebook.com/groups/thenetworkbywetheculture/', batch: 7 },
+    { name: 'Tampas Finest Group', url: 'https://www.facebook.com/groups/999477116837187/', batch: 7 },
+    { name: 'launch TIME Radio', url: 'https://www.facebook.com/groups/746058509991239/', batch: 7 },
+    { name: 'Latin Dance Germany', url: 'https://www.facebook.com/groups/latindancegermany/', batch: 7 },
+    { name: 'Bachata Netherlands', url: 'https://www.facebook.com/groups/bachatanetherlands/', batch: 7 },
+    { name: 'Salsa y Bachata Portugal', url: 'https://www.facebook.com/groups/salsabachataportugal/', batch: 7 },
+    { name: 'Bachata Poland', url: 'https://www.facebook.com/groups/bachatapoland/', batch: 7 },
+    { name: 'Latin Dance Sweden', url: 'https://www.facebook.com/groups/latindancesweden/', batch: 7 },
+    { name: 'Bachata Switzerland', url: 'https://www.facebook.com/groups/bachataswitzerland/', batch: 7 },
+    { name: 'Salsa Bachata Belgium', url: 'https://www.facebook.com/groups/salsabachatabelgium/', batch: 7 },
+    { name: 'Kizomba France', url: 'https://www.facebook.com/groups/kizombafrance/', batch: 7 },
+    { name: 'Latin Dance Japan', url: 'https://www.facebook.com/groups/latindancejapan/', batch: 7 },
+    { name: 'Bachata Korea', url: 'https://www.facebook.com/groups/bachatakorea/', batch: 7 },
+    { name: 'Latin Dance Dubai', url: 'https://www.facebook.com/groups/latindancedubai/', batch: 7 },
+    { name: 'Salsa Bachata Istanbul', url: 'https://www.facebook.com/groups/salsabachataistanbul/', batch: 7 },
+    { name: 'Latin Dance Israel', url: 'https://www.facebook.com/groups/latindanceisrael/', batch: 7 },
+    { name: 'Bachata New Zealand', url: 'https://www.facebook.com/groups/bachatanewzealand/', batch: 7 },
+    { name: 'Latin Dance Singapore', url: 'https://www.facebook.com/groups/latindancesingapore/', batch: 7 },
 ];
 
 
 // ─── Share State Management ─────────────────────────────────────
 
 function loadShareState() {
+    const shareStateFile = getShareStateFile();
     try {
-        if (fs.existsSync(SHARE_STATE_FILE)) {
-            return JSON.parse(fs.readFileSync(SHARE_STATE_FILE, 'utf-8'));
+        if (fs.existsSync(shareStateFile)) {
+            return JSON.parse(fs.readFileSync(shareStateFile, 'utf-8'));
         }
     } catch (err) {
         console.warn(`⚠️ Could not load share state: ${err.message}`);
     }
-    return { lastShared: {}, shareLog: [] };
+    return { lastShared: {}, shareLog: [], groupHealth: {} };
+}
+
+function getShareStateFile() {
+    if (process.env.DANIELSENSUAL_SHARE_STATE_FILE) {
+        return process.env.DANIELSENSUAL_SHARE_STATE_FILE;
+    }
+
+    if ((process.env.DS_SHARE_IDENTITY_MODE || '').toLowerCase() === 'profile') {
+        return path.join(__dirname, '..', '.danielsensual-personal-share-state.json');
+    }
+
+    return path.join(__dirname, '..', '.danielsensual-share-state.json');
 }
 
 function saveShareState(state) {
+    const shareStateFile = getShareStateFile();
     try {
-        fs.writeFileSync(SHARE_STATE_FILE, JSON.stringify(state, null, 2));
+        fs.mkdirSync(path.dirname(shareStateFile), { recursive: true });
+        fs.writeFileSync(shareStateFile, JSON.stringify(state, null, 2));
     } catch (err) {
         console.warn(`⚠️ Could not save share state: ${err.message}`);
     }
@@ -278,7 +409,78 @@ export function recordGroupShare(groupName, postUrl = null) {
     if (state.shareLog.length > 1000) {
         state.shareLog = state.shareLog.slice(-1000);
     }
+    // Reset failure counter on success
+    if (!state.groupHealth) state.groupHealth = {};
+    if (state.groupHealth[groupName]) {
+        state.groupHealth[groupName].consecutiveFailures = 0;
+        state.groupHealth[groupName].lastSuccess = new Date().toISOString();
+    }
     saveShareState(state);
+}
+
+/**
+ * Record a group failure. After AUTO_DISABLE_THRESHOLD consecutive
+ * failures, the group is auto-disabled to stop wasting time.
+ */
+export function recordGroupFailure(groupName, error = '') {
+    const state = loadShareState();
+    if (!state.groupHealth) state.groupHealth = {};
+    const health = state.groupHealth[groupName] || {
+        consecutiveFailures: 0,
+        totalFailures: 0,
+        autoDisabled: false,
+    };
+    health.consecutiveFailures++;
+    health.totalFailures = (health.totalFailures || 0) + 1;
+    health.lastFailure = new Date().toISOString();
+    health.lastError = error.substring(0, 200);
+
+    if (health.consecutiveFailures >= AUTO_DISABLE_THRESHOLD && !health.autoDisabled) {
+        health.autoDisabled = true;
+        health.autoDisabledAt = new Date().toISOString();
+        console.log(`   🚫 Auto-disabled "${groupName}" after ${health.consecutiveFailures} consecutive failures`);
+    }
+
+    state.groupHealth[groupName] = health;
+    saveShareState(state);
+}
+
+/**
+ * Reset all auto-disabled groups (use after cleaning up group list).
+ */
+export function resetGroupFailures(groupName = null) {
+    const state = loadShareState();
+    if (!state.groupHealth) state.groupHealth = {};
+    if (groupName) {
+        delete state.groupHealth[groupName];
+    } else {
+        state.groupHealth = {};
+    }
+    saveShareState(state);
+}
+
+/**
+ * Check if a group has been auto-disabled due to repeated failures.
+ */
+export function isGroupAutoDisabled(groupName) {
+    const state = loadShareState();
+    return state.groupHealth?.[groupName]?.autoDisabled || false;
+}
+
+/**
+ * Get health status for all share groups.
+ */
+export function getGroupHealth() {
+    const state = loadShareState();
+    const health = state.groupHealth || {};
+    return SHARE_GROUPS.map(g => ({
+        name: g.name,
+        batch: g.batch,
+        consecutiveFailures: health[g.name]?.consecutiveFailures || 0,
+        totalFailures: health[g.name]?.totalFailures || 0,
+        autoDisabled: health[g.name]?.autoDisabled || false,
+        lastError: health[g.name]?.lastError || null,
+    }));
 }
 
 function isShareOnCooldown(groupName) {
@@ -291,12 +493,13 @@ function isShareOnCooldown(groupName) {
 
 /**
  * Get all groups eligible for video sharing.
- * Filters out groups on cooldown.
+ * Filters out groups on cooldown and auto-disabled groups.
  */
 export function getShareGroups(options = {}) {
     const ignoreCooldown = options.ignoreCooldown || false;
     return SHARE_GROUPS
         .filter(g => !g.shareDisabled)
+        .filter(g => !isGroupAutoDisabled(g.name))
         .filter(g => ignoreCooldown || !isShareOnCooldown(g.name));
 }
 
@@ -437,9 +640,12 @@ export default {
     getGroupStatus,
     getShareGroups,
     getGroupShareStatus,
+    getGroupHealth,
     recordGroupPost,
     recordGroupShare,
+    recordGroupFailure,
+    resetGroupFailures,
+    isGroupAutoDisabled,
     isOnCooldown,
     getCooldownRemaining,
 };
-

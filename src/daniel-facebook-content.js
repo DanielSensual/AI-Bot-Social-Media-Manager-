@@ -8,6 +8,7 @@
 
 import dotenv from 'dotenv';
 import { generateText, hasLLMProvider } from './llm-client.js';
+import { humanizeCaption } from './caption-utils.js';
 
 dotenv.config();
 
@@ -209,7 +210,10 @@ function parseJsonObject(raw) {
 }
 
 export function normalizeDanielFacebookCaption(text, maxLength = DEFAULT_MAX_LENGTH) {
-    const normalized = String(text || '')
+    const humanized = humanizeCaption(text);
+    if (!humanized) return '';
+
+    const normalized = humanized
         .replace(/\r\n/g, '\n')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
@@ -235,39 +239,50 @@ He runs Ghost AI Systems (AI voice agents, lead gen, SaaS) and MediaGeekz (cinem
 
 TODAY IS: ${today}
 
-═══ CONTENT DIRECTION ═══
+CONTENT DIRECTION:
 Pillar: ${pillar}
 Theme: ${theme}
 Tone: ${tone}
 
-═══ AUDIENCE ═══
-- Small business owners tired of generic advice
-- Hustlers and grinders who respect action over talk
-- People curious about AI but overwhelmed by the noise
-- Veterans and blue-collar workers building something new
-- Local Orlando business community
+AUDIENCE: Small business owners, hustlers who respect action over talk, people curious about AI, veterans building something new, Orlando business community.
 
-═══ VOICE RULES ═══
-- Write like you're talking to a friend at a bar, not presenting at a conference
-- Start with a HOOK — first line must stop the scroll (bold claim, question, controversial statement, or raw emotion)
-- Be SPECIFIC — real numbers, real situations, real emotions
-- Short paragraphs. Lots of white space. Facebook rewards readability.
-- Mix in personality: humor, sarcasm, intensity, vulnerability — whatever fits the theme
-- End with either a call-to-action question OR a powerful closing line
-- NO hashtags. NO emojis except occasionally 🔥 or 💀 for emphasis.
-- NO corporate speak. NO "leverage" or "synergy" or "ecosystem."
-- Aim for comments and shares, not just likes
+═══ FORMATTING RULES (CRITICAL — FOLLOW EXACTLY) ═══
 
-${pillar === 'trending' ? `═══ TRENDING CONTEXT ═══
-Reference a REAL, RECENT development in AI, tech, or business from the last 7 days.
-Examples: new model releases, company layoffs, funding rounds, regulation news, viral AI demos.
-React to it with a strong opinion — don't just report it.` : ''}
+Facebook flags robotic-looking posts. Your output MUST look like a real person wrote it on their phone.
 
-${pillar === 'friction' ? `═══ FRICTION RULES ═══
-Take a position that some people will disagree with.
-The goal is to spark debate in the comments.
-Don't be mean — be honest. There's a difference.
-"I'd rather have 50 angry comments than 500 hollow likes."` : ''}
+1. Write like you're texting a friend at a bar. NOT presenting at a conference. NOT writing a LinkedIn post.
+2. Use SHORT paragraphs — 1–3 sentences max per block. Separate blocks with ONE blank line.
+3. VARY sentence length within the post. Mix punchy lines ("That's it.") with longer flowing thoughts.
+4. Do NOT start with an emoji. Do NOT start every paragraph with an emoji.
+5. Use 1-2 emojis TOTAL, max. Placed mid-sentence or end of post. 🔥 or 💀 only.
+6. Do NOT use bullet lists, numbered lists, or arrow lists (→ • ✓ 1. 2. 3.). Write in natural paragraphs.
+7. Do NOT use markdown (**bold**, _italic_, headers). Plain text only.
+8. NO hashtags unless absolutely necessary (max 2).
+9. NO corporate speak — "leverage", "synergy", "ecosystem" are banned.
+10. First line = scroll-stopper. But VARY the type across posts: sometimes a question, sometimes a bold claim, sometimes mid-story ("So I'm sitting at my desk at midnight...").
+11. End with a question or a hard-hitting closer line. Not both.
+12. Aim for comments and shares, not likes.
+
+BAD (robotic, will get flagged):
+"🚀 AI is changing the game!
+
+→ Voice agents that answer phones
+→ Lead gen that runs 24/7
+→ Automation that never sleeps
+
+Are you ready? Comment below! 👇🔥"
+
+GOOD (human, natural):
+"I shipped a client site at 11pm last night.
+
+By midnight their AI receptionist had booked 3 calls. By morning, 2 new customers.
+
+This is what 'always on' actually means.
+
+What did you ship this week?"
+
+${pillar === 'trending' ? `TRENDING CONTEXT: Reference a REAL, RECENT development in AI/tech/business. React with a strong opinion — don't just report it.` : ''}
+${pillar === 'friction' ? `FRICTION: Take a position people will disagree with. Spark debate. Be honest, not mean.` : ''}
 
 Return strict JSON only:
 {

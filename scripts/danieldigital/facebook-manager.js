@@ -4,7 +4,8 @@
  */
 
 import 'dotenv/config';
-import { pathToFileURL } from 'url';
+import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 import {
     parseDanielFacebookManagerConfig,
     runDanielFacebookManagerCycle,
@@ -145,10 +146,24 @@ export async function main(argv = process.argv.slice(2)) {
     return null;
 }
 
-const isDirectRun = Boolean(process.argv[1])
-    && import.meta.url === pathToFileURL(process.argv[1]).href;
+const CURRENT_FILE = fileURLToPath(import.meta.url);
 
-if (isDirectRun) {
+function matchesCurrentFile(value) {
+    if (!value) return false;
+
+    try {
+        const resolved = path.resolve(value);
+        return resolved === CURRENT_FILE || pathToFileURL(resolved).href === import.meta.url;
+    } catch {
+        return false;
+    }
+}
+
+export function isDanielFacebookManagerDirectRun(argv = process.argv, env = process.env) {
+    return matchesCurrentFile(argv[1]) || matchesCurrentFile(env.pm_exec_path);
+}
+
+if (isDanielFacebookManagerDirectRun()) {
     main().then((code) => {
         if (code !== null) process.exit(code);
         // else: scheduler mode — keep process alive
@@ -156,6 +171,7 @@ if (isDirectRun) {
 }
 
 export default {
+    isDanielFacebookManagerDirectRun,
     parseDanielFacebookManagerArgs,
     main,
 };

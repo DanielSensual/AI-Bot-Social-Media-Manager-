@@ -3,10 +3,16 @@
  * Includes circuit breaker for credit exhaustion (402)
  */
 
+import fs from 'fs';
+import path from 'path';
 import { TwitterApi } from 'twitter-api-v2';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const BREAKER_STATE_PATH = path.join(__dirname, '..', '.x-api-breaker.json');
 
 // Initialize client with OAuth 1.0a for user context (posting)
 const client = new TwitterApi({
@@ -21,31 +27,126 @@ const rwClient = client.readWrite;
 
 // ═══════════════════════════════════════════════════════════
 //  CIRCUIT BREAKER — stops hammering X API after 402
+//  Escalating cooldown: 24h → 48h → 72h on consecutive trips
 // ═══════════════════════════════════════════════════════════
-const BREAKER_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
-let breakerTrippedAt = 0;
+const BASE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+const COOLDOWN_TIERS = [BASE_COOLDOWN_MS, 48 * 60 * 60 * 1000, 72 * 60 * 60 * 1000];
+
+function readBreakerState() {
+    try {
+        if (!fs.existsSync(BREAKER_STATE_PATH)) return { trippedAt: 0, consecutiveTrips: 0 };
+        const raw = JSON.parse(fs.readFileSync(BREAKER_STATE_PATH, 'utf8'));
+        return {
+            trippedAt: Number.isFinite(raw?.trippedAt) ? raw.trippedAt : 0,
+            consecutiveTrips: Number.isFinite(raw?.consecutiveTrips) ? raw.consecutiveTrips : 0,
+        };
+    } catch {
+        return { trippedAt: 0, consecutiveTrips: 0 };
+    }
+}
+
+function getCooldownMs(consecutiveTrips) {
+    const tier = Math.min(consecutiveTrips, COOLDOWN_TIERS.length) - 1;
+    return COOLDOWN_TIERS[Math.max(0, tier)];
+}
+
+function writeBreakerState({ trippedAt, consecutiveTrips }) {
+    try {
+        if (!trippedAt) {
+            if (fs.existsSync(BREAKER_STATE_PATH)) {
+                fs.unlinkSync(BREAKER_STATE_PATH);
+            }
+            return;
+        }
+
+        const cooldown = getCooldownMs(consecutiveTrips);
+        fs.writeFileSync(BREAKER_STATE_PATH, JSON.stringify({
+            trippedAt,
+            consecutiveTrips,
+            cooldownHours: cooldown / (60 * 60 * 1000),
+            resetAt: new Date(trippedAt + cooldown).toISOString(),
+        }, null, 2));
+    } catch (error) {
+        console.warn(`⚠️ Failed to persist X circuit breaker state: ${error.message}`);
+    }
+}
+
+let breakerState = readBreakerState();
 
 function isBreakerOpen() {
-    if (breakerTrippedAt === 0) return false;
-    const elapsed = Date.now() - breakerTrippedAt;
-    if (elapsed > BREAKER_COOLDOWN_MS) {
-        breakerTrippedAt = 0; // Reset after cooldown
-        console.log('🔌 X API circuit breaker reset — retrying allowed');
+    if (breakerState.trippedAt === 0) return false;
+    const cooldown = getCooldownMs(breakerState.consecutiveTrips);
+    const elapsed = Date.now() - breakerState.trippedAt;
+    if (elapsed > cooldown) {
+        // Don't clear consecutiveTrips — only clear after a SUCCESSFUL call
+        breakerState.trippedAt = 0;
+        writeBreakerState({ trippedAt: 0, consecutiveTrips: breakerState.consecutiveTrips });
+        console.log('🔌 X API circuit breaker reset — retrying allowed (1 probe attempt)');
         return false;
     }
     return true;
 }
 
 function tripBreaker() {
-    breakerTrippedAt = Date.now();
-    const resetTime = new Date(breakerTrippedAt + BREAKER_COOLDOWN_MS).toLocaleTimeString();
-    console.error(`⚡ Circuit breaker TRIPPED — all X API calls blocked until ${resetTime}`);
+    breakerState.consecutiveTrips += 1;
+    breakerState.trippedAt = Date.now();
+    writeBreakerState(breakerState);
+    const cooldown = getCooldownMs(breakerState.consecutiveTrips);
+    const cooldownHours = cooldown / (60 * 60 * 1000);
+    const resetTime = new Date(breakerState.trippedAt + cooldown).toISOString();
+    console.error(`⚡ Circuit breaker TRIPPED (trip #${breakerState.consecutiveTrips}) — X API blocked for ${cooldownHours}h until ${resetTime}`);
+}
+
+function clearBreaker() {
+    breakerState = { trippedAt: 0, consecutiveTrips: 0 };
+    writeBreakerState(breakerState);
+    console.log('✅ X API circuit breaker cleared — credits confirmed working');
 }
 
 export function getBreakerStatus() {
-    if (!isBreakerOpen()) return { open: false };
-    const remainingMs = BREAKER_COOLDOWN_MS - (Date.now() - breakerTrippedAt);
-    return { open: true, remainingMs, resetAt: new Date(breakerTrippedAt + BREAKER_COOLDOWN_MS).toISOString() };
+    if (!isBreakerOpen()) return { open: false, consecutiveTrips: breakerState.consecutiveTrips };
+    const cooldown = getCooldownMs(breakerState.consecutiveTrips);
+    const remainingMs = cooldown - (Date.now() - breakerState.trippedAt);
+    return {
+        open: true,
+        consecutiveTrips: breakerState.consecutiveTrips,
+        cooldownHours: cooldown / (60 * 60 * 1000),
+        remainingMs,
+        resetAt: new Date(breakerState.trippedAt + cooldown).toISOString(),
+    };
+}
+
+function isBillingError(error) {
+    const message = String(error?.message || '');
+    return error?.code === 402
+        || error?.data?.status === 402
+        || /\b402\b/.test(message)
+        || /credits exhausted/i.test(message);
+}
+
+async function withBreaker(action, fn) {
+    if (isBreakerOpen()) {
+        const status = getBreakerStatus();
+        throw new Error(`X API circuit breaker is OPEN — ${action} blocked until ${status.resetAt}`);
+    }
+
+    try {
+        const result = await fn();
+        // Successful call — clear consecutive trip counter
+        if (breakerState.consecutiveTrips > 0) clearBreaker();
+        return result;
+    } catch (error) {
+        if (isBillingError(error)) {
+            console.error('💳 ═══════════════════════════════════════');
+            console.error('   X API CREDITS EXHAUSTED (HTTP 402)');
+            console.error('   Add credits → https://console.x.com');
+            console.error('═══════════════════════════════════════════');
+            tripBreaker();
+            throw new Error('X API credits exhausted — add credits at https://console.x.com');
+        }
+
+        throw error;
+    }
 }
 
 /**
@@ -54,36 +155,19 @@ export function getBreakerStatus() {
  * @returns {Promise<object>} Tweet data
  */
 export async function postTweet(text) {
-    if (isBreakerOpen()) {
-        const status = getBreakerStatus();
-        throw new Error(`X API circuit breaker is OPEN — credits exhausted. Resets at ${status.resetAt}`);
-    }
-
-    if (text.length > 280) {
-        throw new Error(`Tweet exceeds 280 characters (${text.length})`);
-    }
-
-    let tweet;
-    try {
-        tweet = await rwClient.v2.tweet(text);
-    } catch (error) {
-        // Surface clear message for billing issues + trip circuit breaker
-        if (error.code === 402 || error.data?.status === 402 || /402/.test(error.message)) {
-            console.error('💳 ═══════════════════════════════════════');
-            console.error('   X API CREDITS EXHAUSTED (HTTP 402)');
-            console.error('   Add credits → https://console.x.com');
-            console.error('═══════════════════════════════════════════');
-            tripBreaker();
-            throw new Error('X API credits exhausted — add credits at https://console.x.com');
+    return withBreaker('tweet publish', async () => {
+        if (text.length > 280) {
+            throw new Error(`Tweet exceeds 280 characters (${text.length})`);
         }
-        throw error;
-    }
 
-    console.log(`✅ Tweet posted: ${tweet.data.id}`);
-    console.log(`📝 "${text.substring(0, 50)}..."`);
-    console.log(`🔗 https://x.com/i/status/${tweet.data.id}`);
+        const tweet = await rwClient.v2.tweet(text);
 
-    return tweet.data;
+        console.log(`✅ Tweet posted: ${tweet.data.id}`);
+        console.log(`📝 "${text.substring(0, 50)}..."`);
+        console.log(`🔗 https://x.com/i/status/${tweet.data.id}`);
+
+        return tweet.data;
+    });
 }
 
 /**
@@ -93,26 +177,28 @@ export async function postTweet(text) {
  * @returns {Promise<object>} Tweet data
  */
 export async function postTweetWithMedia(text, imagePath) {
-    if (text.length > 280) {
-        throw new Error(`Tweet exceeds 280 characters (${text.length})`);
-    }
+    return withBreaker('tweet-with-media publish', async () => {
+        if (text.length > 280) {
+            throw new Error(`Tweet exceeds 280 characters (${text.length})`);
+        }
 
-    // Upload image first
-    console.log('📤 Uploading image to X...');
-    const mediaId = await client.v1.uploadMedia(imagePath);
-    console.log(`✅ Image uploaded: ${mediaId}`);
+        // Upload image first
+        console.log('📤 Uploading image to X...');
+        const mediaId = await client.v1.uploadMedia(imagePath);
+        console.log(`✅ Image uploaded: ${mediaId}`);
 
-    // Post tweet with media
-    const tweet = await rwClient.v2.tweet({
-        text: text,
-        media: { media_ids: [mediaId] },
+        // Post tweet with media
+        const tweet = await rwClient.v2.tweet({
+            text: text,
+            media: { media_ids: [mediaId] },
+        });
+
+        console.log(`✅ Tweet with image posted: ${tweet.data.id}`);
+        console.log(`📝 "${text.substring(0, 50)}..."`);
+        console.log(`🔗 https://x.com/i/status/${tweet.data.id}`);
+
+        return tweet.data;
     });
-
-    console.log(`✅ Tweet with image posted: ${tweet.data.id}`);
-    console.log(`📝 "${text.substring(0, 50)}..."`);
-    console.log(`🔗 https://x.com/i/status/${tweet.data.id}`);
-
-    return tweet.data;
 }
 
 /**
@@ -122,33 +208,35 @@ export async function postTweetWithMedia(text, imagePath) {
  * @returns {Promise<object>} Tweet data
  */
 export async function postTweetWithVideo(text, videoPath) {
-    if (text.length > 280) {
-        throw new Error(`Tweet exceeds 280 characters (${text.length})`);
-    }
+    return withBreaker('tweet-with-video publish', async () => {
+        if (text.length > 280) {
+            throw new Error(`Tweet exceeds 280 characters (${text.length})`);
+        }
 
-    // Upload video (this handles chunked upload internally)
-    console.log('📤 Uploading video to X (this may take a moment)...');
-    const mediaId = await client.v1.uploadMedia(videoPath, {
-        mimeType: 'video/mp4',
-        longVideo: false,
+        // Upload video (this handles chunked upload internally)
+        console.log('📤 Uploading video to X (this may take a moment)...');
+        const mediaId = await client.v1.uploadMedia(videoPath, {
+            mimeType: 'video/mp4',
+            longVideo: false,
+        });
+        console.log(`✅ Video uploaded: ${mediaId}`);
+
+        // Wait for video processing
+        console.log('⏳ Waiting for video processing...');
+        await waitForMediaProcessing(mediaId);
+
+        // Post tweet with video
+        const tweet = await rwClient.v2.tweet({
+            text: text,
+            media: { media_ids: [mediaId] },
+        });
+
+        console.log(`✅ Tweet with video posted: ${tweet.data.id}`);
+        console.log(`📝 "${text.substring(0, 50)}..."`);
+        console.log(`🔗 https://x.com/i/status/${tweet.data.id}`);
+
+        return tweet.data;
     });
-    console.log(`✅ Video uploaded: ${mediaId}`);
-
-    // Wait for video processing
-    console.log('⏳ Waiting for video processing...');
-    await waitForMediaProcessing(mediaId);
-
-    // Post tweet with video
-    const tweet = await rwClient.v2.tweet({
-        text: text,
-        media: { media_ids: [mediaId] },
-    });
-
-    console.log(`✅ Tweet with video posted: ${tweet.data.id}`);
-    console.log(`📝 "${text.substring(0, 50)}..."`);
-    console.log(`🔗 https://x.com/i/status/${tweet.data.id}`);
-
-    return tweet.data;
 }
 
 /**
@@ -192,22 +280,24 @@ async function waitForMediaProcessing(mediaId, maxWaitMs = 60000) {
  * @returns {Promise<object[]>} Array of tweet data
  */
 export async function postThread(tweets) {
-    const posted = [];
-    let lastTweetId = null;
+    return withBreaker('thread publish', async () => {
+        const posted = [];
+        let lastTweetId = null;
 
-    for (const text of tweets) {
-        const options = lastTweetId
-            ? { reply: { in_reply_to_tweet_id: lastTweetId } }
-            : {};
+        for (const text of tweets) {
+            const options = lastTweetId
+                ? { reply: { in_reply_to_tweet_id: lastTweetId } }
+                : {};
 
-        const tweet = await rwClient.v2.tweet(text, options);
-        posted.push(tweet.data);
-        lastTweetId = tweet.data.id;
+            const tweet = await rwClient.v2.tweet(text, options);
+            posted.push(tweet.data);
+            lastTweetId = tweet.data.id;
 
-        console.log(`✅ Thread tweet ${posted.length}/${tweets.length}: ${tweet.data.id}`);
-    }
+            console.log(`✅ Thread tweet ${posted.length}/${tweets.length}: ${tweet.data.id}`);
+        }
 
-    return posted;
+        return posted;
+    });
 }
 
 /**
@@ -215,9 +305,9 @@ export async function postThread(tweets) {
  * @returns {Promise<object>} Account metrics
  */
 export async function getMetrics() {
-    const me = await rwClient.v2.me({
+    const me = await withBreaker('metrics lookup', () => rwClient.v2.me({
         'user.fields': ['public_metrics', 'description'],
-    });
+    }));
 
     return {
         id: me.data.id,
@@ -235,7 +325,7 @@ export async function getMetrics() {
  */
 export async function testConnection() {
     try {
-        const me = await rwClient.v2.me();
+        const me = await withBreaker('connection test', () => rwClient.v2.me());
         console.log(`✅ Connected as @${me.data.username}`);
         return true;
     } catch (error) {

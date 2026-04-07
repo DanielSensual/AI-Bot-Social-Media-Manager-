@@ -185,7 +185,7 @@ export async function postToFacebookWithImage(text, imagePath) {
  * @param {string} videoPath - Path to video file (mp4)
  * @returns {Promise<object>} Post result
  */
-export async function postToFacebookWithVideo(text, videoPath) {
+export async function postToFacebookWithVideo(text, videoPath, options = {}) {
     const { pageId, pageToken, pageName } = await resolvePageCredentials();
 
     console.log('📤 Uploading video to Facebook...');
@@ -193,13 +193,28 @@ export async function postToFacebookWithVideo(text, videoPath) {
     const videoData = fs.readFileSync(videoPath);
     const boundary = '----FormBoundary' + Date.now();
 
-    const body = Buffer.concat([
+    const parts = [
         Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="description"\r\n\r\n${text}\r\n`),
         Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="access_token"\r\n\r\n${pageToken}\r\n`),
+    ];
+
+    // Add thumbnail offset if provided (in seconds)
+    if (options.thumbOffset != null) {
+        parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="thumb_offset"\r\n\r\n${options.thumbOffset}\r\n`));
+    }
+
+    // Add title if provided
+    if (options.title) {
+        parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="title"\r\n\r\n${options.title}\r\n`));
+    }
+
+    parts.push(
         Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="source"; filename="${path.basename(videoPath)}"\r\nContent-Type: video/mp4\r\n\r\n`),
         videoData,
         Buffer.from(`\r\n--${boundary}--\r\n`),
-    ]);
+    );
+
+    const body = Buffer.concat(parts);
 
     const response = await fetch(`${GRAPH_API_BASE}/${pageId}/videos`, {
         method: 'POST',

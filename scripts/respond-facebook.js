@@ -24,7 +24,7 @@ function parseMode() {
 const options = {
     mode: parseMode(),
     limit: Number.parseInt(getFlagValue('limit') || process.env.FACEBOOK_RESPONDER_LIMIT || '5', 10),
-    pageId: getFlagValue('page-id') || process.env.FACEBOOK_RESPONDER_PAGE_ID || '',
+    pageId: getFlagValue('page-id') || process.env.FACEBOOK_RESPONDER_PAGE_ID || process.env.FACEBOOK_PAGE_ID || '',
     pageName: getFlagValue('page-name') || process.env.FACEBOOK_RESPONDER_PAGE_NAME || '',
     profile: getFlagValue('profile') || process.env.FACEBOOK_RESPONDER_PROFILE || 'default',
 };
@@ -54,7 +54,7 @@ Examples:
 }
 
 if (!options.pageId && !options.pageName) {
-    console.error('❌ Missing target page. Use --page-id, --page-name, or set FACEBOOK_RESPONDER_PAGE_ID/FACEBOOK_RESPONDER_PAGE_NAME.');
+    console.error('❌ Missing target page. Use --page-id, --page-name, or set FACEBOOK_RESPONDER_PAGE_ID/FACEBOOK_RESPONDER_PAGE_NAME/FACEBOOK_PAGE_ID.');
     process.exit(1);
 }
 

@@ -36,6 +36,22 @@ test('manager start fails with clear error when Daniel token vars are missing', 
     );
 });
 
+test('manager start fails with clear error when Daniel page ID is missing', () => {
+    const manager = createDanielFacebookManager({
+        scheduleFn: () => ({ stop() { } }),
+    });
+
+    assert.throws(
+        () => manager.start({
+            env: {
+                DANIEL_FACEBOOK_MANAGER_ENABLED: 'true',
+                DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token',
+            },
+        }),
+        /Missing Daniel Facebook page target/i,
+    );
+});
+
 test('dry-run cycle returns preview and does not publish', async () => {
     let postCalls = 0;
 
@@ -52,7 +68,10 @@ test('dry-run cycle returns preview and does not publish', async () => {
     });
 
     const result = await manager.runCycle({
-        env: { DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token' },
+        env: {
+            DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token',
+            DANIEL_FACEBOOK_PAGE_ID: 'page_1',
+        },
         dryRun: true,
     });
 
@@ -81,7 +100,10 @@ test('duplicate detection retries and exits safely', async () => {
     });
 
     const result = await manager.runCycle({
-        env: { DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token' },
+        env: {
+            DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token',
+            DANIEL_FACEBOOK_PAGE_ID: 'page_1',
+        },
         config: {
             ...parseDanielFacebookManagerConfig({}),
             duplicateRetries: 3,
@@ -109,7 +131,10 @@ test('live cycle posts text and records history', async () => {
     });
 
     const result = await manager.runCycle({
-        env: { DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token' },
+        env: {
+            DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token',
+            DANIEL_FACEBOOK_PAGE_ID: 'page_1',
+        },
     });
 
     assert.equal(result.success, true);
@@ -130,7 +155,10 @@ test('scheduler registers exactly one daily job at 10:00 ET', () => {
     });
 
     const jobs = manager.start({
-        env: { DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token' },
+        env: {
+            DANIEL_FACEBOOK_PAGE_ACCESS_TOKEN: 'token',
+            DANIEL_FACEBOOK_PAGE_ID: 'page_1',
+        },
     });
 
     assert.equal(jobs.length, 1);

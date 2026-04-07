@@ -5,7 +5,7 @@
 
 import cron from 'node-cron';
 import { config } from './config.js';
-import { postTweet, postTweetWithMedia, postTweetWithVideo, testConnection } from './twitter-client.js';
+import { postTweet, postTweetWithMedia, postTweetWithVideo, testConnection, getBreakerStatus } from './twitter-client.js';
 import { postToLinkedIn, postToLinkedInWithImage, postToLinkedInWithVideo, testLinkedInConnection, ensureTokenHealth } from './linkedin-client.js';
 import { postToFacebook, postToFacebookWithImage, postToFacebookWithVideo, testFacebookConnection } from './facebook-client.js';
 import { postToInstagram, postInstagramReel, testInstagramConnection, uploadToTempHost } from './instagram-client.js';
@@ -42,10 +42,15 @@ async function autonomousPost() {
     if (autonomy.healthCheck) {
         console.log('\n🩺 Running health checks...');
         if (autonomy.platforms.x) {
-            const xOk = await testConnection().catch(() => false);
-            if (!xOk) {
-                console.warn('   ⚠️ X API health check failed — will attempt post anyway');
-                alertHealthCheckFailure('X', new Error('Connection test failed')).catch(() => { });
+            const breakerStatus = getBreakerStatus();
+            if (breakerStatus.open) {
+                console.warn(`   ⚡ X API circuit breaker is OPEN (trip #${breakerStatus.consecutiveTrips}, ${breakerStatus.cooldownHours}h cooldown) — skipping all X calls`);
+            } else {
+                const xOk = await testConnection().catch(() => false);
+                if (!xOk) {
+                    console.warn('   ⚠️ X API health check failed — will attempt post anyway');
+                    alertHealthCheckFailure('X', new Error('Connection test failed')).catch(() => { });
+                }
             }
         }
         if (autonomy.platforms.linkedin) {
