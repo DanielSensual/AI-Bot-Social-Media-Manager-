@@ -144,12 +144,14 @@ function scanReelsFolder(queue) {
 // ─── AI Caption for Reel ────────────────────────────────────────
 
 const REEL_CAPTION_STYLES = [
-    'hookQuestion',    // "Wait for it... 🔥"
-    'vibeCheck',       // "This energy is unmatched 💃"
-    'behindScenes',    // "Desert roads, sunset, bachata. That's it."
-    'callToAction',    // "Tag your dance partner 👇"
+    'hookQuestion',    // "Wait for it..."
+    'vibeCheck',       // Pure energy, let the video speak
+    'behindScenes',    // "Desert roads, sunset, bachata."
     'storytelling',    // "We pulled over on the highway for this..."
-    'minimalCool',     // Short, punchy. 3 words max + emoji.
+    'minimalCool',     // Short and clean. 5 words max.
+    'emotional',       // Vulnerable, real
+    'funny',           // Light, playful
+    'spanglish',       // Natural code-switching
 ];
 
 async function generateReelCaption(videoTitle) {
@@ -160,19 +162,28 @@ async function generateReelCaption(videoTitle) {
     }
 
     try {
-        const prompt = `You write short, engaging Facebook Reel captions for Daniel Sensual — a bachata music artist & dancer based in Orlando.
+        const prompt = `You are Daniel Sensual's social media manager writing a Facebook Reel caption.
 
-VIDEO: "${videoTitle}"
-STYLE: ${style}
+BRAND: Bachata music artist & dancer. Orlando, FL. Veteran. Dominican roots. AI-produced music.
+VOICE: Real, warm, confident. Spanglish natural. Never corporate.
 
-RULES:
-1. Keep it SHORT — 1-2 sentences max, under 150 characters ideal
-2. Sound natural, human, NOT like a bot or marketer
-3. Use 1-3 relevant emojis (🔥 💃 🎶 ❤️ 🌊 🎵 🌅 🛣️)
-4. Use 2-4 hashtags at the end (#bachata #bachatadance #danielsensual #bachatadancing)
-5. Make people want to watch the whole video
-6. Do NOT mention Spotify, Apple Music, or any links
-7. Match the energy: dance videos = passion/fire, desert videos = cinematic/epic
+VIDEO TITLE: "${videoTitle}"
+CAPTION STYLE: ${style}
+
+Your job is to write a caption that:
+- Makes people STOP scrolling and watch
+- Feels like something a real person would type, not a bot
+- Matches the style requested but don't force it
+- Is SHORT — 1-2 sentences max, ideally under 100 characters
+- Uses 0-1 emojis, naturally placed
+- Ends with 2-3 lowercase hashtags
+- Never says "check this out", "don't miss", "new music alert"
+- Can be funny, vulnerable, mysterious, hype — match the video energy
+- If the title suggests a dance video: passion, connection, fire
+- If it suggests a desert/cinematic video: epic, cinematic, atmospheric
+- If it suggests a studio session: raw, creative, behind-the-curtain
+
+Think about what would make YOU stop scrolling. Write that.
 
 Return ONLY the caption text. No quotes, no JSON.`;
 
@@ -194,14 +205,14 @@ Return ONLY the caption text. No quotes, no JSON.`;
 
 function getFallbackCaption(videoTitle) {
     const captions = [
-        `This is why we dance 🔥💃 #bachata #bachatadance #danielsensual`,
-        `When the music takes over 🎶 #bachata #bachatadancing #danielsensual`,
-        `Dancing through life, one song at a time 💃🔥 #bachata #danielsensual`,
-        `Feel the rhythm 🎵🌊 #bachata #bachatadance #danielsensual`,
-        `No words needed, just watch 🔥 #bachata #bachatadancing #danielsensual`,
-        `This energy right here 💃✨ #bachata #danielsensual #dance`,
-        `Bachata hits different when the vibe is right 🎶🔥 #bachata #danielsensual`,
-        `Can't stop, won't stop 💃🎵 #bachata #bachatadance #danielsensual`,
+        `This is why we dance #bachata #danielsensual`,
+        `No caption needed. Just watch #bachata #bachatadance`,
+        `Late night energy #bachata #danielsensual`,
+        `Tell me this doesn't hit different #bachata #bachatadancing`,
+        `Made for the dance floor #bachata #danielsensual`,
+        `The vibe was right #bachata #danielsensual`,
+        `Some things you just feel #bachata #bachatadance`,
+        `Catch this one #bachata #danielsensual`,
     ];
     return captions[Math.floor(Math.random() * captions.length)];
 }

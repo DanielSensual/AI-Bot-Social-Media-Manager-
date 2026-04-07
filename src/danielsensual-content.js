@@ -230,76 +230,150 @@ export function loadActiveEvents() {
     return events;
 }
 
-// ─── AI Caption Generation ──────────────────────────────────────
+// ─── AI Social Media Manager Brain ──────────────────────────────
+
+// Brand bible — full context so AI can make real strategic decisions
+const BRAND_BIBLE = `
+═══ DANIEL SENSUAL — BRAND BIBLE ═══
+
+IDENTITY: Daniel Sensual is a bachata music artist, dancer, and community figure based in Orlando, FL.
+U.S. Military Veteran. Dominican roots. Creates AI-produced bachata music. Dances socially in Central Florida.
+
+VOICE: First-person. Warm but confident. Like texting a friend — never corporate, never LinkedIn.
+Spanglish is natural. Short sentences. Real opinions. Occasionally vulnerable.
+
+AUDIENCE: Bachata dancers (beginner to advanced), Latin music lovers, Orlando dance community, AI-curious musicians.
+
+DO NOT: Use corporate language. Start lines with emojis. Use more than 3 hashtags. Say "check this out" / "don't miss" / "new music alert".
+Use bullet lists. Sound like ChatGPT. Reference yourself in third person. Over-explain.
+
+DO: Be honest. Be short. Have opinions. Tell micro-stories. Ask real questions (not bait).
+Mix languages naturally. Leave space. Let silence do the work.
+`;
+
+// Expanded content angles the AI can choose from
+const CONTENT_ANGLES = [
+    'music_drop',        // New track, studio session, production insight
+    'dance_tip',         // Technique, musicality, connection advice
+    'dance_moment',      // Personal story from a social dance night
+    'opinion',           // Hot take on dance culture, AI music, the scene
+    'behind_scenes',     // Making music with AI, creative process, studio life
+    'community',         // Shoutout to Orlando scene, gratitude, local energy
+    'personal',          // Veteran life, creative journey, motivation
+    'event',             // Promoting an upcoming event
+];
+
+function getRecentPostSummary() {
+    try {
+        const historyPath = path.join(__dirname, '..', 'data', 'post-history.json');
+        if (fs.existsSync(historyPath)) {
+            const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+            const recent = (history.posts || []).slice(-5);
+            if (recent.length > 0) {
+                return recent.map(p => {
+                    const pillar = p.pillar || 'unknown';
+                    const preview = (p.text || p.caption || '').substring(0, 60);
+                    return `- [${pillar}] "${preview}..."`;
+                }).join('\n');
+            }
+        }
+    } catch { /* no history yet */ }
+    return '(no recent posts available)';
+}
+
+function getTimeContext(now = new Date()) {
+    const hour = now.getHours();
+    const day = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' });
+    const isWeekend = ['Saturday', 'Sunday'].includes(day);
+
+    let timeOfDay = 'morning';
+    if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
+    else if (hour >= 17 && hour < 21) timeOfDay = 'evening';
+    else if (hour >= 21 || hour < 5) timeOfDay = 'late night';
+
+    return { day, timeOfDay, isWeekend, hour };
+}
 
 function buildAIPrompt(pillar, context = {}) {
-    const pillarPrompts = {
-        music: `You write Facebook posts for Daniel Sensual — a bachata music artist in Orlando who creates AI-produced bachata tracks.
+    const now = new Date();
+    const timeCtx = getTimeContext(now);
+    const recentPosts = getRecentPostSummary();
+    const events = loadActiveEvents();
+    const activeEvent = events.length > 0 ? events[0] : null;
 
-Write about: a new song drop, studio session, or music update.
-Vibe: genuine excitement, Dominican bachata culture, personal.`,
+    const eventContext = activeEvent
+        ? `\nACTIVE EVENT: ${activeEvent.name} — ${activeEvent.date} at ${activeEvent.venue} (${activeEvent.price})`
+        : '\nNo active events right now.';
 
-        dance: `You write Facebook posts for Daniel Sensual — a bachata dancer in Orlando, FL.
+    const pillarGuidance = pillar === 'auto'
+        ? `You are the social media manager. Choose the best content angle for right now based on the day, time, recent posts, and what would perform best. Available angles: ${CONTENT_ANGLES.join(', ')}`
+        : `Content angle for this post: ${pillar}`;
 
-Write about: social dancing, bachata tips, the Orlando dance scene, or a personal dance moment.
-Vibe: warm, real, community-first.`,
-
-        event: `You write Facebook posts for Daniel Sensual, promoting an upcoming bachata event.
-
-Event info:
-${context.name || 'Bachata Event'} — ${context.date || 'TBA'}
-${context.time || 'TBA'} at ${context.venue || 'TBA'}
-${context.price || 'See details'}
-
-Vibe: hype and FOMO but genuine — like telling your friend about a party, not writing an ad.`,
+    const angleDetails = {
+        music_drop: 'Focus on music — a new track, production insight, or studio moment. Make people curious enough to listen.',
+        music: 'Focus on music — a new track, production insight, or studio moment. Make people curious enough to listen.',
+        dance_tip: 'Share a real technique insight or musicality tip. From experience, not a textbook.',
+        dance: 'Share a real technique insight, social dance story, or community moment dancers relate to.',
+        dance_moment: 'Tell a short story from a real social dance night. 3-4 sentences. Make the reader feel like they were there.',
+        opinion: 'Share a real, slightly polarizing opinion about bachata, dance culture, or AI music. Drive comments and debate.',
+        behind_scenes: 'Pull back the curtain — making music with AI, the creative grind, what people don\'t see.',
+        community: 'Show genuine love for the Orlando bachata scene or the broader dance community.',
+        personal: 'Share something real about your journey — veteran life, creative risks, a moment that mattered.',
+        event: activeEvent
+            ? `Promote naturally:\n${activeEvent.name}\n${activeEvent.date} · ${activeEvent.time}\n${activeEvent.venue}\n${activeEvent.price}\n${activeEvent.description || ''}\n\nSound like you're telling a friend, not writing an ad.`
+            : 'No active event — write a dance or community post instead.',
+        auto: '',
     };
 
-    return `${pillarPrompts[pillar] || pillarPrompts.dance}
+    return `${BRAND_BIBLE}
 
-═══ FORMATTING RULES (CRITICAL — READ CAREFULLY) ═══
+═══ CURRENT CONTEXT ═══
+Day: ${timeCtx.day} ${timeCtx.timeOfDay}${timeCtx.isWeekend ? ' (WEEKEND — peak engagement window)' : ''}
+${eventContext}
 
-You are writing for Facebook, where robotic-looking posts get buried or flagged.
+═══ RECENT POSTS (do NOT repeat similar content or angles) ═══
+${recentPosts}
 
-1. Write like a REAL PERSON typing on their phone — not a marketer, not a bot.
-2. Use SHORT paragraphs (1-3 sentences each). Separate with a single blank line.
-3. VARY your sentence length — mix short punchy lines ("That's it.") with longer thoughts.
-4. Do NOT start every line with an emoji. Use 2-4 emojis total, placed naturally.
-5. Do NOT use bullet lists (→ • ✓). Write in flowing paragraphs instead.
-6. Keep hashtags to 3-4 max, at the very end.
-7. First line should be a hook — but vary the type (question, bold claim, mid-story, emotional).
-8. Do NOT use markdown (no **bold**, no _italic_, no headers).
-9. Under 1000 characters total.
-10. Sound like Daniel — a veteran who dances bachata, not a LinkedIn influencer.
+═══ YOUR TASK ═══
+${pillarGuidance}
 
-BAD EXAMPLE (too structured, too robotic):
-"🎵 New track alert! Daniel Sensual just dropped another one 🔥
-This one hits different — pure bachata vibes.
-Save it for your next social dance night 💃🕺
-#DanielSensual #BachataMusic"
+${angleDetails[pillar] || angleDetails.dance}
 
-GOOD EXAMPLE (human, natural):
-"Just finished this track at 2am and I can't stop playing it back.
+═══ FORMATTING ═══
+1. Write for Facebook. Sound human — typing on your phone, not drafting a press release.
+2. SHORT paragraphs (1-3 sentences). Single blank lines between.
+3. Vary sentence length. Mix punchy ("That's it.") with longer thoughts.
+4. 0-2 emojis total, placed naturally. Never start a line with one.
+5. 2-3 lowercase hashtags at the very end.
+6. No markdown. No bullet lists. No bold/italic.
+7. Under 800 characters total.
+8. First line = hook. Vary the type (question, mid-story, hot take, emotional, observational).
+9. You can be funny. You can be serious. Match the angle.
 
-Something about this melody hits different. The guitar line alone is worth the listen.
-
-If you love bachata that actually makes you FEEL something, save this one 🔥
-
-#bachata #danielsensual #bachatadance"
-
-Return strict JSON only:
+Return strict JSON:
 {
-  "caption": "post text"
+  "caption": "your post text",
+  "angle": "${pillar === 'auto' ? 'the angle you chose' : pillar}",
+  "reasoning": "1 sentence — why this content, why now"
 }`;
 }
 
 // ─── Main Content Builder ───────────────────────────────────────
 
 export function getTemplatePost(pillar, context = {}) {
-    switch (pillar) {
+    // Map extended angles to base template pillars
+    const templateMap = {
+        music_drop: 'music', music: 'music',
+        dance_tip: 'dance', dance: 'dance', dance_moment: 'dance',
+        opinion: 'dance', behind_scenes: 'music',
+        community: 'dance', personal: 'dance',
+        event: 'event', auto: 'dance',
+    };
+    const basePillar = templateMap[pillar] || 'dance';
+
+    switch (basePillar) {
         case 'music':
             return normalizeCaption(pick(MUSIC_TEMPLATES)());
-        case 'dance':
-            return normalizeCaption(pick(DANCE_TEMPLATES)());
         case 'event': {
             const events = loadActiveEvents();
             const event = context.eventSlug
@@ -308,11 +382,16 @@ export function getTemplatePost(pillar, context = {}) {
             if (!event) return normalizeCaption(pick(DANCE_TEMPLATES)());
             return normalizeCaption(pick(EVENT_TEMPLATES)(event));
         }
+        case 'dance':
         default:
             return normalizeCaption(pick(DANCE_TEMPLATES)());
     }
 }
 
+/**
+ * Build a post with full AI social media manager capabilities.
+ * When pillar is 'auto', the AI chooses the best angle based on context.
+ */
 export async function buildPost(pillar, context = {}) {
     const aiEnabled = context.aiEnabled !== false;
 
@@ -330,7 +409,6 @@ export async function buildPost(pillar, context = {}) {
     // Build base result object
     const baseResult = {
         pillar,
-        // For event posts, include flyer and event URL for attachment
         ...(pillar === 'event' && context.flyerPath ? { flyerPath: context.flyerPath } : {}),
         ...(pillar === 'event' && context.eventUrl ? { eventUrl: context.eventUrl } : {}),
     };
@@ -341,20 +419,28 @@ export async function buildPost(pillar, context = {}) {
             const { text, provider, model } = await generateText({
                 prompt,
                 provider: 'auto',
-                maxOutputTokens: 600,
+                maxOutputTokens: 800,
                 openaiModel: 'gpt-5.4-mini',
             });
 
             const parsed = parseJsonObject(text);
             const caption = normalizeCaption(parsed?.caption);
+            const angle = parsed?.angle || pillar;
+            const reasoning = parsed?.reasoning || '';
 
             if (caption) {
+                if (reasoning) {
+                    console.log(`   🧠 AI strategy: ${reasoning}`);
+                }
                 return {
                     ...baseResult,
+                    pillar: angle,
                     caption,
                     source: 'ai',
                     provider,
                     model,
+                    angle,
+                    reasoning,
                     fallbackReason: null,
                 };
             }
@@ -363,6 +449,7 @@ export async function buildPost(pillar, context = {}) {
         }
     }
 
+    // Template fallback — map extended angles to base pillars
     const caption = getTemplatePost(pillar, context);
     return {
         ...baseResult,
@@ -379,36 +466,63 @@ export function getPostForGroup(groupName, pillar, context = {}) {
     const category = getGroupCategory ? getGroupCategory(groupName) : 'BACHATA_DANCE';
     const adapter = GROUP_CATEGORY_ADAPTERS[category];
 
-    if (!adapter || !adapter[pillar]) {
-        return null; // skip this pillar for this group category
+    // Map extended angles to base pillars for group adapters
+    const basePillar = ['music', 'dance', 'event'].includes(pillar) ? pillar : 'dance';
+
+    if (!adapter || !adapter[basePillar]) {
+        return null;
     }
 
-    const baseCaption = getTemplatePost(pillar, context);
-    const adapted = adapter[pillar](baseCaption);
+    const baseCaption = getTemplatePost(basePillar, context);
+    const adapted = adapter[basePillar](baseCaption);
     return {
         caption: adapted,
-        pillar,
+        pillar: basePillar,
         category,
         source: 'template',
     };
 }
 
 /**
- * Get today's pillar based on day rotation.
- * Music → Dance → Event → repeat
+ * Smart pillar selection — context-aware instead of rigid rotation.
+ * Weekends favor events/community. Evenings favor personal/opinion.
+ * When AI is available, use 'auto' to let it decide.
  */
 export function getTodaysPillar(now = new Date()) {
+    const timeCtx = getTimeContext(now);
+
+    // If AI is available, let it decide
+    if (hasLLMProvider()) {
+        return 'auto';
+    }
+
+    // Template fallback: time-aware rotation
     const dayOfYear = Math.floor(
         (now - new Date(now.getFullYear(), 0, 0)) / 86400000
     );
-    return PILLARS[dayOfYear % PILLARS.length];
+
+    if (timeCtx.isWeekend) {
+        const weekendOptions = ['event', 'dance', 'dance', 'music'];
+        return weekendOptions[dayOfYear % weekendOptions.length];
+    }
+
+    if (timeCtx.timeOfDay === 'evening' || timeCtx.timeOfDay === 'late night') {
+        const eveningOptions = ['dance', 'music', 'dance', 'music'];
+        return eveningOptions[dayOfYear % eveningOptions.length];
+    }
+
+    const defaultOptions = ['music', 'dance', 'dance', 'music', 'dance', 'music', 'dance'];
+    return defaultOptions[dayOfYear % defaultOptions.length];
 }
 
 export default {
-    PILLARS,
+    PILLARS: CONTENT_ANGLES,
     buildPost,
     getTemplatePost,
     getPostForGroup,
     getTodaysPillar,
     loadActiveEvents,
+    CONTENT_ANGLES,
+    BRAND_BIBLE,
 };
+

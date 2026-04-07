@@ -1199,6 +1199,111 @@
       "autoDisabled": false,
       "lastFailure": "2026-04-07T14:23:13.711Z",
       "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Las Vegas Elevated Night with Suavebeats": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:00:24.890Z",
+      "lastError": "Not a member of this group"
+    },
+    "The Network by Dale Tú": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:01:44.752Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "The Network by We The Culture": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:03:14.277Z",
+      "lastError": "No composer found"
+    },
+    "Tampas Finest Group": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:04:30.966Z",
+      "lastError": "Not a member of this group"
+    },
+    "launch TIME Radio": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:05:39.709Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Latin Dance Germany": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:07:19.462Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Bachata Netherlands": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:08:26.777Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Salsa y Bachata Portugal": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:09:31.370Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Bachata Poland": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:11:00.310Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Latin Dance Sweden": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:11:51.722Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Bachata Switzerland": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:13:34.059Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Salsa Bachata Belgium": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:14:48.817Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Kizomba France": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:15:59.080Z",
+      "lastError": "Not a member of this group"
+    },
+    "Latin Dance Japan": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:16:46.028Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Bachata Korea": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:17:59.354Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
     }
   }
 }
