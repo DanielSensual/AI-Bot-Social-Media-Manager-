@@ -228,45 +228,6 @@
     "productionNotes": "AI-produced using cutting-edge generative audio. Real Dominican guitar tones, authentic rhythm patterns. Daniel directs the creative — AI executes the production. Every track is curated, not randomly generated."
   },
 
-  "activeCampaign": {
-    "name": "Stream Bridge Q2 2026",
-    "goal": "Drive Instagram/Facebook followers to Spotify. Target: 883 → 2,500 monthly listeners in 30 days.",
-    "featuredTrack": "Bachata Sensual",
-    "spotifySearch": "Daniel Sensual",
-    "streamingCTA": {
-      "frequency": 0.3,
-      "naturalPhrases": [
-        "Song is 'Bachata Sensual' — search Daniel Sensual on Spotify.",
-        "This is my track. Search Daniel Sensual wherever you stream.",
-        "If this hits, the song is on Spotify. Daniel Sensual.",
-        "Produced this one from scratch. It's called Bachata Sensual — on all platforms.",
-        "New music out — look up Daniel Sensual on Spotify or Apple Music."
-      ],
-      "rules": [
-        "Never say 'Link in bio' or 'Stream now'  — those are banned by voice guardrails",
-        "Weave the CTA into the post naturally, like mentioning a song title in conversation",
-        "Only 1 in 3 posts should mention streaming — the rest are pure content",
-        "Alternate between Spotify, Apple Music, and YouTube mentions",
-        "If the post is a dance_tip or opinion, do NOT add a streaming CTA"
-      ]
-    }
-  },
-
-  "searchKeywords": [
-    "bachata sensual",
-    "sensual bachata music",
-    "bachata 2026",
-    "bachata orlando",
-    "ai bachata music",
-    "bachata dance",
-    "latin dance orlando",
-    "bachata romantica",
-    "dominican bachata",
-    "bachata practice",
-    "sensual dance",
-    "bachata tips"
-  ],
-
   "visual": {
     "aesthetic": "Cinematic, warm, natural. Desert landscapes, night dance scenes, golden hour.",
     "colorPalette": ["Warm amber", "Deep navy", "Sunset orange", "Cream/off-white"],
@@ -282,12 +243,7 @@
 
   "metrics": {
     "northStar": "Monthly streams on Spotify + Apple Music",
-    "targets": {
-      "spotifyMonthlyListeners": { "current": 883, "30day": 2500, "90day": 5000 },
-      "instagramFollowers": { "current": 43400, "90day": 50000 },
-      "youtubeSubscribers": { "current": 1260, "90day": 5000 }
-    },
-    "secondary": ["Facebook group engagement rate", "Reel saves rate", "Reel completion rate", "New followers/week"],
+    "secondary": ["Facebook group engagement rate", "Reel completion rate", "New followers/week"],
     "avoid": "Vanity metrics — follower count means nothing if nobody listens to the music"
   },
 

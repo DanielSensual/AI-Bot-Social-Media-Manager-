@@ -152,7 +152,7 @@ PLATFORM: ${platform.toUpperCase()}
   Strategy: ${pf.strategy || 'General social media presence'}
 ${platformRules}
 ${pillarCtx}
-${buildCampaignContext(brand, options)}
+
 ═══ FORMATTING GUARDRAILS ═══
   Max emojis: ${fmt.maxEmojis || 2}
   Max hashtags: ${fmt.maxHashtags || 3} (${fmt.hashtagCase || 'lowercase'})
@@ -175,38 +175,6 @@ CONTENT ANGLE: ${pillarName}
   Goal: ${pillar.goal}
   Best practices:
 ${practices}`;
-}
-
-/**
- * Build streaming campaign context for the AI prompt.
- * Only injected when shouldInjectStreamingCTA returns true.
- */
-function buildCampaignContext(brand, options = {}) {
-    const campaign = brand.activeCampaign;
-    if (!campaign) return '';
-    
-    // Skip streaming CTA for certain pillars
-    const skipPillars = ['dance_tip', 'opinion', 'community'];
-    if (options.pillar && skipPillars.includes(options.pillar)) return '';
-    
-    // Roll the dice — only inject on ~30% of posts (or whatever frequency is set)
-    const freq = campaign.streamingCTA?.frequency || 0.3;
-    if (Math.random() > freq) return '';
-    
-    const phrases = campaign.streamingCTA?.naturalPhrases || [];
-    const examplePhrase = phrases[Math.floor(Math.random() * phrases.length)] || '';
-    const rules = (campaign.streamingCTA?.rules || []).map(r => `  - ${r}`).join('\n');
-    
-    return `
-═══ ACTIVE CAMPAIGN: ${campaign.name} ═══
-  Goal: ${campaign.goal}
-  Featured: "${campaign.featuredTrack}"
-  
-  STREAMING CTA — End this post by naturally mentioning the music.
-  Example: "${examplePhrase}"
-  Rules:
-${rules}
-`;
 }
 
 // ─── Convenience Accessors ──────────────────────────────────────
@@ -335,43 +303,6 @@ export function validateCaption(brand, caption) {
     };
 }
 
-/**
- * Get the brand's active campaign config (if any).
- */
-export function getActiveCampaign(brand) {
-    return brand.activeCampaign || null;
-}
-
-/**
- * Get search keywords for caption optimization.
- */
-export function getSearchKeywords(brand) {
-    return brand.searchKeywords || [];
-}
-
-/**
- * Check if a streaming CTA should be injected for this post.
- * Respects campaign frequency and pillar exclusions.
- */
-export function shouldInjectStreamingCTA(brand, pillar) {
-    const campaign = brand.activeCampaign;
-    if (!campaign?.streamingCTA) return false;
-    
-    const skipPillars = ['dance_tip', 'opinion', 'community'];
-    if (pillar && skipPillars.includes(pillar)) return false;
-    
-    return Math.random() < (campaign.streamingCTA.frequency || 0.3);
-}
-
-/**
- * Get a random natural streaming CTA phrase.
- */
-export function getStreamingCTA(brand) {
-    const phrases = brand.activeCampaign?.streamingCTA?.naturalPhrases || [];
-    if (phrases.length === 0) return null;
-    return phrases[Math.floor(Math.random() * phrases.length)];
-}
-
 // ─── Default Export ─────────────────────────────────────────────
 
 export default {
@@ -385,8 +316,4 @@ export default {
     getPlatformConfig,
     getNeverSayList,
     validateCaption,
-    getActiveCampaign,
-    getSearchKeywords,
-    shouldInjectStreamingCTA,
-    getStreamingCTA,
 };
