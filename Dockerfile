@@ -30,6 +30,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+COPY brands/ ./brands/
 
 # Create data directory for SQLite (mountable volume)
 RUN mkdir -p /app/data /app/logs && chown -R ghostai:ghostai /app
