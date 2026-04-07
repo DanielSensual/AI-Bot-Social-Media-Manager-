@@ -51,8 +51,8 @@ async function run() {
     console.log(`🎯 Pillar: ${pillar.toUpperCase()}`);
     console.log(`${'═'.repeat(60)}\n`);
 
-    if (!PILLARS.includes(pillar)) {
-        console.error(`❌ Invalid pillar: ${pillar}`);
+    if (!PILLARS.includes(pillar) && pillar !== 'auto') {
+        console.error(`❌ Invalid pillar: ${pillar}. Valid: ${PILLARS.join(', ')}, auto`);
         process.exit(1);
     }
 

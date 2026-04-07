@@ -134,8 +134,8 @@ async function main() {
 
     // Determine pillar
     const pillar = flags.pillar || getTodaysPillar();
-    if (!PILLARS.includes(pillar)) {
-        console.error(`❌ Invalid pillar: ${pillar}. Must be one of: ${PILLARS.join(', ')}`);
+    if (!PILLARS.includes(pillar) && pillar !== 'auto') {
+        console.error(`❌ Invalid pillar: ${pillar}. Must be one of: ${PILLARS.join(', ')}, auto`);
         process.exit(1);
     }
 

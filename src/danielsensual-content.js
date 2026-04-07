@@ -29,7 +29,10 @@ const EVENTS_DIR = path.join(__dirname, '..', 'events');
 
 // ─── Content Pillars ────────────────────────────────────────────
 
-export const PILLARS = ['music', 'dance', 'event'];
+export const PILLARS = [
+    'music', 'music_drop', 'dance', 'dance_tip', 'dance_moment',
+    'opinion', 'behind_scenes', 'community', 'personal', 'event',
+];
 
 // ─── AI Music Templates ────────────────────────────────────────
 
