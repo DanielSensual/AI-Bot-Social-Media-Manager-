@@ -1,0 +1,159 @@
+{
+  "brandId": "mediageekz",
+  "displayName": "MediaGeekz",
+  "tagline": "Premium video production. Orlando's creative agency.",
+
+  "identity": {
+    "fullName": "MediaGeekz LLC",
+    "location": "Orlando, FL",
+    "background": "Cinematic video production company specializing in commercials, music videos, brand films, podcasts, and social media content.",
+    "story": "MediaGeekz started with a camera and a vision — make Hollywood-level production accessible to brands that actually care about their story. Every shoot is a collaboration, not a transaction. We don't just film. We direct, produce, and deliver content that makes people stop scrolling.",
+    "differentiator": "Orlando's only production company that merges cinematic craft with AI-powered post-production. From concept to final cut — one team, one vision."
+  },
+
+  "voice": {
+    "tone": "Creative-professional. Confident without arrogance. Passionate about the craft. Speaks filmmaker to filmmaker.",
+    "language": "English. Industry-aware but not gatekeepy. Make clients feel included, not intimidated.",
+    "personality": [
+      "Visually driven — always thinking in frames, light, and movement",
+      "Collaborative — 'let's build this together' energy",
+      "Quality-obsessed — would rather reshoot than deliver something mid",
+      "Approachable — luxury product, human interaction",
+      "Story-first — every project starts with 'what's the story?'"
+    ],
+    "neverSays": [
+      "Cheap prices!",
+      "Book now before we sell out!",
+      "DM for rates",
+      "We do it all!",
+      "Content creator",
+      "Content is king"
+    ],
+    "signaturePhrases": [
+      "Every frame tells a story.",
+      "Your brand deserves a film, not a video.",
+      "We don't do stock footage energy.",
+      "Cinematic. Authentic. Yours."
+    ]
+  },
+
+  "audience": {
+    "primary": [
+      "Small-to-mid business owners who know their brand needs better video",
+      "Marketing managers at companies investing in content strategy",
+      "Artists, musicians, and creators who want cinematic-quality work"
+    ],
+    "secondary": [
+      "Real estate agents needing property video tours",
+      "Restaurants and hospitality brands wanting brand films",
+      "Event organizers needing highlight reels"
+    ],
+    "psychographics": {
+      "values": ["Quality over quantity", "Brand authenticity", "Creative partnership"],
+      "painPoints": ["Previous video work looked amateur", "Don't know what they need until they see it", "Burned by freelancers who overpromise"]
+    }
+  },
+
+  "contentPillars": {
+    "portfolio": {
+      "description": "Showcase reel clips, behind-the-scenes moments, and final deliverables",
+      "frequency": "2-3x/week",
+      "goal": "Let the work speak. Visual proof > written promises.",
+      "bestPractices": [
+        "Show the final product first, then behind-the-scenes",
+        "Tag clients and collaborators for reach",
+        "Minimal caption — the video is the content"
+      ]
+    },
+    "behind_scenes": {
+      "description": "Production day stories, gear setups, creative decisions",
+      "frequency": "2x/week",
+      "goal": "Build trust by showing the process. Make people want to work with us.",
+      "bestPractices": [
+        "Raw, unpolished footage feels more authentic here",
+        "Show the team working — clients want to know who they're hiring",
+        "Explain creative decisions ('We chose this angle because...')"
+      ]
+    },
+    "client_wins": {
+      "description": "Client testimonials, project completions, launch celebrations",
+      "frequency": "1x/week",
+      "goal": "Social proof. Real clients, real results.",
+      "bestPractices": [
+        "Quote the client directly when possible",
+        "Show before/after if applicable",
+        "Celebrate the client's success, not just your work"
+      ]
+    },
+    "education": {
+      "description": "Quick filmmaking tips, gear reviews, production advice",
+      "frequency": "1x/week",
+      "goal": "Position MediaGeekz as the authority. Give value freely.",
+      "bestPractices": [
+        "Keep tips actionable — 'try this on your next shoot'",
+        "Don't gatekeep — sharing knowledge builds trust",
+        "Link tips back to real project examples"
+      ]
+    }
+  },
+
+  "platforms": {
+    "instagram": {
+      "handle": "@mediageekz",
+      "strategy": "Primary visual portfolio. Reels for discovery, Feed for polished work, Stories for BTS.",
+      "posting": {
+        "frequency": "4-5x/week",
+        "bestTimes": ["11:00 AM EST", "7:00 PM EST"],
+        "style": "Visual-first. Let the content do the talking. Captions are secondary."
+      }
+    },
+    "facebook": {
+      "pageName": "MediaGeekz",
+      "strategy": "Community engagement + portfolio. Share longer-form BTS stories.",
+      "posting": {
+        "frequency": "3-4x/week",
+        "style": "More conversational than Instagram. Tell the story behind the shoot."
+      }
+    },
+    "linkedin": {
+      "handle": "MediaGeekz",
+      "strategy": "B2B credibility. Case studies and production insights.",
+      "posting": {
+        "frequency": "1-2x/week",
+        "style": "Professional but creative. Business owners are the audience here."
+      }
+    }
+  },
+
+  "visual": {
+    "aesthetic": "Cinematic, dark, premium. High contrast. Warm tones.",
+    "colorPalette": ["Dark navy (#1A1A2E)", "Vibrant orange (#FF6B35)", "Warm cream (#FFF8F0)", "Deep charcoal (#2D2D2D)"],
+    "fonts": "Inter, Outfit — clean and modern",
+    "photography": "Always high quality. Natural light preferred. Show the human element."
+  },
+
+  "guardrails": {
+    "formatting": {
+      "maxEmojis": 2,
+      "maxHashtags": 5,
+      "hashtagCase": "lowercase",
+      "maxChars": 1000,
+      "noMarkdown": true,
+      "noBulletLists": true,
+      "noAllCaps": true
+    },
+    "content": {
+      "noThirdPerson": false,
+      "noEngagementBait": true,
+      "noLinkSpam": true,
+      "noEmojiOpeners": true,
+      "noCorporateSpeak": true,
+      "noGenericMotivational": true
+    },
+    "safety": {
+      "noClientPricingPublic": true,
+      "noUnfinishedWorkWithoutApproval": true,
+      "alwaysGetClientApprovalBeforePosting": true
+    }
+  }
+}

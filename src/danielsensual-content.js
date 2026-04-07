@@ -1,12 +1,14 @@
 /**
- * DanielSensual Content Engine
+ * DanielSensual Content Engine — Ghost AI SMMA
  * 
- * 3-pillar content system for Daniel's personal brand:
- * 1) AI Music — song drops, music video shorts, behind-the-scenes
- * 2) Social Dance — dance clips, tips, class highlights
- * 3) Events — pool parties, socials, workshops
+ * AI social media manager powered by the Brand Intelligence System.
+ * Loads full brand context from brands/daniel-sensual.json so every
+ * AI worker truly knows the brand they're posting for.
  * 
- * AI-first caption generation with template fallback.
+ * Content angles: music_drop, dance_tip, dance_moment, opinion,
+ * behind_scenes, community, personal, event
+ * 
+ * AI-first caption generation with brand-validated output.
  */
 
 import dotenv from 'dotenv';
@@ -14,6 +16,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateText, hasLLMProvider } from './llm-client.js';
+import { loadBrand, getBrandPrompt, getBrandRules, validateCaption, getPillarConfig } from './brand-loader.js';
 
 dotenv.config();
 
@@ -232,35 +235,22 @@ export function loadActiveEvents() {
 
 // ─── AI Social Media Manager Brain ──────────────────────────────
 
-// Brand bible — full context so AI can make real strategic decisions
-const BRAND_BIBLE = `
-═══ DANIEL SENSUAL — BRAND BIBLE ═══
+// Load brand intelligence from the central profile
+const DEFAULT_BRAND_ID = 'daniel-sensual';
 
-IDENTITY: Daniel Sensual is a bachata music artist, dancer, and community figure based in Orlando, FL.
-U.S. Military Veteran. Dominican roots. Creates AI-produced bachata music. Dances socially in Central Florida.
+function getBrand(brandId) {
+    try {
+        return loadBrand(brandId || DEFAULT_BRAND_ID);
+    } catch (err) {
+        console.warn(`⚠️ Brand load failed: ${err.message} — using inline fallback`);
+        return null;
+    }
+}
 
-VOICE: First-person. Warm but confident. Like texting a friend — never corporate, never LinkedIn.
-Spanglish is natural. Short sentences. Real opinions. Occasionally vulnerable.
-
-AUDIENCE: Bachata dancers (beginner to advanced), Latin music lovers, Orlando dance community, AI-curious musicians.
-
-DO NOT: Use corporate language. Start lines with emojis. Use more than 3 hashtags. Say "check this out" / "don't miss" / "new music alert".
-Use bullet lists. Sound like ChatGPT. Reference yourself in third person. Over-explain.
-
-DO: Be honest. Be short. Have opinions. Tell micro-stories. Ask real questions (not bait).
-Mix languages naturally. Leave space. Let silence do the work.
-`;
-
-// Expanded content angles the AI can choose from
+// Content angles from brand profile (with inline fallback)
 const CONTENT_ANGLES = [
-    'music_drop',        // New track, studio session, production insight
-    'dance_tip',         // Technique, musicality, connection advice
-    'dance_moment',      // Personal story from a social dance night
-    'opinion',           // Hot take on dance culture, AI music, the scene
-    'behind_scenes',     // Making music with AI, creative process, studio life
-    'community',         // Shoutout to Orlando scene, gratitude, local energy
-    'personal',          // Veteran life, creative journey, motivation
-    'event',             // Promoting an upcoming event
+    'music_drop', 'dance_tip', 'dance_moment', 'opinion',
+    'behind_scenes', 'community', 'personal', 'event',
 ];
 
 function getRecentPostSummary() {
@@ -300,6 +290,12 @@ function buildAIPrompt(pillar, context = {}) {
     const recentPosts = getRecentPostSummary();
     const events = loadActiveEvents();
     const activeEvent = events.length > 0 ? events[0] : null;
+    const brand = getBrand(context.brandId);
+
+    // Generate brand context from profile (or use minimal fallback)
+    const brandPrompt = brand
+        ? getBrandPrompt(brand, context.platform || 'facebook', { pillar })
+        : `You are Daniel Sensual's social media manager. Bachata artist, dancer, Orlando FL. U.S. Veteran. AI-produced music. Voice: warm, real, Spanglish natural. Never corporate.`;
 
     const eventContext = activeEvent
         ? `\nACTIVE EVENT: ${activeEvent.name} — ${activeEvent.date} at ${activeEvent.venue} (${activeEvent.price})`
@@ -309,23 +305,37 @@ function buildAIPrompt(pillar, context = {}) {
         ? `You are the social media manager. Choose the best content angle for right now based on the day, time, recent posts, and what would perform best. Available angles: ${CONTENT_ANGLES.join(', ')}`
         : `Content angle for this post: ${pillar}`;
 
-    const angleDetails = {
-        music_drop: 'Focus on music — a new track, production insight, or studio moment. Make people curious enough to listen.',
-        music: 'Focus on music — a new track, production insight, or studio moment. Make people curious enough to listen.',
-        dance_tip: 'Share a real technique insight or musicality tip. From experience, not a textbook.',
-        dance: 'Share a real technique insight, social dance story, or community moment dancers relate to.',
-        dance_moment: 'Tell a short story from a real social dance night. 3-4 sentences. Make the reader feel like they were there.',
-        opinion: 'Share a real, slightly polarizing opinion about bachata, dance culture, or AI music. Drive comments and debate.',
-        behind_scenes: 'Pull back the curtain — making music with AI, the creative grind, what people don\'t see.',
-        community: 'Show genuine love for the Orlando bachata scene or the broader dance community.',
-        personal: 'Share something real about your journey — veteran life, creative risks, a moment that mattered.',
-        event: activeEvent
-            ? `Promote naturally:\n${activeEvent.name}\n${activeEvent.date} · ${activeEvent.time}\n${activeEvent.venue}\n${activeEvent.price}\n${activeEvent.description || ''}\n\nSound like you're telling a friend, not writing an ad.`
-            : 'No active event — write a dance or community post instead.',
-        auto: '',
-    };
+    // Pull angle instructions from brand profile if available
+    const brandPillarConfig = brand ? getPillarConfig(brand, pillar) : null;
+    let angleInstruction = '';
+    
+    if (brandPillarConfig) {
+        const practices = (brandPillarConfig.bestPractices || []).map(p => `  - ${p}`).join('\n');
+        angleInstruction = `${brandPillarConfig.description}\nGoal: ${brandPillarConfig.goal}\nBest practices:\n${practices}`;
+    } else {
+        // Inline fallback for angles not in brand profile
+        const angleDetails = {
+            music_drop: 'Focus on music — a new track, production insight, or studio moment. Make people curious enough to listen.',
+            music: 'Focus on music — a new track, production insight, or studio moment.',
+            dance_tip: 'Share a real technique insight or musicality tip. From experience, not a textbook.',
+            dance: 'Share a real technique insight, social dance story, or community moment dancers relate to.',
+            dance_moment: 'Tell a short story from a real social dance night. 3-4 sentences.',
+            opinion: 'Share a real, slightly polarizing opinion. Drive comments and debate.',
+            behind_scenes: 'Pull back the curtain — making music with AI, the creative grind.',
+            community: 'Show genuine love for the Orlando bachata scene or the broader community.',
+            personal: 'Share something real about your journey — veteran life, creative risks.',
+            event: activeEvent
+                ? `Promote naturally:\n${activeEvent.name}\n${activeEvent.date} · ${activeEvent.time}\n${activeEvent.venue}\n${activeEvent.price}\n${activeEvent.description || ''}`
+                : 'No active event — write a dance or community post instead.',
+            auto: '',
+        };
+        angleInstruction = angleDetails[pillar] || angleDetails.dance;
+    }
 
-    return `${BRAND_BIBLE}
+    // Get formatting rules from brand
+    const rules = brand ? getBrandRules(brand) : { maxEmojis: 2, maxHashtags: 3, maxChars: 800 };
+
+    return `${brandPrompt}
 
 ═══ CURRENT CONTEXT ═══
 Day: ${timeCtx.day} ${timeCtx.timeOfDay}${timeCtx.isWeekend ? ' (WEEKEND — peak engagement window)' : ''}
@@ -337,16 +347,16 @@ ${recentPosts}
 ═══ YOUR TASK ═══
 ${pillarGuidance}
 
-${angleDetails[pillar] || angleDetails.dance}
+${angleInstruction}
 
 ═══ FORMATTING ═══
-1. Write for Facebook. Sound human — typing on your phone, not drafting a press release.
+1. Write for Facebook. Sound human — typing on your phone, not a press release.
 2. SHORT paragraphs (1-3 sentences). Single blank lines between.
 3. Vary sentence length. Mix punchy ("That's it.") with longer thoughts.
-4. 0-2 emojis total, placed naturally. Never start a line with one.
-5. 2-3 lowercase hashtags at the very end.
+4. Max ${rules.maxEmojis} emojis, placed naturally. Never start a line with one.
+5. Max ${rules.maxHashtags} ${rules.hashtagCase || 'lowercase'} hashtags at the very end.
 6. No markdown. No bullet lists. No bold/italic.
-7. Under 800 characters total.
+7. Under ${rules.maxChars} characters total.
 8. First line = hook. Vary the type (question, mid-story, hot take, emotional, observational).
 9. You can be funny. You can be serious. Match the angle.
 
@@ -432,6 +442,18 @@ export async function buildPost(pillar, context = {}) {
                 if (reasoning) {
                     console.log(`   🧠 AI strategy: ${reasoning}`);
                 }
+                
+                // Validate against brand rules
+                const brand = getBrand(context.brandId);
+                let brandViolations = [];
+                if (brand) {
+                    const validation = validateCaption(brand, caption);
+                    if (!validation.valid) {
+                        brandViolations = validation.violations;
+                        console.warn(`   ⚠️ Brand violations: ${brandViolations.join(', ')}`);
+                    }
+                }
+                
                 return {
                     ...baseResult,
                     pillar: angle,
@@ -441,6 +463,7 @@ export async function buildPost(pillar, context = {}) {
                     model,
                     angle,
                     reasoning,
+                    brandViolations,
                     fallbackReason: null,
                 };
             }
@@ -523,6 +546,6 @@ export default {
     getTodaysPillar,
     loadActiveEvents,
     CONTENT_ANGLES,
-    BRAND_BIBLE,
+    getBrand,
 };
 

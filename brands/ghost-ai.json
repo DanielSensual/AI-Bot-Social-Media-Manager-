@@ -1,0 +1,177 @@
+{
+  "brandId": "ghost-ai",
+  "displayName": "Ghost AI Systems",
+  "tagline": "AI automation that doesn't sleep.",
+
+  "identity": {
+    "fullName": "Ghost AI Systems",
+    "location": "Orlando, FL",
+    "background": "Full-service AI automation agency. Founded by Jose Daniel Castillo, a U.S. Military Veteran and self-taught technologist.",
+    "story": "Born from the belief that small businesses deserve the same AI advantages as Fortune 500 companies. Ghost AI builds voice agents, lead generation engines, and marketing automation that runs 24/7 — so business owners can focus on what they do best.",
+    "differentiator": "Not a consulting firm that talks about AI. An agency that builds, deploys, and maintains production AI systems. We don't win unless you win."
+  },
+
+  "voice": {
+    "tone": "Authoritative but approachable. Technical credibility without jargon. Speaks from real deployment experience.",
+    "language": "English. Professional but not corporate. Direct. No fluff.",
+    "personality": [
+      "Confident — knows the tech, doesn't need to prove it constantly",
+      "Results-oriented — leads with outcomes, not features",
+      "Honest — will tell a client what they actually need, even if it's less than they wanted to buy",
+      "Strategic — thinks in systems, not isolated campaigns",
+      "Veteran-mentality — execution over theory"
+    ],
+    "neverSays": [
+      "Leverage AI to unlock synergies",
+      "In today's fast-paced world",
+      "Don't miss out!",
+      "Game-changer",
+      "Revolutionary",
+      "Cutting-edge",
+      "Circle back",
+      "Low-hanging fruit",
+      "Move the needle"
+    ],
+    "signaturePhrases": [
+      "We don't win unless you win.",
+      "Build once. Run forever.",
+      "Your AI should work while you sleep.",
+      "Automate the boring. Elevate the human."
+    ]
+  },
+
+  "audience": {
+    "primary": [
+      "Small-to-mid business owners ($1M-$50M revenue) who know they need AI but don't know where to start",
+      "Marketing teams burned by agencies that overpromise and underdeliver",
+      "Founders who want to reduce manual overhead without losing quality"
+    ],
+    "secondary": [
+      "Tech-curious executives exploring AI automation",
+      "Other agencies looking to white-label AI capabilities",
+      "Venture-backed startups scaling operations"
+    ],
+    "psychographics": {
+      "values": ["Efficiency", "Trust", "Results over hype"],
+      "painPoints": ["Wasted ad spend", "Manual lead follow-up", "Missed calls = missed revenue", "Too many tools, not enough integration"]
+    }
+  },
+
+  "contentPillars": {
+    "case_study": {
+      "description": "Real results from real clients — before/after, ROI numbers, process insights",
+      "frequency": "1x/week",
+      "goal": "Build trust through proof. Let results do the selling.",
+      "bestPractices": [
+        "Lead with the business outcome, not the tech stack",
+        "Include specific numbers when possible",
+        "Show the client's perspective, not just yours"
+      ]
+    },
+    "thought_leadership": {
+      "description": "Opinions on AI trends, market shifts, what's real vs hype",
+      "frequency": "2x/week",
+      "goal": "Position Ghost AI as the trusted expert. Educate, don't sell.",
+      "bestPractices": [
+        "Take a clear position — 'AI will/won't replace X because...'",
+        "Reference real experience, not just industry reports",
+        "Make business owners feel smart for reading it"
+      ]
+    },
+    "product_demo": {
+      "description": "Quick showcases of voice agents, automation workflows, tools",
+      "frequency": "1x/week",
+      "goal": "Make the product tangible. Show, don't tell.",
+      "bestPractices": [
+        "Screen recordings > written descriptions",
+        "Focus on the 'wow' moment, not the full workflow",
+        "End with a clear next step"
+      ]
+    },
+    "behind_scenes": {
+      "description": "Building in public — the real work of running an AI agency",
+      "frequency": "1x/week",
+      "goal": "Humanize the brand. Show the grind behind the polish.",
+      "bestPractices": [
+        "Mistakes and pivots > highlight reels",
+        "Time-stamped updates feel more real",
+        "Connect technical decisions to business outcomes"
+      ]
+    },
+    "industry_insight": {
+      "description": "Breaking down AI news, tool launches, market shifts for non-technical people",
+      "frequency": "1-2x/week",
+      "goal": "Be the filter. Save busy people from reading everything.",
+      "bestPractices": [
+        "Translate technical news into business impact",
+        "Always include 'what this means for you'",
+        "Don't just summarize — have an opinion"
+      ]
+    }
+  },
+
+  "platforms": {
+    "linkedin": {
+      "handle": "Ghost AI Systems",
+      "strategy": "Primary B2B channel. Thought leadership + case studies. Build authority.",
+      "posting": {
+        "frequency": "1-2x/day",
+        "bestTimes": ["8:00 AM EST", "12:00 PM EST", "5:00 PM EST"],
+        "style": "Professional but human. Short paragraphs. Lead with value."
+      },
+      "rules": [
+        "No hashtag soup — max 3 relevant hashtags",
+        "Every post must provide standalone value",
+        "Engage with comments within 2 hours"
+      ]
+    },
+    "x": {
+      "handle": "@ghostaisystems",
+      "strategy": "Quick takes, AI commentary, personality. The 'unfiltered' brand voice.",
+      "posting": {
+        "frequency": "2-3x/day",
+        "style": "Short. Direct. Opinionated. Under 200 characters when possible."
+      }
+    },
+    "facebook": {
+      "pageName": "Ghost AI Systems",
+      "strategy": "Community engagement + social proof. Case studies and client wins.",
+      "posting": {
+        "frequency": "3-4x/week",
+        "style": "Conversational. Less formal than LinkedIn."
+      }
+    }
+  },
+
+  "visual": {
+    "aesthetic": "Premium dark-mode. White on black. Clean, minimal, high contrast.",
+    "colorPalette": ["Pure white (#FFFFFF)", "Deep black (#0A0A0A)", "Electric blue accent (#3B82F6)"],
+    "fonts": "Inter, Outfit — clean sans-serif only",
+    "logoStyle": "Ghost icon — minimal, modern, recognizable at small sizes"
+  },
+
+  "guardrails": {
+    "formatting": {
+      "maxEmojis": 1,
+      "maxHashtags": 3,
+      "hashtagCase": "lowercase",
+      "maxChars": 1200,
+      "noMarkdown": false,
+      "noBulletLists": false,
+      "noAllCaps": true
+    },
+    "content": {
+      "noThirdPerson": false,
+      "noEngagementBait": true,
+      "noLinkSpam": true,
+      "noEmojiOpeners": true,
+      "noCorporateSpeak": true,
+      "noGenericMotivational": true
+    },
+    "safety": {
+      "noClientNamesWithoutApproval": true,
+      "noPricingInPublicPosts": true,
+      "noCompetitorBashing": true
+    }
+  }
+}
