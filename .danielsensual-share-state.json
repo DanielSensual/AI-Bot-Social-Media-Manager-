@@ -1304,6 +1304,41 @@
       "autoDisabled": false,
       "lastFailure": "2026-04-07T20:17:59.354Z",
       "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Latin Dance Dubai": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:19:33.343Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Salsa Bachata Istanbul": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:20:19.718Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Latin Dance Israel": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:21:52.021Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Bachata New Zealand": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:22:44.418Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
+    },
+    "Latin Dance Singapore": {
+      "consecutiveFailures": 1,
+      "totalFailures": 1,
+      "autoDisabled": false,
+      "lastFailure": "2026-04-07T20:24:20.433Z",
+      "lastError": "Group unavailable (deleted/banned/restricted)"
     }
   }
 }

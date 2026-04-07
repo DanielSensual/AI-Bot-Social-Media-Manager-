@@ -27,6 +27,7 @@ import {
     recordGroupPost,
     GROUPS,
 } from '../src/danielsensual-groups.js';
+import { record } from '../src/post-history.js';
 
 dotenv.config();
 
@@ -218,6 +219,24 @@ async function main() {
 
     // Summary
     console.log('\n✅ Done!');
+
+    // Record to post history so the AI knows what was posted
+    try {
+        record({
+            text: caption,
+            pillar: pillar,
+            aiGenerated: !flags.caption && !flags.noAI,
+            hasVideo: !!flags.video,
+            hasImage: !!flags.image,
+            results: {
+                facebook: results.profile ? 'posted' : null,
+            },
+        });
+        console.log('   💾 Post recorded to history');
+    } catch (err) {
+        console.warn(`   ⚠️ History recording failed: ${err.message}`);
+    }
+
     console.log(JSON.stringify({
         pillar,
         profilePosted: !flags.groupsOnly,

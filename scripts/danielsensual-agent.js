@@ -22,6 +22,7 @@ import {
     getEligibleGroups,
     recordGroupPost,
 } from '../src/danielsensual-groups.js';
+import { record } from '../src/post-history.js';
 
 dotenv.config();
 
@@ -140,13 +141,33 @@ async function run() {
         }
     }
 
+    // Record to post history so the AI brain knows what was posted
+    try {
+        record({
+            text: result.caption,
+            pillar: result.angle || effectivePillar,
+            aiGenerated: result.source === 'ai',
+            hasVideo: false,
+            hasImage: !!result.flyerPath,
+            results: {
+                facebook: 'posted',
+            },
+        });
+        console.log('   💾 Post recorded to history');
+    } catch (err) {
+        console.warn(`   ⚠️ History recording failed: ${err.message}`);
+    }
+
     const output = {
         timestamp,
         pillar: effectivePillar,
+        angle: result.angle || effectivePillar,
+        reasoning: result.reasoning || null,
         source: result.source,
         provider: result.provider || null,
         model: result.model || null,
         captionLength: result.caption.length,
+        brandViolations: result.brandViolations || [],
         profilePost: 'logged',
         groupsPosted: groupResults.filter(g => g.status === 'recorded').length,
         groupsFailed: groupResults.filter(g => g.status === 'failed').length,

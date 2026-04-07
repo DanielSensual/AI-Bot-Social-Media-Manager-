@@ -22,6 +22,7 @@ import {
     loadActiveEvents,
     PILLARS,
 } from '../src/danielsensual-content.js';
+import { record } from '../src/post-history.js';
 
 dotenv.config();
 
@@ -105,11 +106,26 @@ async function runPost(pillar, label) {
         const result = await buildPost(effectivePillar, { aiEnabled: true });
 
         console.log(`   📝 Source: ${result.source} | ${result.provider || 'template'}`);
+        if (result.reasoning) console.log(`   🧠 AI: ${result.reasoning}`);
         console.log(`   📏 Length: ${result.caption.length} chars`);
         console.log(`\n${result.caption.slice(0, 200)}${result.caption.length > 200 ? '...' : ''}\n`);
 
         // Post to Facebook
         const postResult = await postToFacebook(result.caption, effectivePillar);
+
+        // Record to history so AI avoids repeating
+        try {
+            record({
+                text: result.caption,
+                pillar: result.angle || effectivePillar,
+                aiGenerated: result.source === 'ai',
+                hasVideo: false,
+                hasImage: !!result.flyerPath,
+                results: {
+                    facebook: postResult.posted ? postResult.postId : null,
+                },
+            });
+        } catch { /* non-blocking */ }
 
         return { ...result, ...postResult, pillar: effectivePillar };
     } catch (err) {

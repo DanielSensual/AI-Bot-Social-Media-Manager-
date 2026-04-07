@@ -17,6 +17,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateText, hasLLMProvider } from './llm-client.js';
 import { loadBrand, getBrandPrompt, getBrandRules, validateCaption, getPillarConfig } from './brand-loader.js';
+import { getRecent as getRecentPosts } from './post-history.js';
 
 dotenv.config();
 
@@ -255,19 +256,32 @@ const CONTENT_ANGLES = [
 
 function getRecentPostSummary() {
     try {
-        const historyPath = path.join(__dirname, '..', 'data', 'post-history.json');
-        if (fs.existsSync(historyPath)) {
-            const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
-            const recent = (history.posts || []).slice(-5);
-            if (recent.length > 0) {
-                return recent.map(p => {
-                    const pillar = p.pillar || 'unknown';
-                    const preview = (p.text || p.caption || '').substring(0, 60);
-                    return `- [${pillar}] "${preview}..."`;
-                }).join('\n');
-            }
+        // SQLite-backed history (primary source)
+        const recent = getRecentPosts(5);
+        if (recent.length > 0) {
+            return recent.map(p => {
+                const pillar = p.pillar || 'unknown';
+                const preview = (p.text || '').substring(0, 60);
+                return `- [${pillar}] "${preview}..."`;
+            }).join('\n');
         }
-    } catch { /* no history yet */ }
+    } catch {
+        // SQLite not available — try JSON fallback
+        try {
+            const historyPath = path.join(__dirname, '..', 'data', 'post-history.json');
+            if (fs.existsSync(historyPath)) {
+                const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+                const recent = (history.posts || []).slice(-5);
+                if (recent.length > 0) {
+                    return recent.map(p => {
+                        const pillar = p.pillar || 'unknown';
+                        const preview = (p.text || p.caption || '').substring(0, 60);
+                        return `- [${pillar}] "${preview}..."`;
+                    }).join('\n');
+                }
+            }
+        } catch { /* no history at all */ }
+    }
     return '(no recent posts available)';
 }
 
