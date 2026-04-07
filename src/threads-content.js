@@ -1,36 +1,33 @@
 /**
- * Threads Content Engine — DanielSensual Engagement Bot
+ * Threads Content Engine — Ghost AI SMMA
  * 
- * Aggressive engagement strategy:
- * 1) Self-engagement: reply to Daniel's own threads with hype/banter
- * 2) Proactive posting: drop new threads (music, dance, spicy takes)
- * 3) Trolling engagement: reply to trending threads in the bachata/dance/AI space
+ * Powered by the Brand Intelligence System.
+ * Generates proactive posts, engagement replies, and self-troll content
+ * with voice and guardrails loaded from the brand profile.
  * 
- * All AI-generated with fallback templates.
  * Character limit: 500 (Threads max).
  */
 
 import dotenv from 'dotenv';
 import { generateText, hasLLMProvider } from './llm-client.js';
+import { loadBrand, getBrandPrompt, getNeverSayList } from './brand-loader.js';
 
 dotenv.config();
 
+const DEFAULT_BRAND_ID = 'daniel-sensual';
+
 const MAX_LENGTH = 500;
 
-// ─── Persona ────────────────────────────────────────────────────
+// ─── Persona (brand-loaded) ──────────────────────────────────
 
-const DANIEL_PERSONA = `You are Daniel Sensual's Threads social media AI. Daniel is a bachata artist, dancer, and AI entrepreneur in Orlando, FL.
-
-Voice rules:
-- Aggressive, opinionated, provocative — never boring
-- Mix English and Spanish naturally ("dale" "mira" "no cap" "relax bro")
-- Talk shit in a fun way, never genuinely mean
-- Self-promote shamelessly but make it entertaining
-- Dominican-American energy, Orlando local references
-- Hot takes on dance culture, AI, music, and life
-- Emojis: use 1-3 max, never overdo it
-- Short punchy sentences. No essays.
-- Under 500 characters ALWAYS.`;
+function getPersona(brandId) {
+    try {
+        const brand = loadBrand(brandId || DEFAULT_BRAND_ID);
+        return getBrandPrompt(brand, 'threads');
+    } catch {
+        return `You are Daniel Sensual's Threads social media manager. Bachata artist, dancer, AI entrepreneur. Orlando, FL. Voice: opinionated, Spanglish natural, punchy. Under 500 chars always.`;
+    }
+}
 
 // ─── Self-Troll Templates (replies to own posts) ────────────────
 
@@ -119,11 +116,12 @@ function parseAIResponse(raw) {
 /**
  * Generate a self-troll reply for one of Daniel's own posts
  */
-export async function generateSelfReply(originalPost = '') {
+export async function generateSelfReply(originalPost = '', brandId) {
     if (!hasLLMProvider()) return getTemplateSelfReply();
 
+    const persona = getPersona(brandId);
     const promptBase = pick(SELF_TROLL_PROMPTS);
-    const prompt = `${DANIEL_PERSONA}\n\n${promptBase}\n\nOriginal post: "${originalPost.substring(0, 200)}"\n\nOutput ONLY the reply text, nothing else.`;
+    const prompt = `${persona}\n\nPLATFORM: Threads (500 char max)\nSTYLE: Opinionated, punchy, Spanglish natural.\n\n${promptBase}\n\nOriginal post: "${originalPost.substring(0, 200)}"\n\nOutput ONLY the reply text, nothing else.`;
 
     try {
         const { text } = await generateText({
@@ -141,13 +139,14 @@ export async function generateSelfReply(originalPost = '') {
 /**
  * Generate a proactive new thread post
  */
-export async function generateProactivePost(category = null) {
+export async function generateProactivePost(category = null, brandId) {
     const cat = category || pick(Object.keys(PROACTIVE_CATEGORIES));
     const promptBase = PROACTIVE_CATEGORIES[cat] || PROACTIVE_CATEGORIES.hot_take;
 
     if (!hasLLMProvider()) return getTemplateProactivePost(cat);
 
-    const prompt = `${DANIEL_PERSONA}\n\n${promptBase}\n\nOutput ONLY the thread text, nothing else.`;
+    const persona = getPersona(brandId);
+    const prompt = `${persona}\n\nPLATFORM: Threads (500 char max)\nSTYLE: Opinionated, punchy. 0-2 emojis. 2-3 hashtags max.\n\n${promptBase}\n\nOutput ONLY the thread text, nothing else.`;
 
     try {
         const { text, provider, model } = await generateText({
@@ -171,10 +170,11 @@ export async function generateProactivePost(category = null) {
 /**
  * Generate engagement reply to someone else's thread
  */
-export async function generateEngagementReply(threadText, authorUsername = 'someone') {
+export async function generateEngagementReply(threadText, authorUsername = 'someone', brandId) {
     if (!hasLLMProvider()) return null;
 
-    const prompt = `${DANIEL_PERSONA}\n\n${ENGAGEMENT_REPLY_PROMPT}\n\nReplying to @${authorUsername}:\n"${threadText.substring(0, 300)}"\n\nYour reply:`;
+    const persona = getPersona(brandId);
+    const prompt = `${persona}\n\nPLATFORM: Threads (500 char max)\n\n${ENGAGEMENT_REPLY_PROMPT}\n\nReplying to @${authorUsername}:\n"${threadText.substring(0, 300)}"\n\nYour reply:`;
 
     try {
         const { text } = await generateText({

@@ -28,6 +28,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { generateText, hasLLMProvider } from './llm-client.js';
+import { loadBrand, getBrandRules } from './brand-loader.js';
 
 dotenv.config();
 puppeteer.use(StealthPlugin());
@@ -38,6 +39,7 @@ const QUEUE_FILE = path.join(__dirname, '..', 'data', 'reel-queue.json');
 const POSTED_LOG = path.join(__dirname, '..', 'data', 'reel-posted.json');
 const REELS_FOLDER = path.join(process.env.HOME || '/root', 'Downloads', 'Dance Projects', 'Reels', '1080p');
 const PAGE_URL = 'https://www.facebook.com/danielsensual';
+const DEFAULT_BRAND_ID = 'daniel-sensual';
 
 // ─── CLI Args ───────────────────────────────────────────────────
 
@@ -154,18 +156,33 @@ const REEL_CAPTION_STYLES = [
     'spanglish',       // Natural code-switching
 ];
 
-async function generateReelCaption(videoTitle) {
+async function generateReelCaption(videoTitle, brandId) {
     const style = REEL_CAPTION_STYLES[Math.floor(Math.random() * REEL_CAPTION_STYLES.length)];
 
     if (!hasLLMProvider()) {
         return getFallbackCaption(videoTitle);
     }
 
+    // Load brand context
+    let brandContext = 'Bachata music artist & dancer. Orlando, FL. Veteran. Dominican roots. AI-produced music.';
+    let neverSayRules = '';
     try {
-        const prompt = `You are Daniel Sensual's social media manager writing a Facebook Reel caption.
+        const brand = loadBrand(brandId || DEFAULT_BRAND_ID);
+        const id = brand.identity || {};
+        const v = brand.voice || {};
+        const rules = getBrandRules(brand);
+        brandContext = `${brand.displayName} — ${id.background}\nVoice: ${v.tone}\nLanguage: ${v.language}`;
+        const neverSay = brand.voice?.neverSays || [];
+        if (neverSay.length > 0) {
+            neverSayRules = `\nNEVER SAY: ${neverSay.slice(0, 6).map(p => `"${p}"`).join(', ')}`;
+        }
+    } catch { /* use defaults */ }
 
-BRAND: Bachata music artist & dancer. Orlando, FL. Veteran. Dominican roots. AI-produced music.
-VOICE: Real, warm, confident. Spanglish natural. Never corporate.
+    try {
+        const prompt = `You are a social media manager writing a Facebook Reel caption.
+
+BRAND: ${brandContext}
+${neverSayRules}
 
 VIDEO TITLE: "${videoTitle}"
 CAPTION STYLE: ${style}
@@ -177,7 +194,6 @@ Your job is to write a caption that:
 - Is SHORT — 1-2 sentences max, ideally under 100 characters
 - Uses 0-1 emojis, naturally placed
 - Ends with 2-3 lowercase hashtags
-- Never says "check this out", "don't miss", "new music alert"
 - Can be funny, vulnerable, mysterious, hype — match the video energy
 - If the title suggests a dance video: passion, connection, fire
 - If it suggests a desert/cinematic video: epic, cinematic, atmospheric

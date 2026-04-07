@@ -1,29 +1,36 @@
 /**
- * Music Manager — Group Share Caption Generator v2
+ * Group Share Caption Generator — Ghost AI SMMA
  *
- * Generates natural, human-sounding captions for Facebook group shares.
- * Designed to sound like a real artist sharing their music, NOT a bot.
+ * Generates unique, human-sounding captions for Facebook group shares.
+ * Powered by the Brand Intelligence System — loads voice, rules, and
+ * streaming links from the brand profile.
  *
- * v2 Changes:
- * - REMOVED @everyone (instant spam flag in most groups)
- * - Natural bilingual tone matching Daniel Sensual's brand
- * - Contextual captions that reference the group's city/vibe
- * - Varied formats: personal, conversational, casual
- * - Streaming comment is softer, less aggressive
+ * v3: Brand-loader integration. Dynamic voice + guardrails.
  */
 
 import { generateText, hasLLMProvider } from './llm-client.js';
+import { loadBrand, getBrandRules, getNeverSayList, getStreamingLinks } from './brand-loader.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// ─── Streaming Links ────────────────────────────────────────────
+const DEFAULT_BRAND_ID = 'daniel-sensual';
 
-const STREAMING_LINKS = {
-    spotify: 'https://open.spotify.com/album/23lMQH9zN7UXY4SBFUxTnk',
-    appleMusic: 'https://music.apple.com/us/album/bachata-sensual-single/1889991063',
-    youtube: 'https://www.youtube.com/watch?v=NhXWEuRXqbU',
-};
+// ─── Streaming Links (from brand profile) ───────────────────────
+
+function getLinks(brandId) {
+    try {
+        const brand = loadBrand(brandId || DEFAULT_BRAND_ID);
+        return getStreamingLinks(brand);
+    } catch {
+        // Hardcoded fallback
+        return {
+            spotify: 'https://open.spotify.com/album/23lMQH9zN7UXY4SBFUxTnk',
+            appleMusic: 'https://music.apple.com/us/album/bachata-sensual-single/1889991063',
+            youtube: 'https://www.youtube.com/watch?v=NhXWEuRXqbU',
+        };
+    }
+}
 
 // ─── Locale Detection ───────────────────────────────────────────
 
@@ -153,44 +160,56 @@ function getTemplateCaption(locale, groupName) {
     return caption;
 }
 
-// ─── AI Caption Generation ──────────────────────────────────────
+// ─── AI Caption Generation (Brand-Powered) ─────────────────────
 
-function buildCaptionPrompt({ groupName, locale, style, videoContext }) {
+function buildCaptionPrompt({ groupName, locale, style, videoContext, brandId }) {
     const langName = getLocaleName(locale);
     const city = extractCity(groupName);
 
-    return `You are Daniel Sensual, a bachata artist and dancer based in Orlando. Write a caption to share your new song "Bachata Sensual" in a Facebook dance group.
+    // Load brand intelligence
+    let brandContext = '';
+    let neverSayRules = '';
+    try {
+        const brand = loadBrand(brandId || DEFAULT_BRAND_ID);
+        const v = brand.voice || {};
+        const id = brand.identity || {};
+        const music = brand.music || {};
+        const rules = getBrandRules(brand);
+        const neverSay = getNeverSayList(brand);
+
+        brandContext = `You are ${brand.displayName}, ${id.background}
+Voice: ${v.tone}
+Language style: ${v.language}
+Current release: "${music.currentRelease?.title}"`;
+
+        neverSayRules = neverSay.length > 0
+            ? `\nNEVER SAY any of these:\n${neverSay.map(p => `  ✗ "${p}"`).join('\n')}`
+            : '';
+    } catch {
+        brandContext = 'You are Daniel Sensual, a bachata artist and dancer based in Orlando.';
+    }
+
+    return `${brandContext}
+
+Write a caption to share your music in a Facebook dance group.
 
 GROUP: "${groupName}"
 LANGUAGE: ${langName}
 TONE: ${style}
-${city ? `CITY: ${city}` : ''}
+${city ? `CITY: ${city} — reference it naturally if it fits` : ''}
 
 ═══ RULES ═══
-1. Write in ${langName}. You can mix in a little Spanish naturally if writing in English (Spanglish is your vibe)
-2. Do NOT start with "@everyone" — that's spammy
+1. Write in ${langName}. Spanglish is natural if writing in English
+2. Do NOT start with "@everyone"
 3. Keep it SHORT — 1-2 sentences max, under 150 characters ideal
-4. Sound like a REAL PERSON sharing music they're proud of, NOT a marketer
-5. Never use phrases like "out now!", "check this out!", "new music alert!", "don't miss" — those are bot tells
-6. Be conversational — like you're texting a friend in the group
-7. Use 0-1 emojis max. Less is more
-8. Do NOT include links, URLs, hashtags, or platform names
-9. Vary tone: sometimes chill, sometimes excited, sometimes just drop the video with a short line
-10. Reference the group's city/vibe naturally when it makes sense
-${videoContext ? `11. Video context: ${videoContext}` : ''}
-
-Good examples:
-- "Been working on this for a minute, finally dropped it"
-- "Orlando nights made this one 🌙"
-- "Este tema me tiene loco, had to share"
-- "What do y'all think?"
-- "For the late night dancers"
-
-Bad examples (DO NOT write like this):
-- "🔥🔥🔥 NEW MUSIC ALERT! Check out my latest track!"
-- "@everyone Tag someone who needs to hear this!"
-- "This one hits DIFFERENT 🔥💃🎶"
-- "New music just dropped! Stream now!"
+4. Sound like a REAL PERSON sharing music they're proud of
+5. Be conversational — texting a friend, not writing an ad
+6. 0-1 emojis max
+7. No links, URLs, hashtags, or platform names
+8. Vary tone: chill, excited, minimal — match the style requested
+9. Reference the group's city/vibe when natural
+${videoContext ? `10. Video context: ${videoContext}` : ''}
+${neverSayRules}
 
 Return ONLY the caption text. No quotes, no JSON.`;
 }
@@ -243,12 +262,13 @@ export async function generateGroupCaption(options = {}) {
  * Generate the comment text with streaming links.
  * Softer tone — not aggressive promo.
  */
-export function generateStreamingComment(locale = 'en') {
+export function generateStreamingComment(locale = 'en', brandId) {
+    const links = getLinks(brandId);
     const comments = {
-        en: `Full track on streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
-        es: `Tema completo en streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
-        fr: `Morceau complet en streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
-        de: `Ganzer Track im Streaming 🎵\n${STREAMING_LINKS.spotify}\n${STREAMING_LINKS.appleMusic}`,
+        en: `Full track on streaming\n${links.spotify}\n${links.appleMusic}`,
+        es: `Tema completo en streaming\n${links.spotify}\n${links.appleMusic}`,
+        fr: `Morceau complet en streaming\n${links.spotify}\n${links.appleMusic}`,
+        de: `Ganzer Track im Streaming\n${links.spotify}\n${links.appleMusic}`,
     };
     return comments[locale] || comments.en;
 }
