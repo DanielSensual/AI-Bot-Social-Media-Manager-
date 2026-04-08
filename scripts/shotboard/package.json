@@ -1,0 +1,19 @@
+{
+  "name": "ghostai-shotboard",
+  "version": "1.0.0",
+  "description": "Ghost AI Creative Director — Autonomous reel production pipeline",
+  "type": "module",
+  "bin": {
+    "ghostai-shotboard": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "create": "node index.js create",
+    "preview": "node index.js preview",
+    "render": "node index.js render"
+  },
+  "dependencies": {
+    "openai": "^5.0.0",
+    "commander": "^12.0.0"
+  }
+}

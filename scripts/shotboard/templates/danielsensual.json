@@ -1,0 +1,94 @@
+{
+  "version": "2.0",
+  "project": {
+    "title": "Bachata Sensual — World Tour",
+    "brand": "Daniel Sensual",
+    "target_duration": 45,
+    "style": "cinematic, neon-lit, luxury nightlife",
+    "narrative": "A world-tour montage following our DJ from NYC to London to a tropical island to Tokyo, building energy through the last chorus of Bachata Sensual."
+  },
+  "character": {
+    "name": "DJ Girl",
+    "description": "Beautiful white American blonde female DJ, early 20s. White crop top, black leather shorts, headphones around neck. Pioneer CDJ turntables and DJ mixer. Expression: confident smile, nodding to beat. NEVER singing, NEVER speaking, mouth closed or slight smile. Hair: blonde ponytail or loose waves. Build: athletic, toned.",
+    "rules": [
+      "NEVER singing or speaking",
+      "NEVER lip-syncing",
+      "Mouth closed or slight confident smile",
+      "Always behind DJ equipment or near music setup",
+      "Expression: confident, in the zone, vibing to the beat"
+    ]
+  },
+  "audio": {
+    "track": "Bachata Sensual (AI Engineer Remaster).wav",
+    "start_seconds": 130,
+    "bpm": 127,
+    "cut_on_beat": true
+  },
+  "shots": [
+    {
+      "id": 1,
+      "order": 1,
+      "type": "establishing",
+      "location": "NYC rooftop",
+      "angle": "front_wide",
+      "camera_movement": "slow_zoom_in",
+      "duration": 12,
+      "prompt": "Establishing wide shot of an exclusive rooftop party at night in New York City. The blonde DJ girl stands center frame behind Pioneer CDJ turntables, her hands on the mixer, headphones resting around her neck. She wears a white crop top and black leather shorts. She nods her head gently to the beat with a slight confident smile, mouth closed. The neon BACHATA SENSUAL sign glows vivid purple and pink behind her. Couples dance bachata in soft focus in the background. Champagne glasses on the DJ booth catch neon reflections. The NYC skyline twinkles in the distance. Steady camera with a very slow zoom in. Warm purple-pink ambient neon lighting.",
+      "avoid": "singing, talking, lip movement, mouth open, text overlay, watermarks",
+      "provider": "grok+grok",
+      "status": "generated",
+      "qa_score": null
+    },
+    {
+      "id": 2,
+      "order": 2,
+      "type": "detail",
+      "location": "London rooftop with Tower Bridge",
+      "angle": "side_profile",
+      "camera_movement": "smooth_pan_left",
+      "duration": 10,
+      "prompt": "Side profile shot on a London rooftop at night, the illuminated Tower Bridge visible in the background. The blonde DJ girl works the crossfader on her Pioneer mixer, her ponytail swaying as she bobs to the music. She has a slight confident smile with mouth closed, eyes focused intently on the decks. She wears the white crop top and black leather shorts. String lights and candles create warm bokeh in the foreground. A couple dances an intimate bachata behind her. Camera smoothly pans from right to left. Blue hour sky transitioning to night. Elegant, sophisticated atmosphere.",
+      "avoid": "singing, talking, lip movement, mouth open, text overlay",
+      "provider": "grok+grok",
+      "status": "generated",
+      "qa_score": null
+    },
+    {
+      "id": 3,
+      "order": 3,
+      "type": "atmosphere",
+      "location": "Tropical island beach club",
+      "angle": "over_shoulder",
+      "camera_movement": "orbit_right",
+      "duration": 10,
+      "prompt": "Over-the-shoulder shot of the blonde DJ girl at an open-air beach club on a tropical island. Crystal clear turquoise water and white sand are visible beyond the party. She adjusts the EQ knobs with focused precision, headphones around her neck, slight confident smile, mouth closed. She wears the white crop top and black leather shorts. Palm trees sway, tiki torches flicker warm orange light. Guests dance barefoot on sand. Camera orbits slowly to her right revealing the panoramic ocean view. Sunset colors of golden orange and warm coral tones wash the scene. Relaxed but rhythmic energy.",
+      "avoid": "singing, talking, lip movement, mouth open, text overlay",
+      "provider": "grok+grok",
+      "status": "generated",
+      "qa_score": null
+    },
+    {
+      "id": 4,
+      "order": 4,
+      "type": "power",
+      "location": "Tokyo neon district",
+      "angle": "low_angle",
+      "camera_movement": "dramatic_push_forward",
+      "duration": 10,
+      "prompt": "Low angle cinematic power shot looking up at the blonde DJ girl in a Tokyo neon-lit alley transformed into a pop-up bachata party. Massive LED screens and Japanese neon signs in pink and cyan surround her. She raises one hand off the Pioneer mixer and points up to the beat with a confident expression, mouth closed in a powerful slight smile. She wears the white crop top and black leather shorts. Dancers move in silhouette against the neon backdrop. Slow dramatic camera push forward. Rain-wet pavement reflects all the neon colors creating mirror-like streaks. String lights overhead. Climactic, triumphant energy building to the chorus peak.",
+      "avoid": "singing, talking, lip movement, mouth open, text overlay, watermarks",
+      "provider": "grok+grok",
+      "status": "generated",
+      "qa_score": null
+    }
+  ],
+  "assembly": {
+    "transition": "hard_cut",
+    "audio_rule": "MUTE_ALL_CLIP_AUDIO",
+    "resolution": "1080x1920",
+    "fps": 30,
+    "codec": "h264",
+    "crf": 18,
+    "keyframe_interval": 30
+  }
+}
