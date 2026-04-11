@@ -166,7 +166,7 @@ function getProviderOrder(requestedProvider = 'auto') {
     return ['kling', 'grok', 'veo', 'openai'];
 }
 
-async function downloadVideoToCache(videoUrl, generationId) {
+export async function downloadVideoToCache(videoUrl, generationId) {
     const filename = `video_${sanitizeId(generationId)}_${Date.now()}.mp4`;
     const filepath = path.join(CACHE_DIR, filename);
 
