@@ -16,7 +16,7 @@ import { generateText, hasLLMProvider } from './llm-client.js';
 
 dotenv.config();
 
-const DEFAULT_MAX_LENGTH = 2000;
+const DEFAULT_MAX_LENGTH = 1200;
 
 // ═══════════════════════════════════════════════════════════════
 // 8 CONTENT PILLARS — inspirational-forward, varied
@@ -292,10 +292,21 @@ Tone: ${tone}
 - Sometimes be philosophical. Sometimes be tactical. Sometimes be personal. VARY IT.
 - Sound like someone people want to follow, not just respect.
 
+═══ CRITICAL: FACTUAL ACCURACY ═══
+- NEVER claim a product, model, or service has "just launched" or "just dropped" unless YOU ARE 100% CERTAIN it exists.
+- Do NOT fabricate AI model names, version numbers, or release announcements.
+- Do NOT invent statistics, case study numbers, or client results that didn't happen.
+- If referencing AI tools or products, only mention ones that are WIDELY KNOWN and CONFIRMED (ChatGPT, Claude, Gemini, Grok, etc).
+- When in doubt, speak in GENERAL terms about AI capabilities rather than naming specific releases.
+- VIOLATING THIS RULE destroys credibility. Ghost's reputation depends on being REAL, not hype.
+
 ═══ INSTAGRAM FORMAT RULES ═══
 - HOOK FIRST: First line shows in preview — it MUST stop the scroll.
 - Use line breaks aggressively. Short paragraphs. One idea per line.
-- Write 500-1500 characters.
+- VARY caption length. Mix it up:
+  • Sometimes write SHORT and punchy (200-400 chars) — 3-5 lines, hit hard, done.
+  • Sometimes write MEDIUM (500-800 chars) — a real thought, a story, a lesson.
+  • Rarely write LONG (800-1200 chars) — only for deep stories or case studies.
 - Use → arrows and • bullets for lists.
 - End with ENGAGEMENT: question, call to comment, or powerful closing line.
 - 1-2 emojis MAX. Use 🔥 or 👻 sparingly.
