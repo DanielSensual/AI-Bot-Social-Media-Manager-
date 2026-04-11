@@ -18,7 +18,7 @@ import path from 'path';
 import cron from 'node-cron';
 import { fileURLToPath } from 'url';
 
-import { testInstagramConnection, uploadToTempHost, postInstagramReel, postInstagramStory } from '../src/instagram-client.js';
+import { testInstagramConnection, uploadToTempHost, postInstagramReel, postInstagramStory, postInstagramCarousel } from '../src/instagram-client.js';
 import { respondToInstagramComments } from '../src/instagram-responder.js';
 import { buildInstagramCaption } from '../src/instagram-content.js';
 import { generateVideo, cleanupCache } from '../src/video-generator.js';
@@ -47,7 +47,7 @@ Usage:
 
 Options:
   --once                 Run now and exit
-  --slot=<name>          all | comment | story | reel (default: all)
+  --slot=<name>          all | comment | story | reel | carousel (default: all)
   --dry-run              Plan/log actions without posting
   -h, --help             Show help
 
@@ -56,10 +56,12 @@ Environment:
   INSTAGRAM_AUTOPILOT_COMMENT_TIMES=09:30,16:30
   INSTAGRAM_AUTOPILOT_STORY_TIMES=11:00,20:00
   INSTAGRAM_AUTOPILOT_REEL_TIMES=15:00,21:00
+  INSTAGRAM_AUTOPILOT_CAROUSEL_TIMES=14:00
   INSTAGRAM_AUTOPILOT_COMMENT_LIMIT=8
   INSTAGRAM_AUTOPILOT_POSTS_TO_SCAN=5
   INSTAGRAM_AUTOPILOT_AI_REELS_PER_DAY=1
   INSTAGRAM_AUTOPILOT_AI_STORIES_PER_DAY=2
+  INSTAGRAM_AUTOPILOT_AI_CAROUSELS_PER_DAY=1
   INSTAGRAM_AUTOPILOT_AI_VIDEO_PROVIDER=auto|veo|grok|sora
   IG_DRIVE_ROOT=/path/to/drive-sync-folder
 `);
@@ -67,7 +69,7 @@ Environment:
 
 function parseSlot(raw) {
     const value = String(raw || 'all').toLowerCase().trim();
-    const allowed = new Set(['all', 'comment', 'story', 'reel']);
+    const allowed = new Set(['all', 'comment', 'story', 'reel', 'carousel']);
     if (!allowed.has(value)) {
         throw new Error(`Invalid --slot value: ${value}`);
     }
@@ -473,10 +475,138 @@ async function runReelCycle(context, slotKey) {
     return { posted: true, source: 'ai', mediaId: post?.id || null };
 }
 
+async function runCarouselCycle(context, slotKey) {
+    const { config, state } = context;
+    console.log(`🎠 [${slotKey}] Running carousel cycle...`);
+
+    if ((state.aiCarouselsGenerated || 0) >= config.aiCarouselsPerDay) {
+        appendLog({
+            slot: slotKey,
+            type: 'carousel',
+            mode: config.dryRun ? 'dry-run' : 'live',
+            status: 'skipped',
+            reason: `AI carousel daily cap reached (${config.aiCarouselsPerDay})`,
+        });
+        return { posted: false, skipped: true };
+    }
+
+    // Generate carousel content — AI creates slide prompts + caption
+    const { generateText } = await import('../src/llm-client.js');
+
+    const slidePrompt = `You are Ghost — AI Systems Architect, military veteran, founder of Ghost AI Systems in Orlando FL.
+
+Create an Instagram CAROUSEL post (swipeable slides). The carousel should teach, inspire, or showcase something valuable.
+
+Carousel types to rotate between:
+1. "5 Things" listicle (tips, tools, lessons, mistakes)
+2. Before/After transformation (business result, personal growth)
+3. Step-by-step tutorial (how to automate X, how to build Y)
+4. Hot take thread (controversial opinion broken into slides)
+5. Case study breakdown (real results, numbers)
+
+Return strict JSON:
+{
+  "caption": "the Instagram caption that goes with the carousel",
+  "slides": [
+    { "text": "Slide 1 headline — big text, 3-8 words", "subtext": "1-2 sentence supporting detail" },
+    { "text": "Slide 2 headline", "subtext": "supporting detail" },
+    { "text": "Slide 3 headline", "subtext": "supporting detail" },
+    { "text": "Slide 4 headline", "subtext": "supporting detail" },
+    { "text": "Slide 5 headline", "subtext": "supporting detail" }
+  ],
+  "carousel_type": "listicle|transformation|tutorial|hot_take|case_study",
+  "hook_type": "question|statement|number|challenge"
+}
+
+5-7 slides. Make slide 1 a strong hook. Make the last slide a CTA. Keep caption under 1500 chars with 1-2 emojis max.`;
+
+    let slidesData;
+    try {
+        const { text } = await generateText({
+            prompt: slidePrompt,
+            provider: 'grok',
+            maxOutputTokens: 1500,
+            grokModel: 'grok-4.20-0309-reasoning',
+        });
+
+        const parsed = text.match(/\{[\s\S]*\}/);
+        slidesData = parsed ? JSON.parse(parsed[0]) : null;
+    } catch (err) {
+        console.error(`   ❌ Carousel AI generation failed: ${err.message}`);
+        return { posted: false, error: err.message };
+    }
+
+    if (!slidesData?.slides || slidesData.slides.length < 2) {
+        console.error('   ❌ AI returned invalid carousel data');
+        return { posted: false, error: 'invalid_carousel_data' };
+    }
+
+    const caption = String(slidesData.caption || '').trim().slice(0, 2200);
+    const slides = slidesData.slides.slice(0, 10); // max 10 slides
+
+    if (config.dryRun) {
+        appendLog({
+            slot: slotKey,
+            type: 'carousel',
+            mode: 'dry-run',
+            source: 'ai',
+            carouselType: slidesData.carousel_type,
+            slideCount: slides.length,
+            caption,
+            slides: slides.map(s => s.text),
+        });
+        console.log(`   📋 Carousel: ${slidesData.carousel_type} (${slides.length} slides)`);
+        slides.forEach((s, i) => console.log(`   [${i + 1}] ${s.text}`));
+        return { posted: false, dryRun: true, source: 'ai' };
+    }
+
+    // Generate images for each slide
+    console.log(`   🎨 Generating ${slides.length} slide images...`);
+    const imageUrls = [];
+
+    for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
+        const imagePrompt = `Instagram carousel slide, dark premium design with subtle ghost/tech aesthetic, large bold white text saying "${slide.text}", smaller subtext: "${slide.subtext}", clean modern layout, 1080x1080, no watermarks, professional social media graphic, dark navy to black gradient background with subtle cyan/purple accent lighting`;
+
+        try {
+            const imagePath = await generateImage({ prompt: imagePrompt });
+            const publicUrl = await uploadToTempHost(imagePath);
+            imageUrls.push(publicUrl);
+            console.log(`   ✅ Slide ${i + 1}/${slides.length} generated`);
+        } catch (err) {
+            console.error(`   ❌ Slide ${i + 1} generation failed: ${err.message}`);
+            // If we have at least 2 slides, continue with what we have
+            if (imageUrls.length >= 2) break;
+            return { posted: false, error: `slide_gen_failed:${err.message}` };
+        }
+    }
+
+    if (imageUrls.length < 2) {
+        console.error('   ❌ Not enough slides generated (need at least 2)');
+        return { posted: false, error: 'insufficient_slides' };
+    }
+
+    const post = await postInstagramCarousel(caption, imageUrls);
+
+    state.aiCarouselsGenerated = (state.aiCarouselsGenerated || 0) + 1;
+    appendLog({
+        slot: slotKey,
+        type: 'carousel',
+        mode: 'live',
+        source: 'ai',
+        carouselType: slidesData.carousel_type,
+        slideCount: imageUrls.length,
+        mediaId: post?.id || null,
+    });
+
+    return { posted: true, source: 'ai', mediaId: post?.id || null };
+}
+
 async function runSlot(context, slot, slotKey) {
     if (slot === 'comment') return runCommentCycle(context, slotKey);
     if (slot === 'story') return runStoryCycle(context, slotKey);
     if (slot === 'reel') return runReelCycle(context, slotKey);
+    if (slot === 'carousel') return runCarouselCycle(context, slotKey);
     return null;
 }
 
@@ -507,10 +637,12 @@ async function main() {
         commentTimes: parseTimeList(process.env.INSTAGRAM_AUTOPILOT_COMMENT_TIMES, '09:30,16:30'),
         storyTimes: parseTimeList(process.env.INSTAGRAM_AUTOPILOT_STORY_TIMES, '11:00,20:00'),
         reelTimes: parseTimeList(process.env.INSTAGRAM_AUTOPILOT_REEL_TIMES, '15:00,21:00'),
+        carouselTimes: parseTimeList(process.env.INSTAGRAM_AUTOPILOT_CAROUSEL_TIMES, '14:00'),
         commentLimit: toInt(process.env.INSTAGRAM_AUTOPILOT_COMMENT_LIMIT, 8, 1, 50),
         postsToScan: toInt(process.env.INSTAGRAM_AUTOPILOT_POSTS_TO_SCAN, 5, 1, 25),
         aiReelsPerDay: toInt(process.env.INSTAGRAM_AUTOPILOT_AI_REELS_PER_DAY, 1, 0, 4),
         aiStoriesPerDay: toInt(process.env.INSTAGRAM_AUTOPILOT_AI_STORIES_PER_DAY, 2, 0, 6),
+        aiCarouselsPerDay: toInt(process.env.INSTAGRAM_AUTOPILOT_AI_CAROUSELS_PER_DAY, 1, 0, 3),
         aiVideoProvider: String(process.env.INSTAGRAM_AUTOPILOT_AI_VIDEO_PROVIDER || 'grok').toLowerCase(),
         characterMode: String(process.env.INSTAGRAM_AUTOPILOT_CHARACTER_MODE || 'ghost').toLowerCase(),
     };
@@ -600,6 +732,7 @@ async function main() {
             await guardedRun('comment', 'manual-comment');
             await guardedRun('story', 'manual-story');
             await guardedRun('reel', 'manual-reel');
+            await guardedRun('carousel', 'manual-carousel');
         } else {
             await guardedRun(config.slot, `manual-${config.slot}`);
         }
@@ -625,6 +758,7 @@ async function main() {
     scheduleSlots('comment', config.commentTimes);
     scheduleSlots('story', config.storyTimes);
     scheduleSlots('reel', config.reelTimes);
+    scheduleSlots('carousel', config.carouselTimes);
 
     console.log('✅ Autopilot is running. Waiting for scheduled windows...');
 }

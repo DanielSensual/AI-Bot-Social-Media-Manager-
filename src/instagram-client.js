@@ -442,15 +442,15 @@ export async function postInstagramStory(mediaUrl, options = {}) {
 }
 
 /**
- * Post a carousel to Instagram
+ * Post a carousel to Instagram (mixed media — images + videos)
  * @param {string} caption - Carousel caption
- * @param {string[]} imageUrls - Array of publicly accessible image URLs (2-10)
+ * @param {Array<string|{url:string, type:'image'|'video'}>} mediaItems - 2-10 items. Strings default to image.
  * @param {object} [config] - Explicit account config
  * @returns {Promise<object>} Post result
  */
-export async function postInstagramCarousel(caption, imageUrls, config = null) {
-    if (!imageUrls || imageUrls.length < 2 || imageUrls.length > 10) {
-        throw new Error('Carousel requires 2-10 images');
+export async function postInstagramCarousel(caption, mediaItems, config = null) {
+    if (!mediaItems || mediaItems.length < 2 || mediaItems.length > 10) {
+        throw new Error('Carousel requires 2-10 media items');
     }
 
     const connection = await testInstagramConnection(config);
@@ -458,19 +458,44 @@ export async function postInstagramCarousel(caption, imageUrls, config = null) {
 
     const { igUserId, pageToken, apiBase } = connection;
 
-    console.log(`📤 Creating ${imageUrls.length} carousel items...`);
+    // Normalize items: string → { url, type: 'image' }
+    const items = mediaItems.map((item, i) => {
+        if (typeof item === 'string') return { url: item, type: 'image' };
+        if (item && typeof item === 'object' && item.url) {
+            return { url: item.url, type: item.type === 'video' ? 'video' : 'image' };
+        }
+        throw new Error(`Carousel item ${i} is invalid — expected URL string or { url, type }`);
+    });
+
+    console.log(`📤 Creating ${items.length} carousel items...`);
     const childIds = [];
 
-    for (const url of imageUrls) {
+    for (let i = 0; i < items.length; i++) {
+        const { url, type } = items[i];
+        const payload = {
+            is_carousel_item: true,
+            access_token: pageToken,
+        };
+
+        if (type === 'video') {
+            payload.video_url = url;
+            payload.media_type = 'VIDEO';
+        } else {
+            payload.image_url = url;
+        }
+
+        console.log(`   [${i + 1}/${items.length}] ${type}: ${url.substring(0, 60)}...`);
         const childData = await fetchJson(`${apiBase}/${igUserId}/media`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                image_url: url,
-                is_carousel_item: true,
-                access_token: pageToken,
-            }),
-        }, 'Instagram carousel item creation');
+            body: JSON.stringify(payload),
+        }, `Instagram carousel ${type} item creation`);
+
+        // Videos need to be processed before carousel container creation
+        if (type === 'video') {
+            await waitForMediaReady(childData.id, pageToken, apiBase, 60, 5000);
+        }
+
         childIds.push(childData.id);
     }
 
@@ -498,7 +523,7 @@ export async function postInstagramCarousel(caption, imageUrls, config = null) {
         }),
     }, 'Instagram carousel publish');
 
-    console.log(`✅ Instagram carousel published!`);
+    console.log(`✅ Instagram carousel published! (${items.length} slides)`);
     console.log(`🔗 Media ID: ${publishData.id}`);
 
     return publishData;
