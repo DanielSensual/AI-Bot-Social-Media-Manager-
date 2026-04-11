@@ -264,6 +264,26 @@ async function generateAiReelFile(caption, provider) {
         });
     }
 
+    // Character lock: use reference images for Kling I2V when available
+    const refDir = path.join(PROJECT_ROOT, 'assets', 'reference-images');
+    const characters = [];
+    const danielRef = path.join(refDir, 'ghost-primary.jpg');
+    const ghostRef = path.join(refDir, 'ghost-persona.jpg');
+    if (fs.existsSync(danielRef)) characters.push({ name: 'daniel', path: danielRef });
+    if (fs.existsSync(ghostRef)) characters.push({ name: 'ghost', path: ghostRef });
+
+    // If we have character images and provider supports I2V, use character lock
+    if (characters.length > 0 && (provider === 'kling' || provider === 'auto')) {
+        const { generateVideoFromImage } = await import('../src/video-generator.js');
+        const character = characters[Math.floor(Math.random() * characters.length)];
+        console.log(`   🎭 Character lock: ${character.name}`);
+        return generateVideoFromImage(character.path, caption, {
+            provider: 'kling',
+            aspectRatio: '9:16',
+            duration: 5,
+        });
+    }
+
     return generateVideo(caption, {
         provider,
         aspectRatio: '9:16',
