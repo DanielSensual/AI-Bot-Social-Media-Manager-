@@ -399,7 +399,7 @@ export function createInstagramContentBuilder(deps = {}) {
                     prompt,
                     provider,
                     maxOutputTokens: 1200,
-                    claudeModel: 'claude-sonnet-4-20250514',
+                    claudeModel: 'claude-sonnet-4-6',
                 });
 
                 const parsed = parseJsonObject(text);
