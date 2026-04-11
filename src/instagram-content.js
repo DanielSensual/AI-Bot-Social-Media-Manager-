@@ -331,14 +331,14 @@ Keep caption under ${maxLength} characters.`;
 }
 
 /**
- * Verify factual claims via Gemini Flash.
+ * Verify factual claims via GPT-5.4.
  * Returns verified text or null if verification fails.
  */
 async function verifyFacts(caption) {
     try {
         const { text } = await generateText({
-            provider: 'gemini',
-            geminiModel: 'gemini-2.5-flash-preview-05-20',
+            provider: 'openai',
+            openaiModel: 'gpt-5.4',
             prompt: `Review this social media caption for factual accuracy. If all claims are reasonable, return exactly: VERIFIED
 
 If there are factual errors, return: ISSUE: [brief description of the problem]

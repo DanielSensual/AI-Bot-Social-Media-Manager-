@@ -566,12 +566,12 @@ Return strict JSON:
                 throw new Error('Grok returned empty caption for fact post');
             }
 
-            // Step 2: Gemini Flash verifies the factual claims
+            // Step 2: GPT-5.4 verifies the factual claims
             let verified = false;
             try {
                 const { text: verifyResult } = await generateText({
-                    provider: 'gemini',
-                    geminiModel: 'gemini-2.5-flash-preview-05-20',
+                    provider: 'openai',
+                    openaiModel: 'gpt-5.4',
                     prompt: `Review this social media caption about bachata for factual accuracy. Check any historical claims, dates, names, or cultural references.
 
 If all claims are factually accurate or reasonable, return exactly: VERIFIED
