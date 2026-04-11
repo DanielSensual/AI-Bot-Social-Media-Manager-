@@ -26,6 +26,10 @@ const GROK_VIDEO_MODEL = process.env.GROK_VIDEO_MODEL || 'grok-imagine-video';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_VIDEO_MODEL = process.env.OPENAI_VIDEO_MODEL || 'sora-2';
 
+const FAL_KEY = process.env.FAL_KEY || '';
+const FAL_KLING_ENDPOINT = 'https://queue.fal.run/fal-ai/kling-video/v2/master/text-to-video';
+const FAL_KLING_I2V_ENDPOINT = 'https://queue.fal.run/fal-ai/kling-video/v2/master/image-to-video';
+
 if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
@@ -157,7 +161,9 @@ function getProviderOrder(requestedProvider = 'auto') {
     if (mode === 'veo') return ['veo'];
     if (mode === 'grok') return ['grok'];
     if (mode === 'openai') return ['openai'];
-    return ['veo', 'grok', 'openai'];
+    if (mode === 'kling') return ['kling'];
+    // Auto: Kling (best motion/consistency) → Grok → Veo → OpenAI
+    return ['kling', 'grok', 'veo', 'openai'];
 }
 
 async function downloadVideoToCache(videoUrl, generationId) {
@@ -769,6 +775,114 @@ async function generateWithOpenAI(prompt, options = {}, imagePath = null) {
     throw new Error(`OpenAI video generation failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// KLING via fal.ai — Async queue-based generation
+// ═══════════════════════════════════════════════════════════════
+
+async function pollFalQueue(requestId, statusUrl, maxWaitMs = 5 * 60 * 1000, pollIntervalMs = 5000) {
+    const start = Date.now();
+    const pollUrl = statusUrl || `https://queue.fal.run/fal-ai/kling-video/requests/${requestId}/status`;
+
+    while (Date.now() - start < maxWaitMs) {
+        const response = await fetch(pollUrl, {
+            headers: { 'Authorization': `Key ${FAL_KEY}` },
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (data.status === 'COMPLETED') {
+            // Fetch the actual result
+            const resultUrl = `https://queue.fal.run/fal-ai/kling-video/requests/${requestId}`;
+            const resultResponse = await fetch(resultUrl, {
+                headers: { 'Authorization': `Key ${FAL_KEY}` },
+            });
+            const result = await resultResponse.json().catch(() => ({}));
+            return result;
+        }
+
+        if (data.status === 'FAILED') {
+            throw new Error(`Kling generation failed: ${data.error || 'Unknown error'}`);
+        }
+
+        const elapsed = Math.round((Date.now() - start) / 1000);
+        const queuePos = data.queue_position != null ? ` (queue: #${data.queue_position})` : '';
+        console.log(`   ⏳ Kling: ${data.status || 'processing'}${queuePos} (${elapsed}s)`);
+
+        await sleep(pollIntervalMs);
+    }
+
+    throw new Error(`Kling generation timed out after ${Math.round(maxWaitMs / 1000)}s`);
+}
+
+async function generateWithKling(prompt, options = {}, imagePath = null) {
+    if (!FAL_KEY) {
+        throw new Error('FAL_KEY not configured for Kling video generation');
+    }
+
+    const {
+        maxWaitMs = 5 * 60 * 1000,
+        pollIntervalMs = 5000,
+        duration = '5',
+        aspectRatio = '9:16',
+    } = options;
+
+    const isI2V = !!imagePath;
+    const endpoint = isI2V ? FAL_KLING_I2V_ENDPOINT : FAL_KLING_ENDPOINT;
+    const mode = isI2V ? 'image-to-video' : 'text-to-video';
+
+    console.log(`🎬 Generating video with Kling 3.0 (${mode} via fal.ai)...`);
+    console.log(`   Prompt: "${String(prompt || '').substring(0, 80)}..."`);
+
+    const body = {
+        prompt,
+        duration: String(duration),
+        aspect_ratio: aspectRatio,
+    };
+
+    // If image-to-video, upload the image first
+    if (isI2V) {
+        const imageData = fs.readFileSync(imagePath);
+        const base64 = imageData.toString('base64');
+        const mimeType = getMimeType(imagePath) || 'image/jpeg';
+        body.image_url = `data:${mimeType};base64,${base64}`;
+    }
+
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Key ${FAL_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const msg = data?.detail || data?.error || `fal.ai error ${response.status}`;
+        throw new Error(`Kling queue submission failed: ${msg}`);
+    }
+
+    if (!data.request_id) {
+        throw new Error('Kling queue submission returned no request_id');
+    }
+
+    console.log(`   ✅ Queued: ${data.request_id}`);
+
+    // Poll for completion
+    const result = await pollFalQueue(data.request_id, data.status_url, maxWaitMs, pollIntervalMs);
+
+    // Extract video URL from result
+    const videoUrl = result?.video?.url || result?.data?.video?.url;
+    if (!videoUrl) {
+        throw new Error('Kling result contained no video URL');
+    }
+
+    // Download to cache
+    const videoPath = await downloadVideoToCache(videoUrl, `kling_${data.request_id}`);
+    console.log(`   ✅ Kling video saved: ${videoPath}`);
+    return videoPath;
+}
+
 /**
  * Generate a video from a text prompt.
  * @param {string} prompt
@@ -783,6 +897,7 @@ export async function generateVideo(prompt, options = {}) {
 
     for (const provider of providers) {
         try {
+            if (provider === 'kling') return await generateWithKling(prompt, options);
             if (provider === 'veo') return await generateWithVeo(prompt, options);
             if (provider === 'grok') return await generateWithGrok(prompt, options);
             if (provider === 'openai') return await generateWithOpenAI(prompt, options);
@@ -810,6 +925,7 @@ export async function generateVideoFromImage(imagePath, prompt, options = {}) {
 
     for (const provider of providers) {
         try {
+            if (provider === 'kling') return await generateWithKling(prompt, options, imagePath);
             if (provider === 'veo') return await generateWithVeo(prompt, options, imagePath);
             if (provider === 'grok') return await generateWithGrok(prompt, options, imagePath);
             if (provider === 'openai') return await generateWithOpenAI(prompt, options, imagePath);
