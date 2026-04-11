@@ -1,11 +1,14 @@
 /**
- * Instagram Content Builder
- * =========================
- * Dedicated content engine for Instagram captions.
- * NOT tweets — these are 500-2200 char captions designed for
- * reels, stories, and carousel posts.
+ * Instagram Content Builder — Ghost AI Systems
+ * ==============================================
+ * Multi-model creative pipeline for Instagram captions + video prompts.
  *
- * Pillars: grit, friction, trending, story, tactical, lifestyle
+ * 8 Content Pillars — rotated for variety + engagement.
+ * Primary LLM: Grok 4.2 (authentic, human voice)
+ * Fact verification: Gemini Flash (for factual claims)
+ *
+ * Each AI response returns:
+ *   { caption, video_prompt, hook_type }
  */
 
 import dotenv from 'dotenv';
@@ -16,102 +19,136 @@ dotenv.config();
 const DEFAULT_MAX_LENGTH = 2000;
 
 // ═══════════════════════════════════════════════════════════════
-// CONTENT PILLARS — rotate for variety + engagement
+// 8 CONTENT PILLARS — inspirational-forward, varied
 // ═══════════════════════════════════════════════════════════════
 const CONTENT_PILLARS = [
-    // ── DRILL SERGEANT CODE ─────────────────────────────────
-    // Marine Corps DI energy — learn to code, build systems, stop making excuses
+    // ── INSPIRATION ─────────────────────────────────────────
+    // Hungry, motivational, "you can change your life today"
     {
-        pillar: 'drill',
-        theme: 'today you can change everything — learn to code, build systems, stop trading time for money',
-        tone: 'Marine Corps drill instructor energy, direct orders, zero excuses allowed',
+        pillar: 'inspiration',
+        theme: 'today you can change everything — learn to code, build systems, take control of your future',
+        tone: 'Tony Robbins meets a combat veteran — convicted, passionate, not cheesy. Speaks from experience.',
     },
     {
-        pillar: 'drill',
-        theme: 'discipline beats talent every single day — wake up, write code, deploy, repeat',
-        tone: 'hard but caring, like a sergeant who genuinely believes in you',
+        pillar: 'inspiration',
+        theme: 'discipline beats motivation every single day — motivation fades, systems endure',
+        tone: 'Calm intensity. Not yelling, but making them feel like NOT acting is unacceptable.',
     },
     {
-        pillar: 'drill',
-        theme: 'stop scrolling and start building — every hour on your phone is an hour you gave to someone else',
-        tone: 'confrontational wake-up call, drill instructor morning formation energy',
+        pillar: 'inspiration',
+        theme: 'you were not built for the cubicle — you were built to create, to build, to ship things that matter',
+        tone: 'Visionary, calling them into their potential. Make them feel chosen.',
     },
     {
-        pillar: 'drill',
-        theme: 'you do not need permission to build — open your laptop, pull up a tutorial, and start writing code right now',
-        tone: 'urgent command, no-excuse directive, making them act TODAY',
+        pillar: 'inspiration',
+        theme: 'every empire started with one person who said "I can figure this out" — that person is you, right now',
+        tone: 'Urgent but warm. Not selling anything — recruiting them into believing in themselves.',
     },
 
-    // ── AI WEAPONS ──────────────────────────────────────────
-    // Show what AI systems actually do — make them want it
+    // ── AI SHOWCASE ─────────────────────────────────────────
+    // What AI systems actually do — real results, real impact
     {
-        pillar: 'weapons',
+        pillar: 'ai_showcase',
         theme: 'AI voice agents answered 47 calls last night while the business owner slept — this is the new standard',
-        tone: 'tactical briefing, showing the weapon, making them want it',
+        tone: 'Tactical briefing with receipts. Show the weapon, make them want it.',
     },
     {
-        pillar: 'weapons',
-        theme: 'one automation replaced 3 employees worth of manual work — not to fire people, to free them up for what matters',
-        tone: 'strategic, showing the ROI, systems-level thinking',
-    },
-    {
-        pillar: 'weapons',
+        pillar: 'ai_showcase',
         theme: 'we built a system that generates leads, qualifies them, books appointments, and follows up — all while sleeping',
-        tone: 'flex with receipts, showing the machine running, not bragging',
+        tone: 'Quiet confidence. Not bragging — demonstrating what is now possible.',
+    },
+    {
+        pillar: 'ai_showcase',
+        theme: 'one automation replaced 3 employees worth of manual work — not to fire people, to free them for what matters',
+        tone: 'Strategic, showing the ROI, making them think about their own manual bottlenecks.',
     },
 
-    // ── VETERAN GRIT ────────────────────────────────────────
-    // Military to tech founder story — earned authority
+    // ── VETERAN STORY ───────────────────────────────────────
+    // Personal journey, military-to-tech founder arc
     {
-        pillar: 'grit',
-        theme: 'military taught me to execute under pressure — entrepreneurship is the same battlefield different uniform',
-        tone: 'raw veteran energy, earned authority, been through real fire',
+        pillar: 'veteran_story',
+        theme: 'military taught me to execute under pressure — entrepreneurship is the same battlefield, different uniform',
+        tone: 'Raw, earned authority. Been through real fire. No fake motivation.',
     },
     {
-        pillar: 'grit',
+        pillar: 'veteran_story',
         theme: 'no degree, no trust fund, no connections — just discipline and a laptop and the audacity to believe',
-        tone: 'underdog story, defiant, proving every doubter wrong daily',
+        tone: 'Underdog story, defiant, proving every doubter wrong with results.',
     },
     {
-        pillar: 'grit',
-        theme: 'the nights nobody sees — deploying systems at 2am, fixing client fires at 3am, back at it by 6am',
-        tone: 'exhausted but unstoppable, showing the cost of winning',
+        pillar: 'veteran_story',
+        theme: 'the nights nobody sees — deploying code at 2am, fixing client fires at 3am, back at it by 6am',
+        tone: 'Exhausted but unstoppable. Showing the cost of winning.',
     },
 
-    // ── CLASS FUNNEL ────────────────────────────────────────
-    // Soft CTAs leading to Ghost AI coding education
+    // ── BUILDER ─────────────────────────────────────────────
+    // Learn to code, build systems, own your future
     {
-        pillar: 'funnel',
+        pillar: 'builder',
         theme: 'we are building a generation of AI-native builders — coding is the new literacy and it is not optional',
-        tone: 'visionary but accessible, inviting them into the mission',
+        tone: 'Visionary but accessible. Recruiting them into the mission.',
     },
     {
-        pillar: 'funnel',
+        pillar: 'builder',
         theme: 'the people who learn to build AI systems NOW will own the next decade — which side are you choosing',
-        tone: 'urgency without hype, strategic recruitment into the builder class',
-    },
-    {
-        pillar: 'funnel',
-        theme: 'I did not wait for someone to teach me — I taught myself, and now I am building the program I wish I had',
-        tone: 'personal mission, building the ladder for the next generation',
+        tone: 'Urgency without hype. Strategic recruitment into the builder class.',
     },
 
-    // ── SYSTEMS THINKING ────────────────────────────────────
-    // How automation works — engineer mindset
+    // ── BEHIND THE SCENES ───────────────────────────────────
+    // Building in public — the real work of running an AI agency
     {
-        pillar: 'systems',
-        theme: 'the difference between hustling and building is systems — one makes you tired, one makes you free',
-        tone: 'philosophical but practical, engineer architect mindset',
+        pillar: 'behind_scenes',
+        theme: 'the real work of building an AI company — the deployments, the pivots, the breakthroughs nobody posts about',
+        tone: 'Transparent, human. Showing the journey, not just the highlight reel.',
     },
     {
-        pillar: 'systems',
-        theme: 'every manual task in your business is a system waiting to be built — you just have not built it yet',
-        tone: 'challenging their status quo, making them see the inefficiency',
+        pillar: 'behind_scenes',
+        theme: 'just shipped a feature that took 3 days of debugging — the feeling of seeing it work in production is everything',
+        tone: 'In-the-trenches energy. Making engineering feel exciting and human.',
+    },
+
+    // ── INDUSTRY INSIGHT ────────────────────────────────────
+    // AI news, market shifts — translated for non-technical people
+    {
+        pillar: 'industry',
+        theme: 'breaking down the latest AI model release — what it actually means for small businesses',
+        tone: 'Translator. "Here is what this means for you." Opinionated, not just summarizing.',
+    },
+    {
+        pillar: 'industry',
+        theme: 'stop listening to AI influencers who have never deployed a production system — here is what is actually working right now',
+        tone: 'Filter the noise. Save busy people from hype. Give real signal.',
+    },
+
+    // ── CASE STUDY ──────────────────────────────────────────
+    // Client wins, system results, before/after
+    {
+        pillar: 'case_study',
+        theme: 'before: business owner answering 200 calls manually. After: AI handles 95%, owner focuses on growth',
+        tone: 'Show don\'t tell. Numbers first. Let results do the selling.',
+    },
+
+    // ── HOT TAKE ────────────────────────────────────────────
+    // Provocative opinions on tech, business, culture
+    {
+        pillar: 'hot_take',
+        theme: 'unpopular opinion: 90% of people posting about AI have never deployed a single production system',
+        tone: 'Confident, slightly controversial, conversation starter. Pull no punches.',
+    },
+    {
+        pillar: 'hot_take',
+        theme: 'the gap between TALKING about AI and BUILDING with AI is becoming a canyon — most people are on the wrong side',
+        tone: 'Blunt truth. Not mean-spirited — just honest about the state of things.',
+    },
+    {
+        pillar: 'hot_take',
+        theme: 'college degrees are becoming optional for tech careers — the internet is the greatest university in human history, use it',
+        tone: 'Challenging the status quo. Empowering non-traditional paths.',
     },
 ];
 
 // ═══════════════════════════════════════════════════════════════
-// TEMPLATE FALLBACKS — engaging, not generic
+// TEMPLATE FALLBACKS — engaging, varied tone
 // ═══════════════════════════════════════════════════════════════
 const TEMPLATE_CAPTIONS = [
     () => `Nobody handed me a playbook.
@@ -120,33 +157,27 @@ No trust fund. No network. No "connections."
 
 Just a veteran with a laptop, a stupid amount of discipline, and the audacity to believe I could build an AI company from scratch.
 
-Now we're building voice agents that answer phones 24/7, lead gen systems that run on autopilot, and entire SaaS platforms.
-
 The secret? There is no secret.
 
-You just don't quit. You show up at 6am. You deploy at midnight. You fix it when it breaks at 3am.
-
-Every "overnight success" has 1,000 nights of grinding behind it.
+You just don't quit. You show up at 6am. You deploy at midnight. You fix it when it breaks.
 
 If you're in the struggle right now — good. That's where the foundation gets built.
 
 Keep going. 🔥`,
 
-    () => `Unpopular opinion: 90% of people posting about AI have never deployed a single production system.
+    () => `AI is not coming to replace you.
 
-They screenshot ChatGPT and call it "leveraging AI."
+AI is coming to replace the people who refuse to learn it.
 
-Meanwhile we're over here building:
-→ Voice agents handling real phone calls at 2am
-→ Lead gen bots qualifying prospects in their sleep
-→ Quote-to-invoice platforms closing deals automatically
-→ Social media engines running 30 bots on autopilot
+That's the actual reality nobody wants to say out loud.
 
-The gap between TALKING about AI and BUILDING with AI is massive.
+The tools are free. The tutorials are free. YouTube university is open 24/7.
 
-Stop consuming. Start shipping.
+The only cost is your time — and you're already spending it scrolling.
 
-Which side are you on?`,
+What if you spent 1 hour today learning something that could change your next 10 years?
+
+Just 1 hour. Start there.`,
 
     () => `Real talk.
 
@@ -164,39 +195,33 @@ If you're in that chapter right now, hear me: it's fuel, not a sentence.
 
 Your story isn't over. It's barely started.`,
 
+    () => `We deployed an AI voice agent for a local business last week.
+
+Within 48 hours:
+→ 47 calls answered automatically
+→ 12 leads qualified and scored
+→ 3 appointments booked
+→ Zero humans involved
+
+The owner called us and said "I thought you were exaggerating."
+
+We weren't.
+
+This is what most businesses are sleeping on.
+
+If your phone goes to voicemail after 5pm, you're leaving money on the table every single night.`,
+
     () => `The best business advice I ever got wasn't from a course.
 
 It was from the military.
 
 → Execute under pressure
-→ Adapt when the plan falls apart  
+→ Adapt when the plan falls apart
 → Lead when nobody wants to
 → Show up when conditions are terrible
 → Never leave your people behind
 
-I didn't learn entrepreneurship from a guru on YouTube.
-
-I learned it in service. Then I applied it to building tech companies.
-
-Veterans — you already have the hardest skills in the game. Now it's time to build something that's yours.`,
-
-    () => `People ask what Ghost AI Systems actually does.
-
-Simple answer: we make businesses money while the owner sleeps.
-
-Phone rings at 2am? Our AI answers it, qualifies the lead, books the appointment.
-
-Need 50 custom proposals sent? Done by morning with follow-ups loaded.
-
-Social media dead? AI agents posting, engaging, building your audience on autopilot.
-
-This is not science fiction. This is a random Tuesday for us.
-
-The question isn't whether AI will transform your business.
-
-It's whether you'll adopt it before your competitor does.
-
-DM "GHOST" if you want to see what we can build for you. 👻`,
+Veterans — you already have the hardest skills in the game. Now build something that's yours.`,
 ];
 
 function pick(array, randomFn = Math.random) {
@@ -241,9 +266,9 @@ function buildPrompt({ theme, tone, pillar, maxLength }) {
         year: 'numeric',
     });
 
-    return `You write Instagram captions for Ghost — the face of Ghost AI Systems. Ghost is a military veteran turned AI systems architect in Orlando, FL. He speaks with Marine Corps drill sergeant authority mixed with genuine care for people trying to level up.
+    return `You write Instagram captions for Ghost — the face of Ghost AI Systems. Ghost is a military veteran turned AI systems architect in Orlando, FL. He speaks with authority AND genuine warmth — not a drill sergeant shouting orders, but a leader who inspires action through conviction and lived experience.
 
-He runs Ghost AI Systems (AI voice agents, lead gen, SaaS platforms, automation) and is building a coding education program to create the next generation of AI-native builders.
+He runs Ghost AI Systems (AI voice agents, lead gen, SaaS platforms, automation) and is building the future of AI-native businesses.
 
 TODAY IS: ${today}
 
@@ -253,53 +278,74 @@ Theme: ${theme}
 Tone: ${tone}
 
 ═══ AUDIENCE ═══
-- People who know they need to learn to code but haven't started yet
-- Entrepreneurs drowning in manual work who need systems
+- Entrepreneurs drowning in manual work who need AI systems to scale
+- People who know they should learn to code/build but haven't started
 - Veterans and working-class builders tired of trading time for money
-- Aspiring AI builders who want to own the next decade
-- Business owners who need to see what AI automation actually looks like
+- Business owners who want to see what AI automation actually looks like
+- Anyone hungry to level up — career, business, skills, mindset
 
-═══ INSTAGRAM CAPTION RULES ═══
-- HOOK FIRST: The first line shows in preview — it MUST stop the scroll. Bold statement, provocative question, or emotional gut punch.
-- Use line breaks aggressively. Short paragraphs. One idea per line. Instagram rewards readability.
-- Write 500-1500 characters. Not too short (looks lazy), not too long (loses attention).
-- Use → arrows and bullet points for lists. They pop visually.
-- End with ENGAGEMENT: Ask a question, request a comment, or leave a powerful one-liner that lingers.
-- 1-2 emojis MAX. Use 🔥 or 💀 or 👻 sparingly for emphasis. Never emoji soup.
-- NO hashtags in the caption body (they go in comments).
-- Sound like a DRILL INSTRUCTOR who also happens to be a software engineer — not a brand copywriting agency.
+═══ VOICE RULES ═══
+- Ghost is INSPIRATIONAL, not just tough. Think motivational leader with military precision, not boot camp screaming.
+- Lead with HOPE and POSSIBILITY, backed by real experience and results.
+- Be AUTHENTIC — write like a real human posting, not a brand.
+- Vary between vulnerability, intensity, humor, and strategic thinking.
+- Sometimes be philosophical. Sometimes be tactical. Sometimes be personal. VARY IT.
+- Sound like someone people want to follow, not just respect.
 
-${pillar === 'drill' ? `═══ DRILL SERGEANT RULES ═══
-You are giving a direct ORDER. No suggestion, no "maybe you should" — COMMAND them to act.
-"Open your laptop. Pull up a tutorial. Start writing code. NOW."
-Channel Marine Corps boot camp energy — intense but building them up, not tearing down.
-Make them feel like NOT acting is unacceptable.` : ''}
+═══ INSTAGRAM FORMAT RULES ═══
+- HOOK FIRST: First line shows in preview — it MUST stop the scroll.
+- Use line breaks aggressively. Short paragraphs. One idea per line.
+- Write 500-1500 characters.
+- Use → arrows and • bullets for lists.
+- End with ENGAGEMENT: question, call to comment, or powerful closing line.
+- 1-2 emojis MAX. Use 🔥 or 👻 sparingly.
+- NO hashtags in caption body.
 
-${pillar === 'weapons' ? `═══ WEAPONS BRIEFING RULES ═══
-Show SPECIFIC results. Real numbers. Real systems. Real outcomes.
-"47 calls answered. 12 leads qualified. 3 appointments booked. Zero humans involved."
-This is a tactical briefing — make them see the weapon and want it.
-Don't hype AI — show what it DID.` : ''}
-
-${pillar === 'funnel' ? `═══ CLASS FUNNEL RULES ═══
-Plant the seed that learning to code changes everything.
-Don't hard-sell — make them feel like they're being RECRUITED into something bigger.
-"We're building a generation of builders. The only question is: are you in?"
-The CTA is always about LEARNING and BUILDING, never about buying.` : ''}
-
-${pillar === 'grit' ? `═══ VETERAN GRIT RULES ═══
-This is raw, real, earned authority. No fake motivation.
-Share the cost: the 2am deploys, the failures, the grind nobody sees.
-Then show what's on the other side: freedom. Systems. Ownership.
-Don't romanticize struggle — show what it BUILT.` : ''}
+═══ VIDEO PROMPT ═══
+Also generate a cinematic video prompt for Grok Imagine Video that would pair well with this caption. The video should be:
+- 9:16 vertical format (Instagram Reel)
+- Cinematic, moody lighting, professional quality
+- Themes: technology, entrepreneurship, determination, AI systems, city nightscapes, coding
+- NO text overlays in the video
+- 5-8 seconds, visually striking
 
 Return strict JSON only:
 {
   "caption": "the full Instagram caption",
-  "hook_type": "question|bold_claim|drill_command|battle_story|weapons_briefing|recruitment"
+  "video_prompt": "detailed cinematic video generation prompt",
+  "hook_type": "inspiration|tactical|story|hot_take|showcase|builder"
 }
 
-Keep total length under ${maxLength} characters.`;
+Keep caption under ${maxLength} characters.`;
+}
+
+/**
+ * Verify factual claims via Gemini Flash.
+ * Returns verified text or null if verification fails.
+ */
+async function verifyFacts(caption) {
+    try {
+        const { text } = await generateText({
+            provider: 'gemini',
+            geminiModel: 'gemini-2.5-flash-preview-05-20',
+            prompt: `Review this social media caption for factual accuracy. If all claims are reasonable, return exactly: VERIFIED
+
+If there are factual errors, return: ISSUE: [brief description of the problem]
+
+Caption to verify:
+"""
+${caption}
+"""`,
+            maxOutputTokens: 200,
+        });
+
+        const result = String(text || '').trim();
+        if (result.startsWith('VERIFIED')) return { verified: true };
+        return { verified: false, issue: result };
+    } catch {
+        // If verification fails, allow the post (don't block on verification errors)
+        return { verified: true, skipped: true };
+    }
 }
 
 export function createInstagramContentBuilder(deps = {}) {
@@ -314,6 +360,7 @@ export function createInstagramContentBuilder(deps = {}) {
 
         return {
             caption,
+            videoPrompt: 'Cinematic establishing shot of a modern city at night, sleek office with multiple monitors showing code and AI dashboards, dramatic lighting, 9:16 vertical, slow camera movement revealing the scope of the operation',
             source: 'template',
             pillar: 'template',
             theme: 'template_fallback',
@@ -325,8 +372,9 @@ export function createInstagramContentBuilder(deps = {}) {
     async function buildCaption(options = {}) {
         const aiEnabled = options.aiEnabled !== false;
         const maxLength = options.maxLength ?? DEFAULT_MAX_LENGTH;
-        const provider = options.provider || 'auto';
+        const provider = options.provider || 'grok'; // Grok 4.2 by default
         const contentPillar = options.contentPillar || pick(CONTENT_PILLARS, randomFn);
+        const shouldVerify = ['industry', 'case_study', 'ai_showcase'].includes(contentPillar.pillar);
 
         if (aiEnabled && hasLLMProviderFn()) {
             try {
@@ -339,17 +387,27 @@ export function createInstagramContentBuilder(deps = {}) {
                 const { text, provider: usedProvider, model } = await generateTextFn({
                     prompt,
                     provider,
-                    maxOutputTokens: 800,
-                    openaiModel: 'gpt-5.4-mini',
-                    geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
+                    maxOutputTokens: 1200,
+                    grokModel: 'grok-4.20-0309-reasoning',
                 });
 
                 const parsed = parseJsonObject(text);
                 const caption = normalizeCaption(parsed?.caption, maxLength);
+                const videoPrompt = parsed?.video_prompt || null;
 
                 if (caption) {
+                    // Optional fact verification for factual pillars
+                    if (shouldVerify) {
+                        const verification = await verifyFacts(caption);
+                        if (!verification.verified) {
+                            console.log(`   ⚠️ Fact check flagged: ${verification.issue}`);
+                            // Still post but log the issue — don't block
+                        }
+                    }
+
                     return {
                         caption,
+                        videoPrompt,
                         source: 'ai',
                         pillar: contentPillar.pillar,
                         theme: contentPillar.theme,

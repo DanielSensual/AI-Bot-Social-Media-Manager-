@@ -5,19 +5,19 @@
  * Persistent scheduler that posts bachata content throughout the day.
  * Runs as a long-lived process — designed for Railway/Docker.
  *
- * Schedule: 6 posts per day across 3 pillars
- *   08:30 — Dance tip / morning motivation
- *   10:30 — Music drop / studio update
- *   13:00 — Dance scene / community post
- *   16:00 — Music / behind the scenes
- *   19:00 — Event promo / evening dance post
- *   21:30 — Night vibes / social dance energy
+ * Schedule: 5 posts per day, Mon-Fri
+ *   08:00 — Bachata history / culture fact (Grok 4.2 + Gemini Flash verification)
+ *   10:00 — Dance tip / morning motivation
+ *   12:00 — Music drop / studio update
+ *   18:00 — Community / dance scene
+ *   22:00 — Night vibes / personal story
  */
 
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 import {
     buildPost,
+    buildFactPost,
     getTodaysPillar,
     loadActiveEvents,
     PILLARS,
@@ -35,14 +35,14 @@ const USER_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
 const PROFILE_TARGET = 'me';
 
 // ─── Post Schedule ──────────────────────────────────────────────
-// Each slot has a cron expression + pillar assignment
+// 5 slots per day, weekdays only (Mon-Fri)
+// Grok 4.2 generates all text content
 const SCHEDULE = [
-    { cron: '30 08 * * *', pillar: 'dance',  label: 'Morning dance motivation' },
-    { cron: '30 10 * * *', pillar: 'music',  label: 'Music drop / studio update' },
-    { cron: '00 13 * * *', pillar: 'dance',  label: 'Afternoon community post' },
-    { cron: '00 16 * * *', pillar: 'music',  label: 'Behind the scenes' },
-    { cron: '00 19 * * *', pillar: 'event',  label: 'Evening event promo' },
-    { cron: '30 21 * * *', pillar: 'dance',  label: 'Night social dance vibes' },
+    { cron: '00 08 * * 1-5', pillar: 'history',  label: '8AM — Bachata history / culture fact (verified)' },
+    { cron: '00 10 * * 1-5', pillar: 'dance',    label: '10AM — Dance tip / morning motivation' },
+    { cron: '00 12 * * 1-5', pillar: 'music',    label: '12PM — Music drop / studio update' },
+    { cron: '00 18 * * 1-5', pillar: 'dance',    label: '6PM — Community / dance scene' },
+    { cron: '00 22 * * 1-5', pillar: 'personal', label: '10PM — Night vibes / personal story' },
 ];
 
 // ─── Facebook Graph API Poster ──────────────────────────────────
@@ -92,9 +92,42 @@ async function runPost(pillar, label) {
     console.log(`📅 ${now} | Pillar: ${pillar.toUpperCase()}`);
     console.log(`${'─'.repeat(58)}`);
 
-    // Check for active events — fallback to dance if no events
+    // Handle 'history' pillar — bachata fact with verification
     let effectivePillar = pillar;
-    if (pillar === 'event') {
+    if (pillar === 'history') {
+        try {
+            console.log('   📚 Running bachata history fact generation with verification...');
+            const result = await buildFactPost({ aiEnabled: true });
+
+            console.log(`   📝 Source: ${result.source} | ${result.provider || 'template'}`);
+            console.log(`   ✅ Verified: ${result.verified ? 'yes' : 'no'}`);
+            console.log(`   📏 Length: ${result.caption.length} chars`);
+            console.log(`\n${result.caption.slice(0, 200)}${result.caption.length > 200 ? '...' : ''}\n`);
+
+            const postResult = await postToFacebook(result.caption, 'history');
+
+            try {
+                record({
+                    text: result.caption,
+                    pillar: 'history',
+                    aiGenerated: result.source === 'ai',
+                    hasVideo: false,
+                    hasImage: false,
+                    results: {
+                        facebook: postResult.posted ? postResult.postId : null,
+                    },
+                });
+            } catch { /* non-blocking */ }
+
+            return { ...result, ...postResult, pillar: 'history' };
+        } catch (err) {
+            console.error(`   ❌ History post failed, falling back to dance: ${err.message}`);
+            effectivePillar = 'dance';
+        }
+    }
+
+    // Check for active events — fallback to dance if no events
+    if (effectivePillar === 'event') {
         const events = loadActiveEvents();
         if (events.length === 0) {
             console.log('   ⚠️ No active events — switching to dance');
@@ -175,7 +208,7 @@ async function main() {
         const pillar = getTodaysPillar();
         await runPost(pillar, `Startup post (${pillar})`);
     } else {
-        console.log('🌙 Night mode — skipping startup post. First post at 08:30 ET.');
+        console.log('🌙 Night mode — skipping startup post. First post at 08:00 ET.');
     }
 }
 

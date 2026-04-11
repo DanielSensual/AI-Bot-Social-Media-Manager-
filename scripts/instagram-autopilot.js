@@ -234,12 +234,21 @@ function parseArgs(argv) {
 async function generateCaptionFallback(kind) {
     try {
         const result = await buildInstagramCaption();
-        return truncateCaption(result?.caption || '');
+        return {
+            caption: truncateCaption(result?.caption || ''),
+            videoPrompt: result?.videoPrompt || null,
+        };
     } catch {
         if (kind === 'reel') {
-            return 'Nobody handed me a playbook. Just a veteran with a laptop and the audacity to believe AI could change everything. Keep building. 🔥';
+            return {
+                caption: 'Nobody handed me a playbook. Just a veteran with a laptop and the audacity to believe AI could change everything. Keep building. 🔥',
+                videoPrompt: 'Cinematic shot of a person coding late at night, multiple monitors glowing with AI dashboards, city skyline through window, dramatic blue lighting, 9:16 vertical',
+            };
         }
-        return 'Built different. Shipping daily. The grind never stops. 👻';
+        return {
+            caption: 'Built different. Shipping daily. The grind never stops. 👻',
+            videoPrompt: null,
+        };
     }
 }
 
@@ -288,6 +297,7 @@ async function runStoryCycle(context, slotKey) {
     console.log(`📖 [${slotKey}] Running story cycle...`);
 
     const driveAsset = pickNextDriveAsset('story');
+    // Note: stories use drive assets first, AI image fallback — no video prompt needed
 
     if (driveAsset) {
         if (config.dryRun) {
@@ -332,9 +342,10 @@ async function runStoryCycle(context, slotKey) {
         return { posted: false, skipped: true };
     }
 
-    const caption = config.dryRun
-        ? '[dry-run] AI story caption placeholder'
+    const captionResult = config.dryRun
+        ? { caption: '[dry-run] AI story caption placeholder', videoPrompt: null }
         : await generateCaptionFallback('story');
+    const caption = captionResult.caption;
 
     if (config.dryRun) {
         appendLog({
@@ -376,10 +387,10 @@ async function runReelCycle(context, slotKey) {
     const driveAsset = pickNextDriveAsset('reel');
 
     if (driveAsset) {
-        const fallbackCaption = config.dryRun
-            ? '[dry-run] Reel caption placeholder'
+        const fallbackResult = config.dryRun
+            ? { caption: '[dry-run] Reel caption placeholder', videoPrompt: null }
             : await generateCaptionFallback('reel');
-        const caption = truncateCaption(driveAsset.caption || fallbackCaption, 2200);
+        const caption = truncateCaption(driveAsset.caption || fallbackResult.caption, 2200);
 
         if (config.dryRun) {
             appendLog({
@@ -420,10 +431,13 @@ async function runReelCycle(context, slotKey) {
         return { posted: false, skipped: true };
     }
 
-    const caption = truncateCaption(
-        config.dryRun ? '[dry-run] AI reel caption placeholder' : await generateCaptionFallback('reel'),
-        2200,
-    );
+    // Generate caption + video prompt pair
+    const captionResult = config.dryRun
+        ? { caption: '[dry-run] AI reel caption placeholder', videoPrompt: '[dry-run] Cinematic video prompt' }
+        : await generateCaptionFallback('reel');
+    const caption = truncateCaption(captionResult.caption, 2200);
+    // Use dedicated video prompt if available — much better than raw caption for video gen
+    const videoGenPrompt = captionResult.videoPrompt || caption;
 
     if (config.dryRun) {
         appendLog({
@@ -433,12 +447,14 @@ async function runReelCycle(context, slotKey) {
             source: 'ai',
             provider: config.aiVideoProvider,
             caption,
+            videoPrompt: videoGenPrompt,
         });
         return { posted: false, dryRun: true, source: 'ai' };
     }
 
     cleanupCache();
-    const videoPath = await generateAiReelFile(caption, config.aiVideoProvider);
+    // Use videoPrompt (optimized for video gen) instead of raw caption text
+    const videoPath = await generateAiReelFile(videoGenPrompt, config.aiVideoProvider);
     const publicUrl = await uploadToTempHost(videoPath);
     const post = await postInstagramReel(caption, publicUrl);
 
@@ -451,6 +467,7 @@ async function runReelCycle(context, slotKey) {
         provider: config.aiVideoProvider,
         mediaId: post?.id || null,
         asset: videoPath,
+        videoPromptUsed: videoGenPrompt !== caption,
     });
 
     return { posted: true, source: 'ai', mediaId: post?.id || null };
@@ -494,7 +511,7 @@ async function main() {
         postsToScan: toInt(process.env.INSTAGRAM_AUTOPILOT_POSTS_TO_SCAN, 5, 1, 25),
         aiReelsPerDay: toInt(process.env.INSTAGRAM_AUTOPILOT_AI_REELS_PER_DAY, 1, 0, 4),
         aiStoriesPerDay: toInt(process.env.INSTAGRAM_AUTOPILOT_AI_STORIES_PER_DAY, 2, 0, 6),
-        aiVideoProvider: String(process.env.INSTAGRAM_AUTOPILOT_AI_VIDEO_PROVIDER || 'auto').toLowerCase(),
+        aiVideoProvider: String(process.env.INSTAGRAM_AUTOPILOT_AI_VIDEO_PROVIDER || 'grok').toLowerCase(),
         characterMode: String(process.env.INSTAGRAM_AUTOPILOT_CHARACTER_MODE || 'ghost').toLowerCase(),
     };
 
