@@ -383,7 +383,7 @@ export function createInstagramContentBuilder(deps = {}) {
     async function buildCaption(options = {}) {
         const aiEnabled = options.aiEnabled !== false;
         const maxLength = options.maxLength ?? DEFAULT_MAX_LENGTH;
-        const provider = options.provider || 'grok'; // Grok 4.2 by default
+        const provider = options.provider || 'claude'; // Claude primary — best at following rules, no hallucinations
         const contentPillar = options.contentPillar || pick(CONTENT_PILLARS, randomFn);
         const shouldVerify = ['industry', 'case_study', 'ai_showcase'].includes(contentPillar.pillar);
 
@@ -399,7 +399,7 @@ export function createInstagramContentBuilder(deps = {}) {
                     prompt,
                     provider,
                     maxOutputTokens: 1200,
-                    grokModel: 'grok-4.20-0309-reasoning',
+                    claudeModel: 'claude-sonnet-4-20250514',
                 });
 
                 const parsed = parseJsonObject(text);

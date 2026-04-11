@@ -14,11 +14,13 @@ const openaiClient = process.env.OPENAI_API_KEY
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GROK_API_KEY = process.env.GROK_API_KEY || process.env.XAI_API_KEY || '';
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
 
 
 const DEFAULT_GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview';
-const DEFAULT_GROK_MODEL = process.env.GROK_MODEL || 'grok-3';
+const DEFAULT_GROK_MODEL = process.env.GROK_MODEL || 'grok-4.20-0309-reasoning';
+const DEFAULT_CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514';
 
 function getProviderOrder(requestedProvider = 'auto') {
     const mode = (requestedProvider || process.env.AI_PROVIDER || 'auto').toLowerCase();
@@ -26,8 +28,9 @@ function getProviderOrder(requestedProvider = 'auto') {
     if (mode === 'openai') return ['openai'];
     if (mode === 'gemini') return ['gemini'];
     if (mode === 'grok') return ['grok'];
-    // Auto mode uses OpenAI + Grok first, with Gemini as a backup provider.
-    return ['openai', 'grok', 'gemini'];
+    if (mode === 'claude') return ['claude'];
+    // Auto mode: Grok first, Claude second (best for following rules), OpenAI fallback, Gemini backup.
+    return ['grok', 'claude', 'openai', 'gemini'];
 }
 
 async function callOpenAI({
@@ -172,8 +175,63 @@ async function callGrok({
     };
 }
 
+async function callClaude({
+    prompt,
+    systemPrompt = '',
+    claudeModel = DEFAULT_CLAUDE_MODEL,
+    maxOutputTokens = 800,
+}) {
+    if (!ANTHROPIC_API_KEY) {
+        throw new Error('ANTHROPIC_API_KEY is not configured');
+    }
+
+    const messages = [{ role: 'user', content: prompt }];
+
+    const body = {
+        model: claudeModel,
+        max_tokens: maxOutputTokens,
+        messages,
+    };
+
+    if (systemPrompt) {
+        body.system = systemPrompt;
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const message = data?.error?.message || `Claude API error ${response.status}`;
+        throw new Error(message);
+    }
+
+    const text = data?.content
+        ?.filter(block => block.type === 'text')
+        .map(block => block.text)
+        .join('')
+        .trim();
+
+    if (!text) {
+        throw new Error('Claude returned empty content');
+    }
+
+    return {
+        text,
+        provider: 'claude',
+        model: claudeModel,
+    };
+}
+
 export function hasLLMProvider() {
-    return Boolean(openaiClient || GEMINI_API_KEY || GROK_API_KEY);
+    return Boolean(openaiClient || GEMINI_API_KEY || GROK_API_KEY || ANTHROPIC_API_KEY);
 }
 
 /**
@@ -193,6 +251,7 @@ export async function generateText(options) {
             if (candidate === 'openai') return await callOpenAI(options || {});
             if (candidate === 'gemini') return await callGemini(options || {});
             if (candidate === 'grok') return await callGrok(options || {});
+            if (candidate === 'claude') return await callClaude(options || {});
         } catch (error) {
             lastError = error;
         }
