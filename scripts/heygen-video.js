@@ -77,7 +77,7 @@ const TEAM = {
         role: 'VP of Strategy & Client Success',
         avatarId: null,
         voiceId: '6tUIYzIoB6WWDSMbaL5v',  // Trinity female
-        brain: { provider: 'google', model: 'gemini-2.5-flash' },
+        brain: { provider: 'google', model: 'gemini-3.1-flash' },
         brand: 'ghostai',
         style: 'Strategic, warm, client-focused. Growth mindset. Makes complex things feel simple.',
     },
