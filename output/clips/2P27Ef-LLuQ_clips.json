@@ -1,0 +1,47 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=2P27Ef-LLuQ",
+    "title": "Sam Altman: How OpenAI Wins, ChatGPT’s Future, AI Buildout Logic, IPO in 2026?",
+    "channel": "Alex Kantrowitz",
+    "duration": 3502
+  },
+  "clips": [
+    {
+      "start_time": "1:00",
+      "end_time": "1:45",
+      "duration_sec": 45,
+      "title": "OpenAI's Code Red: The AI Battle Strategy",
+      "hook": "First of all, on the code red point, we view those as like relatively low-stakes, somewhat frequent things to do.",
+      "why_viral": "This moment reveals OpenAI's proactive approach to competition with a relatable pandemic analogy, creating an 'aha' moment that sparks curiosity about AI strategies.",
+      "caption": "Ever wonder how OpenAI handles threats like Gemini? Sam Altman breaks it down! 🚀 Curated by Ghost AI Systems, your go-to AI agency in Orlando. #AI #Tech #GhostAI #OpenAI #Innovation",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/2P27Ef-LLuQ_clip1_OpenAI_s_Code_Red__The_AI_Battle_Strateg.mp4",
+      "fileName": "2P27Ef-LLuQ_clip1_OpenAI_s_Code_Red__The_AI_Battle_Strateg.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "2:10",
+      "end_time": "2:55",
+      "duration_sec": 45,
+      "title": "OpenAI's Hottest Launches: Image Models and Beyond",
+      "hook": "just today we launched a new image to model, which is a great thing and I know some many consumers really wanted.",
+      "why_viral": "Sam's announcement of recent product launches and rapid improvements highlights bold innovation, appealing to tech enthusiasts as a breaking news update on AI advancements.",
+      "caption": "Big news from OpenAI! New image models and updates are here to stay ahead. Discover more with Ghost AI Systems. #AI #Tech #GhostAI #OpenAIUpdates #FutureOfAI",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/2P27Ef-LLuQ_clip2_OpenAI_s_Hottest_Launches__Image_Models_.mp4",
+      "fileName": "2P27Ef-LLuQ_clip2_OpenAI_s_Hottest_Launches__Image_Models_.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "4:00",
+      "end_time": "4:45",
+      "duration_sec": 45,
+      "title": "ChatGPT's Explosive Growth: 400M to 800M Users",
+      "hook": "ChatGPT, I think earlier this year was around 400 million weekly active users. Now it's at 800 million.",
+      "why_viral": "This prediction of massive user growth and market dominance is a bold statement that feels like breaking news, perfect for viral shares among AI followers.",
+      "caption": "ChatGPT is dominating with 800M users! Sam Altman shares the strategy. Curated by Ghost AI Systems in Orlando—your source for cutting-edge AI insights. #AI #Tech #GhostAI #ChatGPT #ViralAI",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/2P27Ef-LLuQ_clip3_ChatGPT_s_Explosive_Growth__400M_to_800M.mp4",
+      "fileName": "2P27Ef-LLuQ_clip3_ChatGPT_s_Explosive_Growth__400M_to_800M.mp4",
+      "posted": false
+    }
+  ],
+  "createdAt": "2026-04-13T23:49:12.954Z"
+}

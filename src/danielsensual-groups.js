@@ -187,175 +187,50 @@ const SHARE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
 const AUTO_DISABLE_THRESHOLD = 3; // auto-disable after N consecutive failures
 
 export const SHARE_GROUPS = [
-    // ── Batch 1: Core Bachata & Dance (9 AM EST) ────────────────
+    // ══════════════════════════════════════════════════════════════
+    // VERIFIED WORKING GROUPS ONLY (30 groups)
+    // Cleaned April 13, 2026 — removed 116 dead/non-member groups
+    // 3 batches × ~10 groups — spaced 4 hours apart
+    // ══════════════════════════════════════════════════════════════
 
-    // Daniel's own group — always first
+    // ── Batch 1: Morning (9 AM EST / 13:00 UTC) — Core Bachata ──
+
     { name: 'Orlando Bachata Social Dancers', url: 'https://www.facebook.com/groups/bachataorlando/', batch: 1, owned: true },
-
-    // Verified bachata groups
     { name: 'International Bachata Festivals', url: 'https://www.facebook.com/groups/InternationalBachataFestivals/', batch: 1 },
     { name: 'Bachata News', url: 'https://www.facebook.com/groups/BachataNews/', batch: 1 },
-    { name: 'Bachata News (2)', url: 'https://www.facebook.com/groups/360741504425892/', batch: 1 },
     { name: '🇩🇴Dominican Bachata Videos🇩🇴', url: 'https://www.facebook.com/groups/333512830085444/', batch: 1 },
     { name: 'Bachata Asia', url: 'https://www.facebook.com/groups/1648382815414149/', batch: 1 },
     { name: 'BACHATA URBANA', url: 'https://www.facebook.com/groups/188163091294456/', batch: 1 },
     { name: 'Bachata X', url: 'https://www.facebook.com/groups/bachatax/', batch: 1 },
     { name: 'Bachata in the UK', url: 'https://www.facebook.com/groups/230179800419487/', batch: 1 },
-    { name: 'Bachateo en Europa', url: 'https://www.facebook.com/groups/395125475639743/', batch: 1 },
     { name: "Where's the Bachata Dancing?", url: 'https://www.facebook.com/groups/1029434378380692/', batch: 1 },
-    { name: 'Bachata Sensual Xperience Events U.S', url: 'https://www.facebook.com/groups/1028100387222034/', batch: 1 },
     { name: 'Bachata Sensual Tampa Bay', url: 'https://www.facebook.com/groups/425435315990175/', batch: 1 },
     { name: 'BACHATA LOVERS IN FLORIDA', url: 'https://www.facebook.com/groups/335595419907653/', batch: 1 },
-    { name: 'Bachata Sensual Dance Community', url: 'https://www.facebook.com/groups/bachatsensualdance/', batch: 1 },
-    { name: 'Bachata Dance World', url: 'https://www.facebook.com/groups/bachatadanceworld/', batch: 1 },
-    { name: 'Bachata Moderna', url: 'https://www.facebook.com/groups/bachatamoderna/', batch: 1 },
-    { name: 'Bachata Fusion Worldwide', url: 'https://www.facebook.com/groups/bachatafusionworldwide/', batch: 1 },
-    { name: 'Bachata Sensual World', url: 'https://www.facebook.com/groups/bachatansensualworld/', batch: 1 },
-    { name: 'Bachata Dominicana', url: 'https://www.facebook.com/groups/bachatadominicana/', batch: 1 },
 
-    // ── Batch 2: US City Dance Scenes (1 PM EST) ────────────────
+    // ── Batch 2: Afternoon (1 PM EST / 17:00 UTC) — US Scenes ───
 
     { name: 'Bay Area Bachata Dancing', url: 'https://www.facebook.com/groups/BayAreaBachataDancing/', batch: 2 },
-    { name: 'BACHATA & SALSA IN BAY AREA', url: 'https://www.facebook.com/groups/316995965125643/', batch: 2 },
     { name: 'San Jose Bachata Nights', url: 'https://www.facebook.com/groups/sanjosebachatanights/', batch: 2 },
-    { name: 'Sensual Bachata Chicago', url: 'https://www.facebook.com/groups/5371191912965156/', batch: 2 },
     { name: 'Bachata Social dancers in Chicago', url: 'https://www.facebook.com/groups/906991779337419/', batch: 2 },
     { name: 'Jacksonville Salsa & Bachata Scene', url: 'https://www.facebook.com/groups/jaxsalsabachatascene/', batch: 2 },
-    { name: 'Connecticut Salsa, Mambo, and Bachata Scene', url: 'https://www.facebook.com/groups/ConnecticutSalsaandMamboScene/', batch: 2 },
-    { name: 'Tampa Loves Salsa, Bachata & More', url: 'https://www.facebook.com/groups/121280981317539/', batch: 2 },
     { name: 'Salsa and Bachata Nights!', url: 'https://www.facebook.com/groups/288299318430221/', batch: 2 },
     { name: 'Salsa & Bachata Events', url: 'https://www.facebook.com/groups/534916443239278/', batch: 2 },
-    { name: 'Dance Events in South Florida', url: 'https://www.facebook.com/groups/dancesouthflorida/', batch: 2 },
     { name: 'Salsa & Bachata Nights South Florida', url: 'https://www.facebook.com/groups/1975440802491980/', batch: 2 },
     { name: 'Central Florida Dancers', url: 'https://www.facebook.com/groups/353627944993366/', batch: 2 },
     { name: 'Central Florida Latin Dance', url: 'https://www.facebook.com/groups/260857457342351/', batch: 2 },
-    { name: 'NYC Bachata Scene', url: 'https://www.facebook.com/groups/nycbachatascene/', batch: 2 },
-    { name: 'NYC Salsa & Bachata', url: 'https://www.facebook.com/groups/nycsalsabachata/', batch: 2 },
-    { name: 'Los Angeles Bachata Dancing', url: 'https://www.facebook.com/groups/labachatadancing/', batch: 2 },
-    { name: 'LA Salsa & Bachata Scene', url: 'https://www.facebook.com/groups/lasalsabachata/', batch: 2 },
-    { name: 'Houston Bachata & Salsa', url: 'https://www.facebook.com/groups/houstonbachatandsalsa/', batch: 2 },
-    { name: 'Dallas Bachata & Salsa Scene', url: 'https://www.facebook.com/groups/dallasbachatascene/', batch: 2 },
-    { name: 'Atlanta Latin Dance Scene', url: 'https://www.facebook.com/groups/atlantalatindance/', batch: 2 },
-    { name: 'Miami Salsa & Bachata Scene', url: 'https://www.facebook.com/groups/miamisalsabachata/', batch: 2 },
-    { name: 'Denver Latin Dance Community', url: 'https://www.facebook.com/groups/denverlatindance/', batch: 2 },
-    { name: 'Phoenix Bachata & Salsa', url: 'https://www.facebook.com/groups/phoenixbachatascene/', batch: 2 },
+    { name: 'Orlando Latin Nights', url: 'https://www.facebook.com/groups/1438496766396638/', batch: 2 },
 
-    // ── Batch 3: International + Music + Content Promo (6 PM EST) ──
+    // ── Batch 3: Evening (6 PM EST / 22:00 UTC) — International + Misc ──
 
-    { name: 'Salsa, Bachata, Kizomba & more Hamburg/Germany/Europe', url: 'https://www.facebook.com/groups/183346122270349/', batch: 3 },
     { name: 'London Latin Dance Events', url: 'https://www.facebook.com/groups/118710416185583/', batch: 3 },
     { name: 'Europe WOMAN Dance Fest', url: 'https://www.facebook.com/groups/180113296834114/', batch: 3 },
     { name: 'Washington DC-Baltimore Latin Dance Events', url: 'https://www.facebook.com/groups/207061397127018/', batch: 3 },
     { name: 'San Francisco Latin Dance Events', url: 'https://www.facebook.com/groups/183997259372109/', batch: 3 },
     { name: 'Salsa Orlando - LatinDanceCalendar.com', url: 'https://www.facebook.com/groups/1386797094934361/', batch: 3 },
     { name: 'UNIVERSO KIZOMBA', url: 'https://www.facebook.com/groups/1384948331659485/', batch: 3 },
-    { name: 'Kizomba & UrbanKiz (IROKIZZ)', url: 'https://www.facebook.com/groups/729201684641919/', batch: 3 },
-    { name: 'Casa de la Musica - I ❤ Salsa', url: 'https://www.facebook.com/groups/185609328567625/', batch: 3 },
-    { name: 'Salsa Ladies Cup', url: 'https://www.facebook.com/groups/201598470898010/', batch: 3 },
-    { name: 'Black Coalition of Dancers', url: 'https://www.facebook.com/groups/BlackCDance/', batch: 3 },
-    { name: 'Independent Artists Radar', url: 'https://www.facebook.com/groups/603964381431915/', batch: 3 },
-    { name: 'Promote your AI-generated music', url: 'https://www.facebook.com/groups/518000713909242/', batch: 3 },
-    { name: 'Video Viral', url: 'https://www.facebook.com/groups/1078870673032630/', batch: 3 },
-    { name: 'Bachata Paris', url: 'https://www.facebook.com/groups/bachataparis/', batch: 3 },
-    { name: 'Bachata Madrid', url: 'https://www.facebook.com/groups/bachatamadrid/', batch: 3 },
-    { name: 'Latin Dance London', url: 'https://www.facebook.com/groups/latindancelondon/', batch: 3 },
-    { name: 'Salsa y Bachata Barcelona', url: 'https://www.facebook.com/groups/salsabachatabarcelona/', batch: 3 },
-    { name: 'Bachata Italiana', url: 'https://www.facebook.com/groups/bachataitaliana/', batch: 3 },
-    { name: 'Latin Dance Australia', url: 'https://www.facebook.com/groups/latindanceaustralia/', batch: 3 },
-    { name: 'Bachata Canada', url: 'https://www.facebook.com/groups/bachatacanada/', batch: 3 },
-    { name: 'Toronto Salsa & Bachata', url: 'https://www.facebook.com/groups/torontosalsabachata/', batch: 3 },
-    { name: 'Kizomba World', url: 'https://www.facebook.com/groups/kizombaworld/', batch: 3 },
-    { name: 'Zouk & Bachata Fusion', url: 'https://www.facebook.com/groups/zoukbachatafusion/', batch: 3 },
-
-    // ── Batch 4: Late Night LATAM (11 PM EST = peak LATAM) ──────
-
-    { name: 'Jax Latin Dance', url: 'https://www.facebook.com/groups/1520402664716806/', batch: 4 },
-    { name: 'La Musica Latina Online Con bigraffy T.X.', url: 'https://www.facebook.com/groups/1444805165800431/', batch: 4 },
-    { name: 'Bachata Mexicali y alrededores', url: 'https://www.facebook.com/groups/5574325759345486/', batch: 4 },
-    { name: 'Bay Area Bachata Workshops', url: 'https://www.facebook.com/groups/379062195586330/', batch: 4 },
-    { name: 'Beautiful Oasis for Latin Dance', url: 'https://www.facebook.com/groups/308235663483701/', batch: 4 },
-    { name: 'Las Vegas Latin Music Association', url: 'https://www.facebook.com/groups/495852390445173/', batch: 4 },
-    { name: 'Musica Latina by Chipoco', url: 'https://www.facebook.com/groups/1926469994241318/', batch: 4 },
-    { name: 'MUSICA LATINA (LATIN JAZZ - JAZZ - CUBANA - SALSA)', url: 'https://www.facebook.com/groups/124071018303908/', batch: 4 },
-    { name: 'Musica Latina DJ\'s', url: 'https://www.facebook.com/groups/MusicaLatinaDJs/', batch: 4 },
-    { name: 'Brunchata Miami Friends', url: 'https://www.facebook.com/groups/455903558230546/', batch: 4 },
-    { name: 'Bachata Mexico', url: 'https://www.facebook.com/groups/bachatamexico/', batch: 4 },
-    { name: 'Bachata Colombia', url: 'https://www.facebook.com/groups/bachatacolombia/', batch: 4 },
-    { name: 'Bailadores de Bachata', url: 'https://www.facebook.com/groups/bailadoresdebachata/', batch: 4 },
-    { name: 'Bachata Venezuela', url: 'https://www.facebook.com/groups/bachatavenezuela/', batch: 4 },
-    { name: 'Bachata Peru', url: 'https://www.facebook.com/groups/bachataperu/', batch: 4 },
-    { name: 'Bachata Argentina', url: 'https://www.facebook.com/groups/bachataargentina/', batch: 4 },
-    { name: 'Salsa y Bachata Chile', url: 'https://www.facebook.com/groups/salsabachatachile/', batch: 4 },
-    { name: 'Bachata Puerto Rico', url: 'https://www.facebook.com/groups/bachatapuertorico/', batch: 4 },
-    { name: 'Reggaeton y Bachata Fans', url: 'https://www.facebook.com/groups/reggaetonybachatafans/', batch: 4 },
-    { name: 'Musica Latina Worldwide', url: 'https://www.facebook.com/groups/musicalatinaworldwide/', batch: 4 },
-
-    // ── Batch 5: Orlando + Local LATAM (7 AM EST) ───────────────
-
-    { name: 'Advance Level Bachata Series', url: 'https://www.facebook.com/groups/432085640801277/', batch: 5 },
-    { name: 'Orlando Latin Nights', url: 'https://www.facebook.com/groups/1438496766396638/', batch: 5 },
-    { name: 'BACHATA ORLANDO', url: 'https://www.facebook.com/groups/457752314851653/', batch: 5 },
-    { name: 'Kizomba meets Bachata (#KmB) in Orlando', url: 'https://www.facebook.com/groups/1734954860051839/', batch: 5 },
-    { name: 'Going to Sensual Week', url: 'https://www.facebook.com/groups/1858969754384779/', batch: 5 },
-    { name: 'LATIN NIGHT Clubs in HAWAII', url: 'https://www.facebook.com/groups/Hawaiislatinclubs/', batch: 5 },
-    { name: 'Single Dancer\'s Only', url: 'https://www.facebook.com/groups/847068232090749/', batch: 5 },
-    { name: 'Kizomba dans 49', url: 'https://www.facebook.com/groups/Kizomba.dans.49/', batch: 5 },
-    { name: 'Trabajo para Latinos en Orlando, Florida', url: 'https://www.facebook.com/groups/trabajo.para.latinos.en.orlando.florida/', batch: 5 },
-    { name: 'Latinos en Orlando - Florida', url: 'https://www.facebook.com/groups/334693294170897/', batch: 5 },
-    { name: 'Latinos en Orlando & Kissimmee', url: 'https://www.facebook.com/groups/965840944263810/', batch: 5 },
-    { name: 'latinos en kissimmee y orlando', url: 'https://www.facebook.com/groups/2353738878272658/', batch: 5 },
-    { name: 'Boricuas en Orlando y Kissimmee', url: 'https://www.facebook.com/groups/boricuasenorlando/', batch: 5 },
-    { name: 'Comunidad Hispana en Orlando', url: 'https://www.facebook.com/groups/comunidadhispanaenorlando/', batch: 5 },
-    { name: 'Puertorriquenos en Orlando & Kissimmee', url: 'https://www.facebook.com/groups/puertorriquenosenorlando/', batch: 5 },
-    { name: 'Orlando Events & Things To Do', url: 'https://www.facebook.com/groups/orlandoeventsandthings/', batch: 5 },
-    { name: 'Orlando Nightlife & Events', url: 'https://www.facebook.com/groups/orlandonightlife/', batch: 5 },
-    { name: 'Tampa Bay Latin Scene', url: 'https://www.facebook.com/groups/tampabaylatinscene/', batch: 5 },
-
-    // ── Batch 6: Content + Film + Music Creators (10 AM EST) ────
-
-    { name: 'Suno & AI Music Creators', url: 'https://www.facebook.com/groups/sunoai/', batch: 6 },
-    { name: 'Ai Music Creators', url: 'https://www.facebook.com/groups/2703779406444247/', batch: 6 },
-    { name: 'Suno Music Creator\'s Universe', url: 'https://www.facebook.com/groups/1673444546790462/', batch: 6 },
-    { name: 'Suno Studio', url: 'https://www.facebook.com/groups/1118818620292019/', batch: 6 },
-    { name: 'Orlando FL Actors | Filmmakers | Models', url: 'https://www.facebook.com/groups/205629779822932/', batch: 6 },
-    { name: 'Filming in Florida', url: 'https://www.facebook.com/groups/FilmingInFlorida/', batch: 6 },
-    { name: 'Orlando Filmmakers', url: 'https://www.facebook.com/groups/504090709674065/', batch: 6 },
-    { name: 'MOST INTERESTING VIDEOS', url: 'https://www.facebook.com/groups/707313442694146/', batch: 6 },
-    { name: 'Salsa Memes for Spicy Teens', url: 'https://www.facebook.com/groups/salsamemes/', batch: 6 },
-    { name: 'Facebook & IG Monetization', url: 'https://www.facebook.com/groups/797906347850253/', batch: 6 },
-    { name: 'Insta Reels', url: 'https://www.facebook.com/groups/1121900521601403/', batch: 6 },
-    { name: 'Salsa Events', url: 'https://www.facebook.com/groups/661988930486749/', batch: 6 },
-    { name: 'Udio AI Music', url: 'https://www.facebook.com/groups/udioaimusic/', batch: 6 },
-    { name: 'AI Video Creators', url: 'https://www.facebook.com/groups/aivideocreators/', batch: 6 },
-    { name: 'Reels Creators Community', url: 'https://www.facebook.com/groups/reelscreators/', batch: 6 },
-    { name: 'Short Video Creators', url: 'https://www.facebook.com/groups/shortvideocreators/', batch: 6 },
-    { name: 'Music Video Directors', url: 'https://www.facebook.com/groups/musicvideodirectors/', batch: 6 },
-    { name: 'Florida Creative Community', url: 'https://www.facebook.com/groups/floridacreative/', batch: 6 },
-    { name: 'Latin Music Producers', url: 'https://www.facebook.com/groups/latinmusicproducers/', batch: 6 },
-    { name: 'Viral Video Network', url: 'https://www.facebook.com/groups/viralvideonetwork/', batch: 6 },
-
-    // ── Batch 7: Extended International + Repost (4 PM EST) ─────
-
-    { name: 'Las Vegas Elevated Night with Suavebeats', url: 'https://www.facebook.com/groups/Suavebeatsnews/', batch: 7 },
-    { name: 'The Network by Dale Tú', url: 'https://www.facebook.com/groups/thenetworkbydaletu/', batch: 7 },
-    { name: 'The Network by We The Culture', url: 'https://www.facebook.com/groups/thenetworkbywetheculture/', batch: 7 },
-    { name: 'Tampas Finest Group', url: 'https://www.facebook.com/groups/999477116837187/', batch: 7 },
-    { name: 'launch TIME Radio', url: 'https://www.facebook.com/groups/746058509991239/', batch: 7 },
-    { name: 'Latin Dance Germany', url: 'https://www.facebook.com/groups/latindancegermany/', batch: 7 },
-    { name: 'Bachata Netherlands', url: 'https://www.facebook.com/groups/bachatanetherlands/', batch: 7 },
-    { name: 'Salsa y Bachata Portugal', url: 'https://www.facebook.com/groups/salsabachataportugal/', batch: 7 },
-    { name: 'Bachata Poland', url: 'https://www.facebook.com/groups/bachatapoland/', batch: 7 },
-    { name: 'Latin Dance Sweden', url: 'https://www.facebook.com/groups/latindancesweden/', batch: 7 },
-    { name: 'Bachata Switzerland', url: 'https://www.facebook.com/groups/bachataswitzerland/', batch: 7 },
-    { name: 'Salsa Bachata Belgium', url: 'https://www.facebook.com/groups/salsabachatabelgium/', batch: 7 },
-    { name: 'Kizomba France', url: 'https://www.facebook.com/groups/kizombafrance/', batch: 7 },
-    { name: 'Latin Dance Japan', url: 'https://www.facebook.com/groups/latindancejapan/', batch: 7 },
-    { name: 'Bachata Korea', url: 'https://www.facebook.com/groups/bachatakorea/', batch: 7 },
-    { name: 'Latin Dance Dubai', url: 'https://www.facebook.com/groups/latindancedubai/', batch: 7 },
-    { name: 'Salsa Bachata Istanbul', url: 'https://www.facebook.com/groups/salsabachataistanbul/', batch: 7 },
-    { name: 'Latin Dance Israel', url: 'https://www.facebook.com/groups/latindanceisrael/', batch: 7 },
-    { name: 'Bachata New Zealand', url: 'https://www.facebook.com/groups/bachatanewzealand/', batch: 7 },
-    { name: 'Latin Dance Singapore', url: 'https://www.facebook.com/groups/latindancesingapore/', batch: 7 },
+    { name: 'Bay Area Bachata Workshops', url: 'https://www.facebook.com/groups/379062195586330/', batch: 3 },
+    { name: 'Kizomba meets Bachata (#KmB) in Orlando', url: 'https://www.facebook.com/groups/1734954860051839/', batch: 3 },
+    { name: 'Insta Reels', url: 'https://www.facebook.com/groups/1121900521601403/', batch: 3 },
 ];
 
 

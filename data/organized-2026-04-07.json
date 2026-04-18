@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-07T23:36:18.331Z",
+  "stats": {
+    "adult_content": 6,
+    "dance_reel": 2,
+    "ai_production": 1
+  },
+  "results": [
+    {
+      "file": "_users_5f976325-f30d-461b-b415-d75f611b93c7_generated_b13a7fc7-19d2-4de6-8ae2-fa574c79a37c_generated_video.mp4",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/D/DC07902D-A721-4D6E-96B3-3687BC91D861.mp4",
+      "date": "2026-04-04 23:18",
+      "isVideo": true,
+      "category": "adult_content",
+      "label": "🚫 Adult (auto-skipped)",
+      "folder": "skip",
+      "confidence": 1,
+      "reason": "Filename pre-filter (AI-generated/other project)"
+    },
+    {
+      "file": "_users_5f976325-f30d-461b-b415-d75f611b93c7_generated_ffab73d7-5bc7-43d3-b46b-26d4dc13d24c_generated_video.mp4",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/9/947389D1-C4F1-41A1-B36F-2B869FBABBE7.mp4",
+      "date": "2026-04-04 22:59",
+      "isVideo": true,
+      "category": "adult_content",
+      "label": "🚫 Adult (auto-skipped)",
+      "folder": "skip",
+      "confidence": 1,
+      "reason": "Filename pre-filter (AI-generated/other project)"
+    },
+    {
+      "file": "_users_5f976325-f30d-461b-b415-d75f611b93c7_generated_b13a7fc7-19d2-4de6-8ae2-fa574c79a37c_generated_video.mp4",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/E/EE08819C-514F-4F6D-A2AC-914570EA8370.mp4",
+      "date": "2026-04-04 23:18",
+      "isVideo": true,
+      "category": "adult_content",
+      "label": "🚫 Adult (auto-skipped)",
+      "folder": "skip",
+      "confidence": 1,
+      "reason": "Filename pre-filter (AI-generated/other project)"
+    },
+    {
+      "file": "gemini_generated_video_4C056FFD.mp4",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/4/4E1385C1-255D-49C0-A1D4-CC7FE6446076.mp4",
+      "date": "2026-04-02 10:15",
+      "isVideo": true,
+      "category": "adult_content",
+      "label": "🚫 Adult (auto-skipped)",
+      "folder": "skip",
+      "confidence": 1,
+      "reason": "Filename pre-filter (AI-generated/other project)"
+    },
+    {
+      "file": "_users_5f976325-f30d-461b-b415-d75f611b93c7_generated_3cd1cd11-9e48-4bfb-8b8e-7c89f9deb3c9_generated_video.mp4",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/A/A791E23B-ACCB-455D-B038-6224977BDC43.mp4",
+      "date": "2026-04-04 23:06",
+      "isVideo": true,
+      "category": "adult_content",
+      "label": "🚫 Adult (auto-skipped)",
+      "folder": "skip",
+      "confidence": 1,
+      "reason": "Filename pre-filter (AI-generated/other project)"
+    },
+    {
+      "file": "Timeline 1.mov",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/5/5072AC5D-364F-45FC-B97D-32ABB8C0B6AD.mov",
+      "date": "2026-03-30 23:04",
+      "isVideo": true,
+      "category": "dance_reel",
+      "label": "💃 Dance / Social Dancing",
+      "folder": "queue/reels",
+      "confidence": 0.85,
+      "reason": "The individual is dancing in a casual outdoor setting."
+    },
+    {
+      "file": "IMG_2008.MOV",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/scopes/syndication/originals/4/4B238DEA-3E82-4067-9BDC-F30FB8696BAB.mov",
+      "date": "2026-04-02 16:53",
+      "isVideo": true,
+      "category": "ai_production",
+      "label": "🤖 AI / Tech",
+      "folder": "queue/behind-scenes",
+      "confidence": 0.85,
+      "reason": "Image shows a computer screen with editing software, indicating a tech setup."
+    },
+    {
+      "file": "gemini_generated_video_4C056FFD.mp4",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/9/908C5146-1F8D-475F-BD3C-D714BF010C5A.mp4",
+      "date": "2026-04-02 14:29",
+      "isVideo": true,
+      "category": "adult_content",
+      "label": "🚫 Adult (auto-skipped)",
+      "folder": "skip",
+      "confidence": 1,
+      "reason": "Filename pre-filter (AI-generated/other project)"
+    },
+    {
+      "file": "Timeline 1.mov",
+      "path": "/Users/danielcastillo/Pictures/Photos Library.photoslibrary/originals/3/369EF7AC-EB29-4B9F-96F0-7D7503B519DA.mov",
+      "date": "2026-03-30 23:04",
+      "isVideo": true,
+      "category": "dance_reel",
+      "label": "💃 Dance / Social Dancing",
+      "folder": "queue/reels",
+      "confidence": 0.85,
+      "reason": "The image features a dancer in a performance context."
+    }
+  ]
+}

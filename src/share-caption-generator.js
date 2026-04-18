@@ -277,5 +277,5 @@ export default {
     generateGroupCaption,
     generateStreamingComment,
     detectLocale,
-    STREAMING_LINKS,
+    getLinks,
 };

@@ -1,0 +1,59 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=C0gErQtnNFE",
+    "title": "The Hardest Problem AI Ever Solved, with Google DeepMind CEO",
+    "channel": "Cleo Abram",
+    "duration": 3911
+  },
+  "clips": [
+    {
+      "start_time": "0:00",
+      "end_time": "0:45",
+      "duration_sec": 45,
+      "title": "Redefining Intelligence with AI",
+      "hook": "Something's obviously not quite right about the definition of intelligence.",
+      "why_viral": "This moment challenges conventional views on intelligence, sparking curiosity and debate among AI enthusiasts.",
+      "caption": "Curated by Ghost AI Systems: Dive into Demis Hassabis' thoughts on rethinking intelligence in AI. What's the limit? #AI #Tech #GhostAI #Innovation #DeepMind",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/C0gErQtnNFE_clip1_Redefining_Intelligence_with_AI.mp4",
+      "fileName": "C0gErQtnNFE_clip1_Redefining_Intelligence_with_AI.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "0:05",
+      "end_time": "0:50",
+      "duration_sec": 45,
+      "title": "AI's Breakthrough for Human Health",
+      "hook": "The best use case of AI was to improve human health.",
+      "why_viral": "A bold statement on AI's potential to revolutionize healthcare, creating an 'aha' moment that resonates with audiences interested in real-world applications.",
+      "caption": "From Ghost AI Systems: Hear Google DeepMind's CEO on how AI can transform human health like never before. The future is here! #AI #Tech #GhostAI #HealthTech #AIHealth",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/C0gErQtnNFE_clip2_AI_s_Breakthrough_for_Human_Health.mp4",
+      "fileName": "C0gErQtnNFE_clip2_AI_s_Breakthrough_for_Human_Health.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "0:20",
+      "end_time": "1:05",
+      "duration_sec": 45,
+      "title": "What Governments Should Do with AI",
+      "hook": "Governments are going to use AI. What would you hope that they use it for?",
+      "why_viral": "This predictive and thought-provoking exchange highlights potential risks and hopes, making it a controversial take perfect for sparking online discussions.",
+      "caption": "Curated by Ghost AI Systems: Demis Hassabis shares his hopes for AI in government—two things to worry about. What's your take? #AI #Tech #GhostAI #AIFuture #GovTech",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/C0gErQtnNFE_clip3_What_Governments_Should_Do_with_AI.mp4",
+      "fileName": "C0gErQtnNFE_clip3_What_Governments_Should_Do_with_AI.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "3:57",
+      "end_time": "4:42",
+      "duration_sec": 45,
+      "title": "The AlphaFold Revolution",
+      "hook": "Mhm. Well, I came across it actually uh as an undergrad in Cambridge.",
+      "why_viral": "This 'aha' moment reveals the personal story behind AlphaFold's Nobel-winning success, connecting AI's scientific edge to everyday inspiration.",
+      "caption": "From Ghost AI Systems: Discover why Demis Hassabis tackled the AlphaFold challenge—shaping the future of science! #AI #Tech #GhostAI #NobelPrize #ScienceAI",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/C0gErQtnNFE_clip4_The_AlphaFold_Revolution.mp4",
+      "fileName": "C0gErQtnNFE_clip4_The_AlphaFold_Revolution.mp4",
+      "posted": false
+    }
+  ],
+  "createdAt": "2026-04-14T17:53:11.042Z"
+}

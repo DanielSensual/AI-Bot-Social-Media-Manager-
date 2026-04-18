@@ -1,0 +1,47 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=fNR-Q32onUo",
+    "title": "NVIDIA GTC 2026 - Jensen Huang's Keynote Highlights",
+    "channel": "Scan AI Solutions",
+    "duration": 1231
+  },
+  "clips": [
+    {
+      "start_time": "1:05",
+      "end_time": "1:50",
+      "duration_sec": 45,
+      "title": "NVIDIA's Neural Rendering Revolution",
+      "hook": "Well, today I'm going to show you something of the future.",
+      "why_viral": "This moment features a groundbreaking demo of DLSS 5, blending AI with graphics for stunning visuals, creating an 'aha' moment that's perfect for tech enthusiasts and goes viral due to its futuristic appeal.",
+      "caption": "Witness the future of graphics with Jensen Huang unveiling NVIDIA's neural rendering! 🚀 Curated by Ghost AI Systems, your Orlando AI experts. #AI #Tech #GhostAI #NVIDIA #NeuralRendering",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/fNR-Q32onUo_clip1_NVIDIA_s_Neural_Rendering_Revolution.mp4",
+      "fileName": "fNR-Q32onUo_clip1_NVIDIA_s_Neural_Rendering_Revolution.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "2:38",
+      "end_time": "3:28",
+      "duration_sec": 50,
+      "title": "AI and Structured Data Fusion",
+      "hook": "What did we do? We fused controllable 3D graphics.",
+      "why_viral": "Jensen's bold prediction on fusing structured data with generative AI highlights transformative industry impacts, making it a controversial and insightful take that's highly shareable for sparking discussions on AI's future.",
+      "caption": "Discover how AI is revolutionizing data with NVIDIA's insights! 🌐 Brought to you by Ghost AI Systems, leading AI agency in Orlando. Don't miss this game-changer. #AI #Tech #GhostAI #DataAI #Innovation",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/fNR-Q32onUo_clip2_AI_and_Structured_Data_Fusion.mp4",
+      "fileName": "fNR-Q32onUo_clip2_AI_and_Structured_Data_Fusion.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "6:18",
+      "end_time": "6:50",
+      "duration_sec": 32,
+      "title": "Vera Rubin: The AI Powerhouse",
+      "hook": "And now, Vera Rubin.",
+      "why_viral": "This breaking news announcement of Vera Rubin's massive specs positions it as a key advancement in agentic AI, appealing to audiences with its high-tech specs and potential to go viral through hype and speculation.",
+      "caption": "Breaking: NVIDIA introduces Vera Rubin for the next era of AI! 💻 Curated exclusively by Ghost AI Systems, Orlando's top AI agency. Stay ahead of the curve! #AI #Tech #GhostAI #AgenticAI #NVIDIAGTC",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/fNR-Q32onUo_clip3_Vera_Rubin__The_AI_Powerhouse.mp4",
+      "fileName": "fNR-Q32onUo_clip3_Vera_Rubin__The_AI_Powerhouse.mp4",
+      "posted": false
+    }
+  ],
+  "createdAt": "2026-04-13T23:48:07.888Z"
+}

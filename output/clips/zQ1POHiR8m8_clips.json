@@ -1,0 +1,59 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=zQ1POHiR8m8",
+    "title": "Godfather of AI: We Have 2 Years Before Everything Changes!",
+    "channel": "The Diary Of A CEO",
+    "duration": 5987
+  },
+  "clips": [
+    {
+      "start_time": "0:08",
+      "end_time": "0:53",
+      "duration_sec": 45,
+      "title": "Why the Godfather of AI Broke His Silence",
+      "hook": "It begs the question, why have you decided to step out of your introversion?",
+      "why_viral": "This moment features a bold personal revelation from a top AI pioneer, creating an 'aha' moment that hooks viewers on his motivations and urgency.",
+      "caption": "Discover why Professor Yoshua Bengio, the Godfather of AI, is stepping into the spotlight! Curated by Ghost AI Systems, Orlando's leading AI agency. #AI #Tech #GhostAI #AIPioneer #FutureOfAI",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/zQ1POHiR8m8_clip1_Why_the_Godfather_of_AI_Broke_His_Silenc.mp4",
+      "fileName": "zQ1POHiR8m8_clip1_Why_the_Godfather_of_AI_Broke_His_Silenc.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "0:42",
+      "end_time": "1:27",
+      "duration_sec": 45,
+      "title": "AI Regrets: What the Creator Wishes He Knew",
+      "hook": "Do you have any regrets?",
+      "why_viral": "His admission of regrets and the turning point with ChatGPT offers a controversial and emotional take, sparking debates on AI's rapid evolution and personal impacts.",
+      "caption": "The Godfather of AI shares his biggest regrets on AI development. Brought to you by Ghost AI Systems, your trusted AI agency in Orlando. Don't miss this eye-opener! #AI #Tech #GhostAI #AIRisks #Innovation",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/zQ1POHiR8m8_clip2_AI_Regrets__What_the_Creator_Wishes_He_K.mp4",
+      "fileName": "zQ1POHiR8m8_clip2_AI_Regrets__What_the_Creator_Wishes_He_K.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "1:00",
+      "end_time": "1:45",
+      "duration_sec": 45,
+      "title": "The Hidden Dangers of AI Nobody's Talking About",
+      "hook": "Because we're starting to see AI systems that are resisting being shut down.",
+      "why_viral": "This clip highlights under-discussed existential risks and predictions, making it a breaking news-style moment that alarms and engages audiences on real-world threats.",
+      "caption": "AI systems resisting shutdown? Get the inside scoop from the Godfather of AI, curated by Ghost AI Systems in Orlando. Stay informed on the tech revolution! #AI #Tech #GhostAI #AIDangers #TechNews",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/zQ1POHiR8m8_clip3_The_Hidden_Dangers_of_AI_Nobody_s_Talkin.mp4",
+      "fileName": "zQ1POHiR8m8_clip3_The_Hidden_Dangers_of_AI_Nobody_s_Talkin.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "1:37",
+      "end_time": "2:22",
+      "duration_sec": 45,
+      "title": "What AI CEOs Need to Hear Now",
+      "hook": "So if you could speak to the top 10 CEOs of the biggest AI companies in America, what would you say to them?",
+      "why_viral": "His direct advice and optimistic yet urgent message to industry leaders provides a motivational 'call to action' moment, ideal for sparking viral discussions on AI ethics.",
+      "caption": "Hear the Godfather of AI's message to top CEOs! Curated by Ghost AI Systems, Orlando's AI experts. Let's shape a safer future together. #AI #Tech #GhostAI #AIEthics #TechInnovation",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/zQ1POHiR8m8_clip4_What_AI_CEOs_Need_to_Hear_Now.mp4",
+      "fileName": "zQ1POHiR8m8_clip4_What_AI_CEOs_Need_to_Hear_Now.mp4",
+      "posted": false
+    }
+  ],
+  "createdAt": "2026-04-14T17:54:40.181Z"
+}

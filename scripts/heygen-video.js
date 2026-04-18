@@ -6,11 +6,13 @@
  * 
  * Team Roster:
  *   Daniel Castillo — Founder (custom avatar + cloned voice)
- *   Ghost — CEO
- *   Tyrion — Head of Engineering
- *   Shadow — VP of Operations
- *   Valkyra — VP of Strategy & Client Success
- *   Jordan — Creative Director
+ *   Ghost — CEO (Claude Opus 4.6)
+ *   Tyrion — Head of Engineering (Gemini 2.5 Pro)
+ *   Shadow — VP of Operations & Security (Claude Sonnet 4.6)
+ *   Valkyra — VP of Strategy & Client Success (Gemini 2.5 Flash)
+ *   Jordan — Creative Director (Grok 3)
+ *   Maximus — Chief Strategist (Grok 4.2)
+ *   Prometheus — Chief Research Officer (o4-pro)
  * 
  * Usage:
  *   node scripts/heygen-video.js --list-avatars          # Show available
@@ -48,40 +50,63 @@ const TEAM = {
         role: 'CEO — Ghost AI Systems',
         avatarId: null,  // Uses stock avatar — assign later
         voiceId: 'vdY8O7DAlGoHVOAVoPUK',  // Ghost V3
+        brain: { provider: 'anthropic', model: 'claude-opus-4-6' },
         brand: 'ghostai',
-        style: 'Authoritative, technical, visionary. AI-native leader.',
+        style: 'Authoritative, technical, visionary. AI-native leader. Speaks with earned authority.',
     },
     tyrion: {
         name: 'Tyrion',
         role: 'Head of Engineering',
         avatarId: null,
         voiceId: 'c9674bba39674231acd401adf6c6720e',  // Ghos V3
+        brain: { provider: 'google', model: 'gemini-2.5-pro' },
         brand: 'ghostai',
-        style: 'Technical, detailed, engineering focus. Loves architecture.',
+        style: 'Technical, detailed, engineering focus. Loves architecture and system design.',
     },
     shadow: {
         name: 'Shadow',
         role: 'VP of Operations & Security',
         avatarId: null,
         voiceId: 'ebe26ebdb0304f5889956c273868d55f',  // Chill Ghost
+        brain: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
         brand: 'ghostai',
-        style: 'Calm, measured, security-focused. Ops precision.',
+        style: 'Calm, measured, security-focused. Ops precision. Speaks in absolutes about infrastructure.',
     },
     valkyra: {
         name: 'Valkyra',
         role: 'VP of Strategy & Client Success',
         avatarId: null,
         voiceId: '6tUIYzIoB6WWDSMbaL5v',  // Trinity female
+        brain: { provider: 'google', model: 'gemini-2.5-flash' },
         brand: 'ghostai',
-        style: 'Strategic, warm, client-focused. Growth mindset.',
+        style: 'Strategic, warm, client-focused. Growth mindset. Makes complex things feel simple.',
     },
     jordan: {
         name: 'Jordan',
         role: 'Creative Director',
         avatarId: null,
         voiceId: 'zTQ8YuLQBpyKN4LLmPSq',  // Trinity V2 female
+        brain: { provider: 'xai', model: 'grok-3' },
         brand: 'mediageekz',
-        style: 'Creative, bold, visual storytelling. Cinematic thinking.',
+        style: 'Creative, bold, visual storytelling. Cinematic thinking. Makes everything look like a movie.',
+    },
+    maximus: {
+        name: 'Maximus',
+        role: 'Chief Strategist',
+        avatarId: null,
+        voiceId: null,  // NEEDS: Assign HeyGen voice
+        brain: { provider: 'xai', model: 'grok-4.2' },
+        brand: 'ghostai',
+        style: 'Bold, aggressive, gladiator energy. Speaks in absolute truths. Respects strength, despises mediocrity.',
+    },
+    prometheus: {
+        name: 'Prometheus',
+        role: 'Chief Research Officer',
+        avatarId: null,
+        voiceId: null,  // NEEDS: Assign HeyGen voice
+        brain: { provider: 'openai', model: 'o4-pro' },
+        brand: 'ghostai',
+        style: 'Analytical, prescient, forward-looking. Sees around corners. Academic depth with practical impact.',
     },
 };
 
