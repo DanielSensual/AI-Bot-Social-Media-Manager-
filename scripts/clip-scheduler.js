@@ -209,6 +209,137 @@ async function postToFacebook(clip, dryRun = false) {
     }
 }
 
+// ─── Instagram Reels Post (via Graph API) ───────────────────────
+
+const IG_TOKEN = process.env.INSTAGRAM_GRAPH_TOKEN || PAGE_TOKEN;
+
+async function postToInstagramReels(clip, dryRun = false) {
+    if (!IG_ACCOUNT_ID || !IG_TOKEN) {
+        console.log('   ⚠️ Instagram credentials not configured, skipping');
+        return null;
+    }
+
+    const caption = clip.caption || `${clip.title}\n\n🎯 Curated by Ghost AI Systems\n#AI #Tech #GhostAI #Founders`;
+
+    if (dryRun) {
+        console.log(`   🔍 [DRY RUN] Would post to Instagram Reels:`);
+        console.log(`      Video: ${clip.fileName}`);
+        console.log(`      Caption: ${caption.substring(0, 100)}...`);
+        return 'dry-run';
+    }
+
+    console.log(`   📸 Posting to Instagram Reels...`);
+
+    try {
+        // IG Reels requires a public URL — upload to FB first, then use the returned URL
+        // Step 1: Upload video to get a hosted URL via the page
+        const videoData = await fsPromises.readFile(clip.filePath);
+        const sizeMB = (videoData.length / (1024 * 1024)).toFixed(1);
+        console.log(`   📤 Uploading ${sizeMB} MB video for IG...`);
+
+        // Upload to FB page videos to get a hosted URL
+        const uploadForm = new FormData();
+        uploadForm.append('source', new Blob([videoData]), clip.fileName);
+        uploadForm.append('published', 'false');  // Don't publish on FB — just host
+        uploadForm.append('access_token', PAGE_TOKEN);
+
+        const uploadRes = await fetch(`${GRAPH_API}/${PAGE_ID}/videos`, {
+            method: 'POST',
+            body: uploadForm,
+            signal: AbortSignal.timeout(300000),
+        });
+        const uploadText = await uploadRes.text();
+        let uploadData;
+        try { uploadData = JSON.parse(uploadText); } catch { 
+            console.error(`   ❌ IG upload parse error for ${sizeMB}MB video`);
+            return null;
+        }
+
+        if (!uploadData.id) {
+            console.error(`   ❌ IG video upload failed:`, uploadData.error?.message);
+            return null;
+        }
+
+        // Get the video source URL from the upload
+        const videoInfoRes = await fetch(`${GRAPH_API}/${uploadData.id}?fields=source&access_token=${PAGE_TOKEN}`);
+        const videoInfo = await videoInfoRes.json();
+        const videoUrl = videoInfo.source;
+
+        if (!videoUrl) {
+            console.error(`   ❌ Could not get video URL from FB upload`);
+            return null;
+        }
+
+        console.log(`   🔗 Got hosted video URL`);
+
+        // Step 2: Create IG media container
+        const containerRes = await fetch(`${GRAPH_API}/${IG_ACCOUNT_ID}/media`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                media_type: 'REELS',
+                video_url: videoUrl,
+                caption: caption,
+                share_to_feed: true,
+                access_token: IG_TOKEN,
+            }),
+        });
+        const containerData = await containerRes.json();
+
+        if (!containerData.id) {
+            console.error(`   ❌ IG container error:`, containerData.error?.message || JSON.stringify(containerData));
+            return null;
+        }
+
+        console.log(`   📦 IG container created: ${containerData.id}`);
+
+        // Step 3: Wait for video processing (poll)
+        let ready = false;
+        for (let i = 0; i < 30; i++) {
+            await sleep(10000); // 10s polling
+            const statusRes = await fetch(`${GRAPH_API}/${containerData.id}?fields=status_code&access_token=${IG_TOKEN}`);
+            const statusData = await statusRes.json();
+            
+            if (statusData.status_code === 'FINISHED') {
+                ready = true;
+                break;
+            } else if (statusData.status_code === 'ERROR') {
+                console.error(`   ❌ IG processing error`);
+                return null;
+            }
+            
+            process.stdout.write(`   ⏳ Processing... (${i * 10}s)\r`);
+        }
+
+        if (!ready) {
+            console.error(`   ❌ IG processing timed out after 5 minutes`);
+            return null;
+        }
+
+        // Step 4: Publish
+        const publishRes = await fetch(`${GRAPH_API}/${IG_ACCOUNT_ID}/media_publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                creation_id: containerData.id,
+                access_token: IG_TOKEN,
+            }),
+        });
+        const publishData = await publishRes.json();
+
+        if (publishData.id) {
+            console.log(`   ✅ Instagram Reel posted! ID: ${publishData.id}`);
+            return publishData.id;
+        } else {
+            console.error(`   ❌ IG publish error:`, publishData.error?.message);
+            return null;
+        }
+    } catch (err) {
+        console.error(`   ❌ Instagram upload failed: ${err.message}`);
+        return null;
+    }
+}
+
 // ─── Post Next Clip (with retry) ────────────────────────────────
 
 async function postNextClip(dryRun = false, retries = 2) {
@@ -262,7 +393,14 @@ async function _postNextClipInner(dryRun, retries) {
         markPosted(clip.fileName, 'facebook', fbId);
     }
 
-    return { clip, fbId };
+    // Post to Instagram Reels
+    let igId = null;
+    igId = await postToInstagramReels(clip, dryRun);
+    if (igId && !dryRun) {
+        markPosted(clip.fileName, 'instagram', igId);
+    }
+
+    return { clip, fbId, igId };
 }
 
 // ─── Catch-Up Engine ────────────────────────────────────────────
