@@ -35,3 +35,9 @@ logs/
 *.db-wal
 *.db-shm
 .env.backup.*
+
+# Video clips & temp media (too large for GitHub)
+output/clips/*.mp4
+tmp/
+*.mp4
+!scripts/**/*.mp4

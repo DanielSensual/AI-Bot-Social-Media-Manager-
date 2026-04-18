@@ -59,7 +59,7 @@ const TEAM = {
         role: 'Head of Engineering',
         avatarId: null,
         voiceId: 'c9674bba39674231acd401adf6c6720e',  // Ghos V3
-        brain: { provider: 'google', model: 'gemini-2.5-pro' },
+        brain: { provider: 'google', model: 'gemini-3-pro' },
         brand: 'ghostai',
         style: 'Technical, detailed, engineering focus. Loves architecture and system design.',
     },

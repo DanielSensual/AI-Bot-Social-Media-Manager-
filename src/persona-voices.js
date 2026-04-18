@@ -303,6 +303,7 @@ async function callGoogle(model, systemPrompt, userPrompt) {
     const modelMap = {
         'gemini-3.1-pro': 'gemini-3.1-pro-preview',
         'gemini-3.1-flash': 'gemini-3.1-flash-lite-preview',
+        'gemini-3-pro': 'gemini-3-pro-preview',
     };
     const resolvedModel = modelMap[model] || model;
 

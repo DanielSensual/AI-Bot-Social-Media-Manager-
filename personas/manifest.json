@@ -87,7 +87,14 @@
           "tokenEnvVar": "INSTAGRAM_GRAPH_TOKEN",
           "status": "active",
           "followers": 18,
-          "posts": 161
+          "posts": 161,
+          "note": "This is the AI Knowledge page's IG — shared with Ghost persona"
+        },
+        "instagram_dedicated": {
+          "username": "supremeaighost",
+          "accountId": "17841476146990955",
+          "status": "active",
+          "note": "Ghost's DEDICATED IG — found in Business Suite, managed by Ghost FB page"
         },
         "x": {
           "handle": "@ghostaisystems",
@@ -112,7 +119,7 @@
       "type": "ai",
       "brain": {
         "provider": "google",
-        "model": "gemini-2.5-pro",
+        "model": "gemini-3-pro",
         "note": "Architecture specialist. Best at complex system design reasoning."
       },
       "voice": {
@@ -204,10 +211,10 @@
           "notes": "Daniel says Valkyra page exists — NEEDS DISCOVERY. Check Business Suite."
         },
         "instagram": {
-          "username": null,
-          "accountId": null,
-          "status": "unknown",
-          "notes": "Daniel says Valkyra IG exists — NEEDS DISCOVERY."
+          "username": "valkyraai",
+          "accountId": "17841475869023680",
+          "status": "active",
+          "notes": "FOUND — needs to be connected to FB page for API access"
         }
       }
     },
