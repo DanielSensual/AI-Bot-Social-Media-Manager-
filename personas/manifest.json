@@ -244,10 +244,11 @@
       },
       "social": {
         "facebook": {
-          "pageName": null,
+          "pageName": "Jordan - MediaGeekz Creative",
           "pageId": null,
-          "status": "not_created",
-          "notes": "NEEDS: Create 'Jordan — MediaGeekz Creative' FB page"
+          "tokenEnvVar": "JORDAN_FACEBOOK_PAGE_ACCESS_TOKEN",
+          "status": "created",
+          "notes": "Created 2026-04-18. NEEDS: Get Page ID + generate token."
         },
         "instagram": {
           "username": null,
