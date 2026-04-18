@@ -134,10 +134,11 @@
       },
       "social": {
         "facebook": {
-          "pageName": null,
-          "pageId": null,
-          "status": "not_created",
-          "notes": "NEEDS: Create 'Tyrion — Ghost AI Engineering' FB page"
+          "pageName": "Tyrion - Ghost AI Engineering",
+          "pageId": "1081767315018576",
+          "tokenEnvVar": "TYRION_FACEBOOK_PAGE_ACCESS_TOKEN",
+          "status": "created",
+          "notes": "Created 2026-04-18. NEEDS: Generate page access token."
         },
         "instagram": {
           "username": null,
@@ -170,10 +171,11 @@
       },
       "social": {
         "facebook": {
-          "pageName": null,
-          "pageId": null,
-          "status": "not_created",
-          "notes": "NEEDS: Create 'Shadow — Ghost AI Security' FB page"
+          "pageName": "Shadow - Ghost AI Operations",
+          "pageId": "1072510742613313",
+          "tokenEnvVar": "SHADOW_FACEBOOK_PAGE_ACCESS_TOKEN",
+          "status": "created",
+          "notes": "Created 2026-04-18. NEEDS: Generate page access token."
         },
         "instagram": {
           "username": null,
@@ -205,10 +207,11 @@
       },
       "social": {
         "facebook": {
-          "pageName": null,
-          "pageId": null,
-          "status": "unknown",
-          "notes": "Daniel says Valkyra page exists — NEEDS DISCOVERY. Check Business Suite."
+          "pageName": "Valkyra - Ghost AI Strategy",
+          "pageId": "1075738152291967",
+          "tokenEnvVar": "VALKYRA_FACEBOOK_PAGE_ACCESS_TOKEN",
+          "status": "created",
+          "notes": "Created 2026-04-18 via Business Suite. NEEDS: Generate page access token."
         },
         "instagram": {
           "username": "valkyraai",
