@@ -299,7 +299,14 @@ async function callGoogle(model, systemPrompt, userPrompt) {
     const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY;
     if (!key) throw new Error('GEMINI_API_KEY not set');
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    // Map friendly names to actual API model IDs
+    const modelMap = {
+        'gemini-3.1-pro': 'gemini-3.1-pro-preview',
+        'gemini-3.1-flash': 'gemini-3.1-flash-lite-preview',
+    };
+    const resolvedModel = modelMap[model] || model;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${resolvedModel}:generateContent?key=${key}`;
 
     const res = await fetch(url, {
         method: 'POST',
