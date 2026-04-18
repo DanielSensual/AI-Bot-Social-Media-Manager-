@@ -218,9 +218,9 @@
       "brand": "mediageekz",
       "type": "ai",
       "brain": {
-        "provider": "xai",
-        "model": "grok-3",
-        "note": "Creative engine. Visual storytelling and content ideation."
+        "provider": "google",
+        "model": "gemini-3.1-pro",
+        "note": "Creative engine. Visual storytelling and content ideation. Google's latest frontier."
       },
       "voice": {
         "style": "Creative, bold, visual storytelling. Cinematic thinking. Makes everything look like a movie.",

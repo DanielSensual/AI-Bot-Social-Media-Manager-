@@ -86,7 +86,7 @@ const TEAM = {
         role: 'Creative Director',
         avatarId: null,
         voiceId: 'zTQ8YuLQBpyKN4LLmPSq',  // Trinity V2 female
-        brain: { provider: 'xai', model: 'grok-3' },
+        brain: { provider: 'google', model: 'gemini-3.1-pro' },
         brand: 'mediageekz',
         style: 'Creative, bold, visual storytelling. Cinematic thinking. Makes everything look like a movie.',
     },
