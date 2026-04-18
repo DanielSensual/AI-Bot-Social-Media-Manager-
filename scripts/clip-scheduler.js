@@ -44,9 +44,34 @@ const PAGE_ID = process.env.GHOST_AI_PAGE_ID || process.env.FACEBOOK_PAGE_ID;
 const PAGE_TOKEN = process.env.GHOST_AI_PAGE_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_TOKEN;
 const IG_ACCOUNT_ID = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
 
-// Scheduled hours in EST — used by both cron and the watchdog catch-up
-const SCHEDULE_HOURS = [9, 13, 19];
-const SCHEDULE_LABELS = { 9: '☀️ Morning', 13: '🌤️ Lunch', 19: '🌙 Evening' };
+// ─── 15-Slot Daily Schedule (Content Army v2) ──────────────────
+// Peak windows: 8-12AM, 5-9PM EST (2 posts/hr)
+// Off-peak: 12-5PM (1 post/hr)
+// IG API limit: 25/24hrs — 15 is safe with 30min+ gaps
+const SCHEDULE_SLOTS = [
+    // Peak Morning (2/hr)
+    { hour: 8,  min: 0,  label: '🌅 Early Morning',    tier: 'peak' },
+    { hour: 8,  min: 45, label: '🌅 Morning Ramp',     tier: 'peak' },
+    { hour: 9,  min: 15, label: '☀️ Peak Morning',      tier: 'peak' },
+    { hour: 10, min: 0,  label: '☀️ Mid-Morning',       tier: 'peak' },
+    { hour: 10, min: 45, label: '☀️ Late Morning',      tier: 'peak' },
+    { hour: 11, min: 30, label: '🌤️ Pre-Lunch',         tier: 'peak' },
+    // Off-Peak (1/hr)
+    { hour: 12, min: 15, label: '🍽️ Lunch',             tier: 'offpeak' },
+    { hour: 13, min: 30, label: '☁️ Afternoon',          tier: 'offpeak' },
+    { hour: 15, min: 0,  label: '☁️ Mid-Afternoon',      tier: 'offpeak' },
+    // Peak Evening (2/hr)
+    { hour: 17, min: 0,  label: '🔥 Evening Ramp',      tier: 'peak' },
+    { hour: 17, min: 45, label: '🔥 Pre-Prime',         tier: 'peak' },
+    { hour: 18, min: 30, label: '🌙 Prime Time',        tier: 'peak' },
+    { hour: 19, min: 15, label: '🌙 Peak Evening',      tier: 'peak' },
+    { hour: 20, min: 0,  label: '🌃 Late Prime',        tier: 'peak' },
+    { hour: 21, min: 0,  label: '🌃 Night Cap',         tier: 'offpeak' },
+];
+
+// Legacy compat
+const SCHEDULE_HOURS = SCHEDULE_SLOTS.map(s => s.hour);
+const SCHEDULE_LABELS = Object.fromEntries(SCHEDULE_SLOTS.map(s => [s.hour, s.label]));
 
 // Prevent concurrent postNextClip calls
 let postingLock = false;
@@ -451,10 +476,10 @@ function showStatus() {
     console.log('📊 Ghost AI Clip Scheduler — Status');
     console.log('═'.repeat(50));
     console.log(`   ✅ Total posted: ${posted.length} clips`);
-    console.log(`   📅 Posted today: ${todayCount}/3`);
+    console.log(`   📅 Posted today: ${todayCount}/15`);
     console.log(`   📋 Queued:       ${queue.length} clips`);
-    console.log(`   ⏰ Schedule:     9:00 AM, 1:00 PM, 7:00 PM EST`);
-    console.log(`   📅 Days left:    ~${Math.floor(queue.length / 3)} days of content`);
+    console.log(`   ⏰ Schedule:     15 slots/day (2/hr peak, 1/hr off-peak)`);
+    console.log(`   📅 Days left:    ~${Math.floor(queue.length / 15)} days of pre-made content`);
     console.log('');
 
     if (queue.length > 0) {
@@ -495,10 +520,11 @@ async function startScheduler() {
     console.log('⏰ Ghost AI — Founder Clip Scheduler (Hardened)');
     console.log('═'.repeat(50));
     console.log(`   📋 ${queue.length} clips in queue`);
-    console.log(`   📅 ~${Math.floor(queue.length / 3)} days of content`);
-    console.log(`   ⏰ Posting 3x daily: 9AM, 1PM, 7PM EST`);
-    console.log(`   🔧 Catch-up: enabled (checks every 30 min)`);
+    console.log(`   📅 ~${Math.floor(queue.length / 15)} days of pre-made content`);
+    console.log(`   ⏰ Posting 15x daily — 2/hr peak, 1/hr off-peak`);
+    console.log(`   🔧 Catch-up: enabled (checks every 15 min)`);
     console.log(`   🔄 Retry: 2 attempts with exponential backoff`);
+    console.log(`   📸 Dual-post: FB + IG Reels on each clip`);
     console.log('');
 
     if (queue.length === 0) {
@@ -507,44 +533,33 @@ async function startScheduler() {
         process.exit(1);
     }
 
-    // ── Cron schedules (primary) ──
+    // ── Cron schedules — dynamic from SCHEDULE_SLOTS ──
 
-    // 9:00 AM EST — Morning drop
-    cron.schedule('0 9 * * *', async () => {
-        console.log(`\n[${new Date().toLocaleString('en-US', { timeZone: TZ })}] ☀️ Morning clip drop`);
-        try { await postNextClip(); }
-        catch (err) { console.error('❌ Morning post failed:', err.message); }
-    }, { timezone: TZ });
+    for (const slot of SCHEDULE_SLOTS) {
+        const cronExpr = `${slot.min} ${slot.hour} * * *`;
+        cron.schedule(cronExpr, async () => {
+            console.log(`\n[${new Date().toLocaleString('en-US', { timeZone: TZ })}] ${slot.label} clip drop (${slot.tier})`);
+            try { await postNextClip(); }
+            catch (err) { console.error(`❌ ${slot.label} post failed:`, err.message); }
+        }, { timezone: TZ });
+        console.log(`   🕒 ${String(slot.hour).padStart(2,'0')}:${String(slot.min).padStart(2,'0')} — ${slot.label} (${slot.tier})`);
+    }
 
-    // 1:00 PM EST — Lunch drop
-    cron.schedule('0 13 * * *', async () => {
-        console.log(`\n[${new Date().toLocaleString('en-US', { timeZone: TZ })}] 🌤️ Lunch clip drop`);
-        try { await postNextClip(); }
-        catch (err) { console.error('❌ Lunch post failed:', err.message); }
-    }, { timezone: TZ });
-
-    // 7:00 PM EST — Evening prime time
-    cron.schedule('0 19 * * *', async () => {
-        console.log(`\n[${new Date().toLocaleString('en-US', { timeZone: TZ })}] 🌙 Evening clip drop`);
-        try { await postNextClip(); }
-        catch (err) { console.error('❌ Evening post failed:', err.message); }
-    }, { timezone: TZ });
-
-    // ── Watchdog: catch-up check every 30 minutes ──
-    // This is the safety net — if cron missed a tick, the watchdog picks it up
+    // ── Watchdog: catch-up check every 15 minutes ──
+    // Tighter interval for 15-slot schedule
     setInterval(async () => {
         try {
             await catchUpMissedSlots();
         } catch (err) {
             console.error('❌ Watchdog catch-up error:', err.message);
         }
-    }, 30 * 60 * 1000); // 30 minutes
+    }, 15 * 60 * 1000); // 15 minutes
 
     // ── Heartbeat log every 6 hours ──
     setInterval(() => {
         const queue = getUnpostedClips();
         const todayCount = todayPostCount();
-        console.log(`\n💓 [${new Date().toLocaleString('en-US', { timeZone: TZ })}] Heartbeat — ${todayCount}/3 posted today, ${queue.length} in queue`);
+        console.log(`\n💓 [${new Date().toLocaleString('en-US', { timeZone: TZ })}] Heartbeat — ${todayCount}/15 posted today, ${queue.length} in queue`);
     }, 6 * 60 * 60 * 1000);
 
     console.log('🟢 Scheduler running. Ctrl+C to stop.');
