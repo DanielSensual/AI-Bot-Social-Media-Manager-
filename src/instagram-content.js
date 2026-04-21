@@ -383,10 +383,53 @@ export function createInstagramContentBuilder(deps = {}) {
     async function buildCaption(options = {}) {
         const aiEnabled = options.aiEnabled !== false;
         const maxLength = options.maxLength ?? DEFAULT_MAX_LENGTH;
-        const provider = options.provider || 'claude'; // Claude primary — best at following rules, no hallucinations
+        const provider = options.provider || 'grok'; // Grok primary for news reactions — authentic, opinionated
         const contentPillar = options.contentPillar || pick(CONTENT_PILLARS, randomFn);
-        const shouldVerify = ['industry', 'case_study', 'ai_showcase'].includes(contentPillar.pillar);
+        const shouldVerify = ['industry', 'case_study', 'ai_showcase', 'breaking_news'].includes(contentPillar.pillar);
 
+        // ── NEWS-FIRST: 60% chance to use real-time AI news ──
+        const useNews = randomFn() < 0.6;
+
+        if (aiEnabled && hasLLMProviderFn() && useNews) {
+            try {
+                const { getTopUnpostedStory, markPosted } = await import('./news-scraper.js');
+                const { generateNewsCaption } = await import('./news-commentator.js');
+
+                const newsItem = await getTopUnpostedStory({ maxAge: 24 });
+
+                if (newsItem) {
+                    console.log(`   📰 News-first mode: [${newsItem.source}] ${newsItem.title}`);
+
+                    const result = await generateNewsCaption(newsItem, {
+                        maxLength,
+                        provider,
+                    });
+
+                    if (result?.caption) {
+                        markPosted(newsItem);
+                        return {
+                            caption: normalizeCaption(result.caption, maxLength),
+                            videoPrompt: result.videoPrompt || null,
+                            source: 'news',
+                            pillar: 'breaking_news',
+                            theme: newsItem.title,
+                            hookType: result.hookType || 'breaking_news',
+                            provider: result.provider || provider,
+                            model: result.model || null,
+                            fallbackReason: null,
+                            newsSource: newsItem.source,
+                            newsUrl: newsItem.link,
+                        };
+                    }
+                } else {
+                    console.log('   ℹ️ No fresh news — falling back to content pillars');
+                }
+            } catch (newsErr) {
+                console.warn(`   ⚠️ News scraper failed: ${newsErr.message} — falling back to pillars`);
+            }
+        }
+
+        // ── PILLAR FALLBACK: existing content system ──
         if (aiEnabled && hasLLMProviderFn()) {
             try {
                 const prompt = buildPrompt({
@@ -399,7 +442,7 @@ export function createInstagramContentBuilder(deps = {}) {
                     prompt,
                     provider,
                     maxOutputTokens: 1200,
-                    claudeModel: 'claude-sonnet-4-6',
+                    grokModel: 'grok-4.20-0309-reasoning',
                 });
 
                 const parsed = parseJsonObject(text);
@@ -407,12 +450,10 @@ export function createInstagramContentBuilder(deps = {}) {
                 const videoPrompt = parsed?.video_prompt || null;
 
                 if (caption) {
-                    // Optional fact verification for factual pillars
                     if (shouldVerify) {
                         const verification = await verifyFacts(caption);
                         if (!verification.verified) {
                             console.log(`   ⚠️ Fact check flagged: ${verification.issue}`);
-                            // Still post but log the issue — don't block
                         }
                     }
 

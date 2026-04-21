@@ -214,15 +214,48 @@ module.exports = {
             },
         },
         */
+        // ── Ghost AI News Posts (Real-Time AI News) ─────────────────────
         {
-            name: 'ai-takeover-daily',
-            script: 'scripts/ai-takeover-post.js',
+            name: 'ghostai-news-morning',
+            script: 'scripts/ghostai-news-post.js',
             cwd: __dirname,
-            cron_restart: '0 15 * * *', // 3:00 PM daily
+            cron_restart: '0 9 * * *', // 9:00 AM — morning news drop
             watch: false,
             autorestart: false,
-            error_file: './logs/pm2/ai-takeover-error.log',
-            out_file: './logs/pm2/ai-takeover-out.log',
+            error_file: './logs/pm2/ghostai-news-error.log',
+            out_file: './logs/pm2/ghostai-news-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'ghostai-news-afternoon',
+            script: 'scripts/ghostai-news-post.js',
+            cwd: __dirname,
+            cron_restart: '0 13 * * *', // 1:00 PM — lunch break news
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/ghostai-news-error.log',
+            out_file: './logs/pm2/ghostai-news-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+        {
+            name: 'ghostai-news-evening',
+            script: 'scripts/ghostai-news-post.js',
+            cwd: __dirname,
+            cron_restart: '0 18 * * *', // 6:00 PM — evening prime time
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/ghostai-news-error.log',
+            out_file: './logs/pm2/ghostai-news-out.log',
             merge_logs: true,
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
             env: {

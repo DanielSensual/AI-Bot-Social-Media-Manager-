@@ -1,0 +1,41 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=z3Zzlgo-xZM&t=3410s",
+    "title": "E173: Google buying HubSpot? FTX depositors not made whole, AI job fears, Ukraine joining NATO",
+    "channel": "All-In Podcast",
+    "duration": 5576,
+    "sourceSegment": "00:56:50-00:58:18",
+    "notes": "Matched against the Instagram reel thesis around Agent Maestro / agents > copilots."
+  },
+  "clips": [
+    {
+      "start_time": "56:50",
+      "end_time": "57:36",
+      "duration_sec": 46,
+      "title": "Agent Maestro: The Job of the Future",
+      "hook": "The job of the future is being the conductor of AI agents.",
+      "why_viral": "Clear framing shift from copilots to agent orchestration. Strong operator angle for Ghost AI audience.",
+      "caption": "The real job shift isn't coder vs non-coder. It's operator vs orchestrator. Copilots were phase one. Agents are phase two. If you can direct a stack of AI agents toward one business outcome, that's leverage. 👻\n\nSource: All-In Podcast\n#AI #AIAgents #FutureOfWork #GhostAI",
+      "fileName": "z3Zzlgo-xZM_clip1_Agent_Maestro_The_Job_of_the_Future_9x16.mp4",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/z3Zzlgo-xZM_clip1_Agent_Maestro_The_Job_of_the_Future_9x16.mp4",
+      "aspectRatio": "9:16",
+      "watermark": "Ghost AI logo bottom-right",
+      "posted": false
+    },
+    {
+      "start_time": "57:34",
+      "end_time": "58:18",
+      "duration_sec": 44,
+      "title": "Agents Are Phase Two",
+      "hook": "Forget copilots. Agents are phase two.",
+      "why_viral": "Shorter tactical clip with tighter language around agent stacks and outcome-driven work.",
+      "caption": "Most people are still thinking in copilots. The real jump is orchestration: copy agent, design agent, ops agent, all moving toward one result. That's where the compounding starts. 👻\n\nSource: All-In Podcast\n#AI #Agents #Automation #GhostAI",
+      "fileName": "z3Zzlgo-xZM_clip2_Agents_Are_Phase_Two_9x16.mp4",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/z3Zzlgo-xZM_clip2_Agents_Are_Phase_Two_9x16.mp4",
+      "aspectRatio": "9:16",
+      "watermark": "Ghost AI logo bottom-right",
+      "posted": false
+    }
+  ],
+  "createdAt": "2026-04-20T15:01:18Z"
+}
