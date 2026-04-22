@@ -83,11 +83,13 @@ const BOT_CONFIGS = [
         script: 'src/index.js',
         description: 'LinkedIn + X + Facebook scheduler (4x daily)',
     },
-    {
-        name: 'instagram-autopilot',
-        script: 'scripts/instagram-autopilot.js',
-        description: 'Instagram Reels + Stories + Comments',
-    },
+    // DISABLED 2026-04-22 — was posting ghost stories autonomously
+    // Re-enable when story content pipeline is curated
+    // {
+    //     name: 'instagram-autopilot',
+    //     script: 'scripts/instagram-autopilot.js',
+    //     description: 'Instagram Reels + Stories + Comments',
+    // },
     {
         name: 'facebook-agent',
         script: 'scripts/facebook-agent.js',
