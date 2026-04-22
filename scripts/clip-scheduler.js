@@ -186,7 +186,7 @@ function getUnpostedClips() {
     return queue;
 }
 
-// ─── Facebook Video Post (Async — non-blocking) ────────────────
+// ─── Facebook Video Post (via curl — reliable for large files) ──
 
 async function postToFacebook(clip, dryRun = false) {
     if (!PAGE_ID || !PAGE_TOKEN) {
@@ -205,21 +205,17 @@ async function postToFacebook(clip, dryRun = false) {
 
     console.log(`   📘 Posting to Facebook...`);
 
-    // ⚡ ASYNC file read — this was the blocking IO culprit
-    const videoData = await fsPromises.readFile(clip.filePath);
-
-    const formData = new FormData();
-    formData.append('source', new Blob([videoData]), clip.fileName);
-    formData.append('description', caption);
-    formData.append('access_token', PAGE_TOKEN);
+    const { execSync } = await import('child_process');
 
     try {
-        const res = await fetch(`${GRAPH_API}/${PAGE_ID}/videos`, {
-            method: 'POST',
-            body: formData,
-            signal: AbortSignal.timeout(180000), // 3 min timeout for large videos
-        });
-        const data = await res.json();
+        const url = `${GRAPH_API}/${PAGE_ID}/videos`;
+        const result = execSync(`curl -s -X POST "${url}" \
+            -F "source=@${clip.filePath}" \
+            -F "description=${caption.replace(/"/g, '\\"').replace(/\n/g, '\\n')}" \
+            -F "access_token=${PAGE_TOKEN}" \
+            --max-time 300`, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+
+        const data = JSON.parse(result);
 
         if (data.id) {
             console.log(`   ✅ Facebook posted! ID: ${data.id}`);
@@ -229,7 +225,7 @@ async function postToFacebook(clip, dryRun = false) {
             return null;
         }
     } catch (err) {
-        console.error(`   ❌ Facebook upload failed: ${err.message}`);
+        console.error(`   ❌ Facebook upload failed: ${err.message?.substring(0, 200)}`);
         return null;
     }
 }
@@ -305,7 +301,7 @@ async function postToInstagramReels(clip, dryRun = false) {
                 media_type: 'REELS',
                 video_url: videoUrl,
                 caption: caption,
-                share_to_feed: true,
+                share_to_feed: false, // disabled 2026-04-22 — was leaking Reels into stories
                 access_token: IG_TOKEN,
             }),
         });
