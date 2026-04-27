@@ -22,6 +22,8 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        // ── KILLED 2026-04-27 — Rogue MediaGeekz auto-poster removed ──
+        /*
         {
             name: 'facebook-agent',
             script: 'scripts/facebook-agent.js',
@@ -39,6 +41,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        */
         {
             name: 'daniel-facebook-manager',
             script: 'scripts/danieldigital/facebook-manager.js',
@@ -214,6 +217,24 @@ module.exports = {
             },
         },
         */
+        // ── LinkedIn Portfolio Engine — Daily Case Study Posts ──────────
+        {
+            name: 'linkedin-portfolio-daily',
+            script: 'scripts/linkedin-portfolio-post.js',
+            cwd: __dirname,
+            cron_restart: '15 8 * * *', // 8:15 AM EST — LinkedIn prime time
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/linkedin-portfolio-error.log',
+            out_file: './logs/pm2/linkedin-portfolio-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
+
         // ── Ghost AI News Posts (Real-Time AI News) ─────────────────────
         {
             name: 'ghostai-news-morning',
