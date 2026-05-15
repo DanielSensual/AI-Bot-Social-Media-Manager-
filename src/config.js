@@ -14,26 +14,29 @@ export const config = {
     },
 
     // Content Pillars with weights (must sum to 100)
+    // Quality Sniper mode — prioritize real builds over generic takes
     pillars: {
-        hotTakes: 35,           // Controversial opinions, engagement bait
-        builderLogs: 25,        // What we shipped today, raw and real
-        industryCommentary: 20, // React to AI news fast, have a position
-        subtleFlex: 10,         // Client results, speed records, let numbers talk
-        cta: 10,                // Soft sells only, never more than 1 in 10
+        builderLogs: 35,        // Show the real work — screenshots, repos, deploys
+        hotTakes: 25,            // Still spicy, but earned through substance
+        portfolio: 20,           // Client results with proof — numbers, before/after
+        industryCommentary: 15,  // React to AI news with a sharp position
+        cta: 5,                  // Barely any — let results speak
     },
 
     // Posting Schedule (EST timezone)
+    // Algorithm-optimized: Thunder retention window favors recency.
+    // 3x/day stays under AuthorDiversityScorer penalty threshold.
     schedule: {
         timezone: 'America/New_York',
-        times: ['8:00', '12:30', '17:30', '21:00'], // 4x daily — spicy cadence
+        times: ['9:00', '12:00', '17:00'],
         enabled: true,
     },
 
-    // Hashtag Strategy
+    // Hashtag Strategy — less is more, X deprioritizes hashtag-heavy posts
     hashtags: {
-        primary: ['#AI', '#WebDev', '#Startup'],
-        secondary: ['#SaaS', '#Automation', '#GrowthHacking', '#BuildInPublic'],
-        maxPerTweet: 3,
+        primary: ['#BuildInPublic', '#AI'],
+        secondary: ['#WebDev', '#Automation', '#IndieHacker'],
+        maxPerTweet: 2,
     },
 
     // Portfolio Showcase Data
@@ -58,12 +61,14 @@ export const config = {
         { keyword: 'GHOST', description: 'Discovery call booking' },
     ],
 
-    // Autonomy Settings - Controls how the scheduler generates content
+    // Autonomy Settings — X Algorithm Optimized
+    // Based on xai-org/x-algorithm source analysis (May 2026)
     autonomy: {
-        // Percentage of posts that use AI generation (vs templates)
-        aiRatio: 50,
-        // Percentage of posts that include AI-generated video
-        videoRatio: 25,
+        // AI posts tuned to algorithm scoring signals (hook-first, reply-bait, dwell-optimized)
+        aiRatio: 85,
+        // ALWAYS attach video — triggers P(dwell) + P(video_view) + P(share) prediction heads
+        // that text-only posts literally cannot activate
+        videoRatio: 100,
         // Which platforms to post to
         platforms: {
             x: true,

@@ -535,7 +535,7 @@ export async function postToAllGroups(options = {}) {
         dryRun = false,
         headless = true,
         filterGroups = [],
-        postAsPage = 'MediaGeekz', // Page name to switch to (null = post as personal profile)
+        postAsPage = null, // KILLED 2026-04-27 — was 'MediaGeekz', now defaults to personal profile
     } = options;
 
     if (!text) {

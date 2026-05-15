@@ -1,0 +1,59 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=cEg8cOx7UZk",
+    "title": "Keynote by NVIDIA CEO Jensen Huang at 2024 SIEPR Economic Summit",
+    "channel": "Stanford Institute for Economic Policy Research (SIEPR)",
+    "duration": 3321
+  },
+  "clips": [
+    {
+      "start_time": "2:41",
+      "end_time": "3:24",
+      "duration_sec": 43,
+      "title": "Jensen Huang: The American Dream in Action",
+      "hook": "The Oxford English Dictionary defines the American dream as a situation where everybody has an equal opportunity for success through hard work.",
+      "why_viral": "This moment highlights an inspirational success story that resonates with audiences, featuring bold statements on achievement and opportunity, perfect for sparking motivation and shares.",
+      "caption": "Witness Jensen Huang's journey as the ultimate American Dream! Curated by Ghost AI Systems, your leading AI agency in Orlando. #AI #Tech #GhostAI #AmericanDream #Innovation #SuccessStory",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/cEg8cOx7UZk_clip1_Jensen_Huang__The_American_Dream_in_Acti.mp4",
+      "fileName": "cEg8cOx7UZk_clip1_Jensen_Huang__The_American_Dream_in_Acti.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "3:14",
+      "end_time": "4:25",
+      "duration_sec": 71,
+      "title": "From Immigrant Kid to Tech Icon",
+      "hook": "Jensen was born in Taiwan, came to the US at age nine, and overcame challenges to build a remarkable life.",
+      "why_viral": "The 'aha' moment in his personal story, including early struggles and triumphs, creates an emotional connection and relatability, ideal for viral shares on social media.",
+      "caption": "How did Jensen Huang go from a tough school in Kentucky to leading a tech giant? Curated by Ghost AI Systems in Orlando. #AI #Tech #GhostAI #ImmigrantStory #Inspiration #Leadership",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/cEg8cOx7UZk_clip2_From_Immigrant_Kid_to_Tech_Icon.mp4",
+      "fileName": "cEg8cOx7UZk_clip2_From_Immigrant_Kid_to_Tech_Icon.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "4:15",
+      "end_time": "5:05",
+      "duration_sec": 50,
+      "title": "The Rise of NVIDIA: A Tech Revolution",
+      "hook": "At age 30, he co-founds NVIDIA, becoming its only CEO and transforming it into a global powerhouse.",
+      "why_viral": "This clip features breaking news on NVIDIA's growth and its central role in AI innovation, with bold predictions on tech's future, making it highly shareable.",
+      "caption": "Discover the story behind NVIDIA's explosive success and its impact on AI! Curated by Ghost AI Systems, Orlando's AI experts. #AI #Tech #GhostAI #NVIDIA #Innovation #TechRevolution",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/cEg8cOx7UZk_clip3_The_Rise_of_NVIDIA__A_Tech_Revolution.mp4",
+      "fileName": "cEg8cOx7UZk_clip3_The_Rise_of_NVIDIA__A_Tech_Revolution.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "5:51",
+      "end_time": "6:32",
+      "duration_sec": 41,
+      "title": "Jensen Huang's Prestigious Honor",
+      "hook": "Last month, he was elected as a member of the National Academy of Engineering, a rare and prestigious award.",
+      "why_viral": "As a controversial and elite recognition in the tech world, this moment offers an 'aha' insight into industry excellence, positioning it for viral discussions and engagement.",
+      "caption": "Congratulations to Jensen Huang on his National Academy of Engineering election! Curated by Ghost AI Systems, your go-to AI agency in Orlando. #AI #Tech #GhostAI #Engineering #Awards #TechLeadership",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/cEg8cOx7UZk_clip4_Jensen_Huang_s_Prestigious_Honor.mp4",
+      "fileName": "cEg8cOx7UZk_clip4_Jensen_Huang_s_Prestigious_Honor.mp4",
+      "posted": false
+    }
+  ],
+  "createdAt": "2026-04-21T16:10:34.531Z"
+}

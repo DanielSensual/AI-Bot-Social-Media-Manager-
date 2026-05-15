@@ -15,12 +15,11 @@ const openaiClient = process.env.OPENAI_API_KEY
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GROK_API_KEY = process.env.GROK_API_KEY || process.env.XAI_API_KEY || '';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
+const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.5-thinking';
 
-
-const DEFAULT_GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview';
-const DEFAULT_GROK_MODEL = process.env.GROK_MODEL || 'grok-4.20-0309-reasoning';
-const DEFAULT_CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
+const DEFAULT_GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-pro';
+const DEFAULT_GROK_MODEL = process.env.GROK_MODEL || 'grok-4.3';
+const DEFAULT_CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-6';
 
 function getProviderOrder(requestedProvider = 'auto') {
     const mode = (requestedProvider || process.env.AI_PROVIDER || 'auto').toLowerCase();

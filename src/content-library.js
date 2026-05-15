@@ -501,7 +501,20 @@ export async function generateAITweet(options = {}) {
             ? `\nNEVER SAY: ${neverSay.slice(0, 8).map(p => `"${p}"`).join(', ')}`
             : '';
 
-        prompt = `${brandPrompt}\n\nPLATFORM: X (Twitter) — ${maxLength} char limit\n${neverSayBlock}\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make this SPICY — the kind of tweet that gets quote-tweeted and argued about.' : 'Keep it punchy but not necessarily controversial.'}\n\nRULES:\n- MUST be under ${maxLength} characters\n- NO hashtags ever\n- 1 emoji max\n- casual voice, lowercase ok, "ngl" "tbh" ok\n- Output ONLY the tweet text, nothing else`;
+        const algoDirectives = [
+            '\n\n═══ X ALGORITHM OPTIMIZATION (x-algorithm source) ═══',
+            '\n1. HOOK FIRST 10 WORDS — banger_initial_screen decides distribution instantly.',
+            '\n2. PROVOKE REPLIES — P(reply) highest positive weight. End with challenge.',
+            '\n3. MAXIMIZE DWELL — Line breaks stop scrolling. P(dwell) weighted heavily.',
+            '\n4. SHARE-WORTHY — P(repost) fires when sharer looks smart. Surprising data.',
+            '\n5. NO NEGATIVES — P(block)/P(mute)/P(report) have negative weights.',
+        ].join('');
+
+        const spice = controversial
+            ? 'Make this SPICY — the kind of tweet that gets quote-tweeted and argued about.'
+            : 'Keep it punchy but not necessarily controversial.';
+
+        prompt = `${brandPrompt}\n\nPLATFORM: X (Twitter) — ${maxLength} char limit\n${neverSayBlock}\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${spice}\n${algoDirectives}\n\nRULES:\n- MUST be under ${maxLength} characters\n- NO hashtags ever\n- 1 emoji max\n- casual voice, lowercase ok\n- Use line breaks for visual structure\n- Output ONLY the tweet text, nothing else`;
     } catch {
         // Priority 2: x-brain.md
         const xBrain = loadXBrain();

@@ -90,11 +90,12 @@ const BOT_CONFIGS = [
     //     script: 'scripts/instagram-autopilot.js',
     //     description: 'Instagram Reels + Stories + Comments',
     // },
-    {
-        name: 'facebook-agent',
-        script: 'scripts/facebook-agent.js',
-        description: 'AI Knowledge Facebook page (4x daily)',
-    },
+    // ── KILLED 2026-04-27 — Rogue MediaGeekz auto-poster removed ──
+    // {
+    //     name: 'facebook-agent',
+    //     script: 'scripts/facebook-agent.js',
+    //     description: 'AI Knowledge Facebook page (4x daily)',
+    // },
     {
         name: 'danielsensual',
         script: 'scripts/danielsensual-scheduler.js',

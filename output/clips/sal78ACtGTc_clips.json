@@ -1,0 +1,59 @@
+{
+  "source": {
+    "url": "https://www.youtube.com/watch?v=sal78ACtGTc",
+    "title": "What's next for AI agentic workflows ft. Andrew Ng of AI Fund",
+    "channel": "Sequoia Capital",
+    "duration": 820
+  },
+  "clips": [
+    {
+      "start_time": "0:48",
+      "end_time": "1:18",
+      "duration_sec": 30,
+      "title": "Revolutionize AI with Agentic Workflows!",
+      "hook": "Hey agents you know today the way most of us use Lish models is like this with a non-agentic workflow...",
+      "why_viral": "This moment introduces a bold new trend in AI, grabbing attention with its exciting potential for everyday applications.",
+      "caption": "Discover the exciting trend of AI agents from Andrew Ng! Curated by Ghost AI Systems, your go-to AI agency in Orlando. #AI #Tech #GhostAI #AgenticWorkflow #AndrewNg",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/sal78ACtGTc_clip1_Revolutionize_AI_with_Agentic_Workflows_.mp4",
+      "fileName": "sal78ACtGTc_clip1_Revolutionize_AI_with_Agentic_Workflows_.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "1:14",
+      "end_time": "1:44",
+      "duration_sec": 30,
+      "title": "Why AI Workflows Beat Human-Only Methods",
+      "hook": "like if you ask a person to write an essay on a topic and I say please sit down to the keyboard and just type the essay...",
+      "why_viral": "An 'aha' moment comparing AI to human processes, highlighting the power of iteration for better results.",
+      "caption": "Watch Andrew Ng explain how agentic workflows transform AI tasks! Curated by Ghost AI Systems for the latest in tech innovation. #AI #Tech #GhostAI #AIWorkflows #Innovation",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/sal78ACtGTc_clip2_Why_AI_Workflows_Beat_Human_Only_Methods.mp4",
+      "fileName": "sal78ACtGTc_clip2_Why_AI_Workflows_Beat_Human_Only_Methods.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "2:33",
+      "end_time": "3:03",
+      "duration_sec": 30,
+      "title": "GPT 3.5 Shocks with Agentic Superiority!",
+      "hook": "so today lot of us will use zero shot prompting meaning we tell the AI write the code...",
+      "why_viral": "Surprising benchmark results show older AI models outperforming newer ones, creating a controversial and shareable buzz.",
+      "caption": "Mind-blowing: GPT 3.5 beats GPT-4 with agentic workflows! Curated by Ghost AI Systems, leading AI experts in Orlando. #AI #Tech #GhostAI #AIBenchmarks #AndrewNg",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/sal78ACtGTc_clip3_GPT_3_5_Shocks_with_Agentic_Superiority_.mp4",
+      "fileName": "sal78ACtGTc_clip3_GPT_3_5_Shocks_with_Agentic_Superiority_.mp4",
+      "posted": false
+    },
+    {
+      "start_time": "3:40",
+      "end_time": "4:10",
+      "duration_sec": 30,
+      "title": "Unlock AI's Potential with Design Patterns",
+      "hook": "agents reflection is a tool that I think many of us should just use it just works...",
+      "why_viral": "Practical advice on emerging AI techniques provides an 'aha' moment for developers, predicting future productivity boosts.",
+      "caption": "Explore key design patterns for AI agents from Andrew Ng! Curated by Ghost AI Systems to keep you ahead in tech. #AI #Tech #GhostAI #AIDesign #Innovation",
+      "filePath": "/Users/danielcastillo/Projects/Websites/Bots/ghostai-x-bot/output/clips/sal78ACtGTc_clip4_Unlock_AI_s_Potential_with_Design_Patter.mp4",
+      "fileName": "sal78ACtGTc_clip4_Unlock_AI_s_Potential_with_Design_Patter.mp4",
+      "posted": false
+    }
+  ],
+  "createdAt": "2026-04-21T16:08:16.282Z"
+}

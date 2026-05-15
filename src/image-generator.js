@@ -24,7 +24,7 @@ const openaiClient = process.env.OPENAI_API_KEY
     : null;
 
 const GROK_API_KEY = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
-const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1.5';
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2';
 
 /**
  * Generate a branded image card for a social media post.
@@ -67,27 +67,43 @@ export async function generateImage(postText, options = {}) {
 }
 
 /**
- * 8 visually DISTINCT concepts — human, lifestyle, personal feel.
- * These go on Daniel's personal LinkedIn, so they need to feel like a real person,
- * NOT a tech company. Think: iPhone photos a founder would actually take.
+ * 16 visually DISTINCT concepts — wildly different compositions, settings, and moods.
+ * Each concept has unique lighting, angle, and subject matter to guarantee
+ * the feed never looks repetitive. Think: a photographer's diverse portfolio.
  */
 const VISUAL_CONCEPTS = [
     // 0 — Coffee Shop Hustle
-    (topic) => `A Latino man working on a laptop at a cozy coffee shop, warm natural light streaming through the window. A cortadito and a notebook sit beside him. The vibe is focused but relaxed, candid iPhone photo. Golden hour window light, shallow depth of field. Topic: "${topic}". No text, no logos.`,
-    // 1 — Rooftop Sunset
-    (topic) => `Silhouette of a young man standing on a rooftop at sunset overlooking a city skyline (Orlando vibes — low-rise buildings, palm trees). He's looking at his phone, backlit by warm orange and pink sky. Cinematic, contemplative, authentic. Topic: "${topic}". No text.`,
-    // 2 — Late Night Desk
-    (topic) => `Overhead shot of a clean desk at night — a glowing laptop screen illuminates the space, a half-drunk coffee, AirPods, and a notebook with handwritten notes. Moody ambient lighting from a desk lamp. The vibe is "shipping at midnight." Topic: "${topic}". Cozy, real, no text.`,
-    // 3 — Walking & Thinking
-    (topic) => `A man walking down a palm-lined street in Orlando wearing casual clothes, AirPods in, looking thoughtful. Warm afternoon light creates long shadows. Shot from slightly behind — feels like a candid street photo. Topic: "${topic}". Natural colors, documentary style, no text.`,
-    // 4 — Whiteboard Moment
-    (topic) => `A blurry whiteboard in the background covered in diagrams and sticky notes. In the foreground, a hand holds a marker mid-thought. The scene feels like a real brainstorming session — messy, real, in-progress. Warm office lighting. Topic: "${topic}". No text readable.`,
-    // 5 — Team Dinner
-    (topic) => `A group of friends at an outdoor restaurant table at night, string lights overhead, laughter mid-conversation. Plates of food, drinks on the table. Warm, social, the kind of photo you'd post on a Friday night. Topic: "${topic}". Candid, slightly blurry, real moment. No text.`,
-    // 6 — Morning Energy
-    (topic) => `A man jogging past a lake at sunrise, earbuds in, palm trees in the background. Golden morning light, slight lens flare. Feels like a wellness/hustle culture photo but authentic — not staged gym content. Topic: "${topic}". Natural photography, no text.`,
-    // 7 — Home Office Real
-    (topic) => `A lived-in home office — dual monitors, a plant, a framed photo, coffee mug. Natural light from a nearby window. The desk has character — stickers on the laptop, a book open to a random page. Real, not minimalist perfection. Topic: "${topic}". Editorial lifestyle photography, no text.`,
+    (topic) => `A Latino man working on a laptop at a cozy coffee shop, warm natural light streaming through the window. A cortadito and a notebook sit beside him. Focused but relaxed, candid iPhone photo. Golden hour window light, shallow depth of field. Topic: "${topic}". No text, no logos.`,
+    // 1 — Neon Rain Walk
+    (topic) => `A man walking alone on a rain-soaked city street at night, neon signs reflecting off wet pavement in purples and blues. He's wearing a dark jacket, hands in pockets, looking ahead with quiet determination. Shot from across the street — cinematic wide angle. Topic: "${topic}". Blade Runner mood, no text.`,
+    // 2 — Aerial Drone — Orlando Skyline
+    (topic) => `Drone aerial photograph of downtown Orlando at twilight, city lights beginning to glow, Lake Eola visible below. The sky transitions from deep indigo to burnt orange at the horizon. Feels like an establishing shot from a documentary. Topic: "${topic}". Ultra-wide, architectural photography, no text.`,
+    // 3 — Dark Studio Portrait
+    (topic) => `Dramatic portrait of a man lit by a single strip light from the left, face half in shadow. He's wearing a simple black tee, looking directly at camera with intensity. Dark studio background, Rembrandt lighting. The mood is serious, powerful, editorial. Topic: "${topic}". Fashion photography, no text.`,
+    // 4 — Abstract Tech Close-Up
+    (topic) => `Extreme macro close-up of circuit board traces with shallow depth of field, tiny components glowing with warm amber light. Abstract, almost alien — feels like a landscape from another world. Topic: "${topic}". Macro photography, teal and copper tones, no text.`,
+    // 5 — Boardroom Power Shot
+    (topic) => `A man standing at the head of a modern glass conference table, floor-to-ceiling windows behind him showing a city view at golden hour. He's mid-gesture, presenting to an unseen audience. Confident, executive energy. Topic: "${topic}". Corporate editorial photography, no text.`,
+    // 6 — Beach Sunrise Meditation
+    (topic) => `Silhouette of a person sitting cross-legged on a Florida beach at sunrise, waves lapping gently. The sky is painted in coral, peach, and lavender. Peaceful, minimal, the kind of photo that stops the scroll. Shot from behind, wide composition. Topic: "${topic}". Mindfulness aesthetic, no text.`,
+    // 7 — Car Interior Night Drive
+    (topic) => `Interior of a car at night, dashboard lights casting a warm glow. Through the windshield, city highway lights streak by in a long exposure. A hand rests on the steering wheel. The vibe is late-night drive, introspective playlist energy. Topic: "${topic}". Automotive mood photography, no text.`,
+    // 8 — Whiteboard War Room
+    (topic) => `A massive whiteboard covered in hand-drawn system architecture diagrams, arrows, and sticky notes. Shot from an angle that makes it feel like a detective board. Warm office lighting, depth of field blur on edges. Topic: "${topic}". Documentary style, no readable text.`,
+    // 9 — Tropical Patio Work Session
+    (topic) => `A laptop open on a patio table surrounded by tropical plants — monstera, bird of paradise. A glass of cold brew sweats in the humidity. Dappled sunlight through palm fronds creates shadow patterns on the table. Topic: "${topic}". Lifestyle editorial, lush greens, no text.`,
+    // 10 — Server Room Glow
+    (topic) => `Rows of server racks in a data center, blue and green LED lights creating geometric patterns in the darkness. A technician's silhouette stands between aisles. Cold, precise, futuristic atmosphere. Topic: "${topic}". Tech infrastructure photography, no text.`,
+    // 11 — Rooftop Golden Hour
+    (topic) => `A man standing on a rooftop at sunset overlooking a city skyline with palm trees. He's looking at his phone, backlit by warm orange and pink sky. Cinematic, contemplative, authentic. Wide shot with skyline context. Topic: "${topic}". No text.`,
+    // 12 — Late Night Code Session
+    (topic) => `Overhead flat-lay of a desk at 2AM — glowing laptop with code on screen, energy drink, mechanical keyboard, scattered sticky notes. The only light is the screen glow and a small desk lamp. Intimate, real. Topic: "${topic}". Cozy developer aesthetic, no text.`,
+    // 13 — Street Art Backdrop
+    (topic) => `A man leaning against a vibrant graffiti-covered wall in an urban alley, arms crossed, wearing clean streetwear. The mural behind him bursts with color — abstract shapes, neon pinks, electric blues. Topic: "${topic}". Urban portrait, high contrast, no text.`,
+    // 14 — Analog Film Texture
+    (topic) => `A candid moment shot on 35mm film — visible grain, warm color shift, light leak on the right edge. A man in a bookstore pulling a book off the shelf, natural overhead lighting. Nostalgic, authentic, imperfect beauty. Topic: "${topic}". Film photography aesthetic, no text.`,
+    // 15 — AI Visualization Abstract
+    (topic) => `Abstract visualization of a neural network — glowing nodes connected by luminous threads in deep space. Colors shift from electric blue at the core to warm gold at the edges. Feels like looking at a galaxy made of intelligence. Topic: "${topic}". Data art, generative aesthetic, no text.`,
 ];
 
 /**
@@ -129,13 +145,13 @@ function loadImageHistory() {
 }
 
 /**
- * Save the concept index to history (keep last 6)
+ * Save the concept index to history (keep last 12 — with 16 concepts, this guarantees no repeats for 12 posts)
  */
 function saveImageHistory(conceptIndex) {
     const historyFile = path.join(IMAGE_CACHE_DIR, 'history.json');
     const history = loadImageHistory();
     history.recent.push(conceptIndex);
-    if (history.recent.length > 6) history.recent = history.recent.slice(-6);
+    if (history.recent.length > 12) history.recent = history.recent.slice(-12);
     fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
 }
 
@@ -159,7 +175,7 @@ function pickFreshConcept() {
 
 /**
  * Build a style-appropriate prompt for image generation.
- * Rotates through 8 distinct visual concepts with dedup, pillar context, and time-of-day mood.
+ * Rotates through 16 distinct visual concepts with dedup, pillar context, and time-of-day mood.
  */
 function buildImagePrompt(postText, style, pillar) {
     // Extract the core topic (first 150 chars, strip hashtags/emojis)
