@@ -516,13 +516,15 @@ export async function generateAITweet(options = {}) {
 
         prompt = `${brandPrompt}\n\nPLATFORM: X (Twitter) — ${maxLength} char limit\n${neverSayBlock}\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${spice}\n${algoDirectives}\n\nRULES:\n- MUST be under ${maxLength} characters\n- NO hashtags ever\n- 1 emoji max\n- casual voice, lowercase ok\n- Use line breaks for visual structure\n- Output ONLY the tweet text, nothing else`;
     } catch {
+        // Algorithm directives for fallback prompts too
+        const algoFallback = '\n\n═══ X ALGORITHM OPTIMIZATION ═══\n1. HOOK FIRST 10 WORDS (banger classifier)\n2. PROVOKE REPLIES (highest positive weight)\n3. LINE BREAKS for dwell time\n4. BE SHARE-WORTHY (surprising data)\n5. NO hashtags, NO misleading claims';
         // Priority 2: x-brain.md
         const xBrain = loadXBrain();
         if (xBrain) {
-            prompt = `Here is your complete identity, voice, and strategy guide:\n\n${xBrain}\n\n---\n\nNow generate a tweet for the "${pillar}" content pillar: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make this SPICY.' : 'Keep it punchy.'}\n\nRULES:\n- MUST be under ${maxLength} characters\n- Follow ALL the voice rules from the brain file above\n- Output ONLY the tweet text, nothing else`;
+            prompt = `Here is your complete identity, voice, and strategy guide:\n\n${xBrain}\n\n---\n\nNow generate a tweet for the "${pillar}" content pillar: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make this SPICY.' : 'Keep it punchy.'}\n${algoFallback}\n\nRULES:\n- MUST be under ${maxLength} characters\n- Follow ALL the voice rules from the brain file above\n- Use line breaks for visual structure\n- Output ONLY the tweet text, nothing else`;
         } else {
             // Priority 3: inline fallback
-            prompt = `You are Daniel Castillo, founder of Ghost AI Systems. You build AI-powered websites in 72 hours, AI voice agents, and automation.\n\nYour voice on X: casual, spicy, builder energy. Lowercase ok. "ngl", "tbh" ok. NO hashtags ever. 1 emoji max.\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make it controversial and engagement-baiting.' : 'Keep it punchy.'}\n\nMust be under ${maxLength} characters. Output ONLY the tweet text.`;
+            prompt = `You are Daniel Castillo, founder of Ghost AI Systems. You build AI-powered websites in 72 hours, AI voice agents, and automation.\n\nYour voice on X: casual, spicy, builder energy. Lowercase ok. NO hashtags ever. 1 emoji max.\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make it controversial and engagement-baiting.' : 'Keep it punchy.'}\n${algoFallback}\n\nMust be under ${maxLength} characters. Use line breaks. Output ONLY the tweet text.`;
         }
     }
 

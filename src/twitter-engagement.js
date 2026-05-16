@@ -307,19 +307,32 @@ async function findTargetAccountTweets(client, myUserId, engagedIds, limit = 5, 
 
 /**
  * Generate a strategic reply
+ * Algorithm-optimized: X's PlanReplyRanking classifier scores reply quality.
+ * High-scoring replies surface to the original poster's audience = free distribution.
+ * PlanSpamComment classifier watches for spam patterns = instant suppression.
  */
 async function generateEngagementReply(tweet) {
     if (!hasLLMProvider()) return null;
 
     const xBrain = loadXBrain();
 
+    // Algorithm directives shared across all prompt paths
+    const algoReplyDirectives = [
+        '\n═══ X ALGORITHM REPLY OPTIMIZATION ═══',
+        'X\'s PlanReplyRanking classifier scores every reply. High-quality replies get surfaced to the OP\'s entire audience.',
+        'PlanSpamComment classifier instantly suppresses generic/promotional replies.',
+        '1. ADD GENUINE VALUE — share a contrarian take, personal experience, or data point the OP missed.',
+        '2. HAVE A POSITION — "interesting" and "great point" are spam-classified. Take a side.',
+        '3. TRIGGER P(profile_click) — subtly reference something you\'ve built or shipped. Make them curious.',
+        '4. NO SELF-PROMO — mentioning your business name or URL = spam classifier death.',
+        '5. MATCH ENERGY — if OP is technical, be technical. If OP is casual, be casual.',
+    ].join('\n');
+
     let prompt;
     if (xBrain) {
-        // Extract just the voice + engagement sections to keep prompt focused
-        prompt = `Here is your identity and engagement strategy:\n\n${xBrain}\n\n---\n\nYou're scrolling X and see this from @${tweet.authorUsername} (${tweet.followers.toLocaleString()} followers):\n"${tweet.text}"\n\nWrite a casual reply following ALL the engagement rules from your brain file. Be a real person in the conversation. Under 280 characters. Output ONLY the reply text.`;
+        prompt = `Here is your identity and engagement strategy:\n\n${xBrain}\n\n---\n\nYou're scrolling X and see this from @${tweet.authorUsername} (${tweet.followers.toLocaleString()} followers):\n"${tweet.text}"\n${algoReplyDirectives}\n\nWrite a casual reply following ALL the engagement rules from your brain file. Be a real person in the conversation. Under 280 characters. Output ONLY the reply text.`;
     } else {
-        // Fallback if x-brain.md is missing
-        prompt = `You're a real person named Daniel who runs an AI agency. You're scrolling X and genuinely reacting to posts \u2014 not as a brand, just as a dude who's deep in AI and builds stuff.\n\nYou're replying to @${tweet.authorUsername} (${tweet.followers.toLocaleString()} followers):\n"${tweet.text}"\n\nWrite a casual reply like a real human would. Rules:\n1. Sound like you're texting a friend \u2014 lowercase fine, fragments fine\n2. Have an actual OPINION or ADD something\n3. No \"Great take!\", no \"This \ud83d\udd25\" \u2014 bot energy\n4. 0-1 emojis, NO hashtags, under 280 chars\n5. Don't mention your business\n\nReply:`;
+        prompt = `You're a real person named Daniel who runs an AI agency. You're scrolling X and genuinely reacting to posts — not as a brand, just as a dude who's deep in AI and builds stuff.\n\nYou're replying to @${tweet.authorUsername} (${tweet.followers.toLocaleString()} followers):\n"${tweet.text}"\n${algoReplyDirectives}\n\nWrite a casual reply like a real human would. Rules:\n1. Sound like you're texting a friend — lowercase fine, fragments fine\n2. Have an actual OPINION or ADD something\n3. No "Great take!", no "This 🔥" — bot energy\n4. 0-1 emojis, NO hashtags, under 280 chars\n5. Don't mention your business\n\nReply:`;
     }
 
     const { text } = await generateText({

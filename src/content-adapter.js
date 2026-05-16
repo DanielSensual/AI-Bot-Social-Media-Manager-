@@ -13,8 +13,8 @@ const PLATFORM_RULES = {
     x: {
         name: 'X (Twitter)',
         maxChars: 280,
-        tone: 'Punchy, direct, provocative. Short sentences. 1-2 hashtags max.',
-        format: 'Single paragraph or very short bullet points. Must be under 280 characters.',
+        tone: 'Punchy, direct, provocative. Hook in first 10 words (banger classifier). End with challenge or question (P(reply) signal). NO hashtags ever.',
+        format: 'Use line breaks for visual structure — multi-line stops scrolling and maximizes P(dwell). Must be under 280 characters. Make the sharer look smart (P(repost)).',
     },
     linkedin: {
         name: 'LinkedIn',
