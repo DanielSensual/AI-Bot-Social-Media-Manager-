@@ -27,8 +27,19 @@ logs/
 .ai-engaged.json
 .x-engaged.json
 .x-session.json
+.x-commenter-engaged.json
+.x-replied.json
 .env.bak*
 .instagram-autopilot-state.json
+.danielsensual-group-state.json
+.danielsensual-personal-share-state.json
+.danielsensual-share-state.json
+.danielsensual-share-url.json
+.fb-comment-replied.json
+.fb-responded.*.json
+.fb-responded.json
+.ig-comment-replied.json
+.image-cache/
 
 # Mutable runtime databases — never track in git
 *.db
