@@ -1061,10 +1061,26 @@ export function cleanupCache() {
 
     for (const file of files) {
         const filepath = path.join(CACHE_DIR, file);
-        const stats = fs.statSync(filepath);
-        if (now - stats.mtimeMs > maxAge) {
-            fs.unlinkSync(filepath);
-            cleaned++;
+        try {
+            const stats = fs.statSync(filepath);
+
+            // Skip directories and non-video files (like breaker state)
+            if (stats.isDirectory()) {
+                // Remove old directories recursively
+                if (now - stats.mtimeMs > maxAge) {
+                    fs.rmSync(filepath, { recursive: true, force: true });
+                    cleaned++;
+                }
+                continue;
+            }
+
+            // Only clean video/media files older than maxAge
+            if (now - stats.mtimeMs > maxAge && /\.(mp4|webm|mov|png|jpg)$/i.test(file)) {
+                fs.unlinkSync(filepath);
+                cleaned++;
+            }
+        } catch (err) {
+            console.warn(`⚠️ Cache cleanup skipped ${file}: ${err.message}`);
         }
     }
 
