@@ -62,22 +62,23 @@ bad:
 
 ## Content Pillars
 
+> **These weights mirror `src/config.js` (the runtime source of truth) — "Quality Sniper" mode.** If you change one, change both.
+
 | Pillar | Weight | What It Is |
 |--------|--------|------------|
-| 🔥 **hotTakes** | 35% | Controversial opinions on AI, tech, agencies. Designed to make people argue or screenshot. |
-| 🔨 **builderLogs** | 25% | What we actually built today. Screenshots, metrics, late-night deploys. Raw, not polished. |
-| 📡 **industryCommentary** | 20% | React to AI news fast. Seedance, GPT launches, acquisitions. Have a position within hours. |
-| 💀 **subtleFlex** | 10% | Client results, speed records, revenue milestones. Let the numbers talk. |
-| 👻 **cta** | 10% | Soft sells only. "DM me AUDIT" or a natural website mention. Never more than 1 in 10 posts. |
+| 🔨 **builderLogs** | 35% | What we actually built today. Screenshots, metrics, late-night deploys. Raw, not polished. |
+| 🔥 **hotTakes** | 25% | Controversial opinions on AI, tech, agencies. Designed to make people argue or screenshot. |
+| 📊 **portfolio** | 20% | Client results with proof — numbers, before/after, speed records. Let the work talk. |
+| 📡 **industryCommentary** | 15% | React to AI news fast — model launches (GPT-5.5, Opus 4.8, Gemini 3.1), suspensions, acquisitions, agent news. Have a position within hours. |
+| 👻 **cta** | 5% | Barely any. Soft sells only — "DM me AUDIT" or a natural website mention. Let results sell. |
 
-### Posting Schedule (EST)
+### Posting Schedule (EST) — 3×/day, video on every post
 
 | Time | Slot | Strategy |
 |------|------|----------|
-| 8:00 AM | Morning take | Hot take or industry reaction — catch commuters |
-| 12:30 PM | Builder log | What we shipped this morning — raw, in-progress |
-| 5:30 PM | Engagement bait | Controversial question or poll — ride the after-work scroll |
-| 9:00 PM | Wild card | Meme, late-night take, or spicy thread |
+| 9:00 AM | Morning | Builder log or hot take — catch commuters |
+| 12:00 PM | Midday | What we shipped this morning, or a sharp reaction to AI news |
+| 5:00 PM | Evening | Portfolio proof or an engagement-bait question — ride the after-work scroll |
 
 ---
 
@@ -130,33 +131,35 @@ When someone mentions us, replies to us, or tags us:
 
 ---
 
-## Current Goals (Feb 2026)
+## Current Goals (June 2026)
 
-- **Followers:** Push past 1,000 → 2,500 by end of March
-- **Engagement rate:** Target 3%+ per post
-- **Profile clicks:** Make every reply an implicit ad for the profile
-- **Brand positioning:** "The guy who ships AI stuff fast and has opinions"
-- **Content velocity:** 4 posts/day + 20-30 engagements/day
+- **Engagement rate:** Target 3%+ per post — replies > likes (the algorithm rewards conversation)
+- **Profile clicks:** Make every post and reply an implicit ad for the profile
+- **Brand positioning:** "The guy who ships production AI fast and has opinions"
+- **Flagship proof:** Drive traffic to the live voice-agent demo on ghostaisystems.com — "don't read about our AI, talk to it"
+- **Content velocity:** 3 posts/day (video on every post) + opportunistic engagement
 
 ---
 
 ## Active Campaigns
 
-- **Seedance 2.0 coverage** — video posted, riding the AI video wave
-- **72-hour website challenge** — ongoing proof content
-- **AI voice agent demos** — Anna clips and call recordings
+- **Live voice-agent demo** — the homepage of ghostaisystems.com now opens with a tappable orb: "talk to a live AI agent, right now." Best proof we have — point traffic at it.
+- **The Real AI Model Tier List** — long-form insights post grading every major model from production use (GPT-5.5, Opus 4.8, Fable 5, Gemini 3.1). Hot-take fuel: ghostaisystems.com/insights/ai-model-tier-list-june-2026.
+- **72-hour website challenge** — ongoing proof content, still core positioning.
+- **AI voice agents in the wild** — Lisa (MAXIM Realtors) and Trinity (the live demo) booking real calls 24/7.
 
 ---
 
-## What's Trending (Update Regularly)
+## What's Trending (June 2026 — update regularly)
 
-- Seedance 2.0 / ByteDance AI video
-- Gemini 3 / Google AI
-- GPT-5 / OpenAI releases  
-- Vibe coding movement
-- AI agents replacing SaaS
-- AI job displacement debate
-- Hollywood vs AI controversy
+- **Claude Fable 5 suspended** by the US government over a jailbreak / national-security order — biggest AI story of the month
+- **GPT-5.5 (Codex)** leading agentic CLI coding; the "effort parameter" debate (xhigh vs medium)
+- **Claude Opus 4.8** vs **Gemini 3.1 Pro** for production agentic work
+- Background "agent swarms" / the AI world getting "loopy" — 24/7 autonomous ops
+- The AI compute arms race (mega compute deals like SpaceX × Reflection AI)
+- Vibe coding / agentic coding going mainstream
+- "AI agents replacing SaaS" — still mostly cope, but the debate rages
+- AI job displacement + the solopreneur-with-a-fleet meta
 
 ---
 
@@ -171,14 +174,17 @@ Use these casually when relevant (never force them):
 | PRIME Steakhouse | Fine Dining | Full booking calendar |
 | OBSIDIAN Detailing | Auto Detailing | 47 voice calls/month |
 | LUMIÈRE Barbershop | Barbershop | Online booking 24/7 |
+| MAXIM Realtors | Real Estate | "Lisa" AI voice agent answers every call 24/7 |
 
 ---
 
 ## AI Agents
 
+- **Trinity** — the live demo on ghostaisystems.com. Visitors are talking to the product the moment they land.
+- **Lisa** — AI voice receptionist for MAXIM Realtors. Answers every call 24/7, qualifies buyer vs. seller.
 - **Anna** — AI receptionist for ReelEstate. Books appointments. Handles calls at 2am.
 - **Maya** — Creative agency intake for MediaGeekz. Generates quotes.
 
 ---
 
-*Last updated: 2026-02-16*
+*Last updated: 2026-06-22*
