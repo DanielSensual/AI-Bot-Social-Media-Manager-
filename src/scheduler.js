@@ -13,7 +13,7 @@ import { generateTweet, generateAITweet } from './content-library.js';
 import { adaptForAll } from './content-adapter.js';
 import { generateVideo, generateVideoFromImage, cleanupCache } from './video-generator.js';
 import { generateImage, cleanupImageCache } from './image-generator.js';
-import { isDuplicate, record } from './post-history.js';
+import { isDuplicate, record, getRecent } from './post-history.js';
 import { makePostKey, checkAndClaim, releaseKey } from './idempotency.js';
 import { alertPostFailure, alertHealthCheckFailure, recordFailure, clearFailure } from './alerting.js';
 import { getTopPerformingExamples } from './content-feedback.js';
@@ -126,34 +126,72 @@ async function autonomousPost() {
         return;
     }
 
-    // ═══ Image-to-Video Pipeline ═══
-    // Step 1: Always generate a quality image first
-    // Step 2: If video mode, animate the image with grok-imagine-video-1.5
+    // ═══ Video Pipeline (Cost-Aware) ═══
+    // Premium i2v: image-quality → video-1.5 (~$1.21/post) — limited per day
+    // Standard t2v: text → grok-imagine-video (~$0.10/post) — unlimited
+    const I2V_LIMIT = Number.parseInt(process.env.I2V_POSTS_PER_DAY || '1', 10);
     let videoPath = null;
     let imagePath = null;
 
-    try {
-        console.log('\n🎨 Generating branded image...');
-        cleanupImageCache();
-        imagePath = await generateImage(content.text, { style: 'bold', pillar: content.pillar });
-    } catch (error) {
-        console.warn(`⚠️ Image generation failed: ${error.message}`);
-        console.log('   Proceeding with text-only post');
-    }
+    // Count today's video posts to decide i2v vs t2v
+    const todayVideos = getRecent(50).filter(p => {
+        const postDate = new Date(p.timestamp);
+        const now = new Date();
+        return p.hasVideo && postDate.toDateString() === now.toDateString();
+    }).length;
+    const useI2V = useVideo && todayVideos < I2V_LIMIT;
 
-    if (useVideo && imagePath) {
+    if (useI2V) {
+        // ── Premium: Image → Video 1.5 ──
         try {
-            console.log('\n🎬 Animating image → video (i2v pipeline)...');
+            console.log(`\n🎨 Generating branded image (i2v pipeline, ${todayVideos}/${I2V_LIMIT} used today)...`);
+            cleanupImageCache();
+            imagePath = await generateImage(content.text, { style: 'bold', pillar: content.pillar });
+        } catch (error) {
+            console.warn(`⚠️ Image generation failed: ${error.message}`);
+        }
+
+        if (imagePath) {
+            try {
+                console.log('\n🎬 Animating image → video (premium i2v)...');
+                cleanupCache();
+                videoPath = await generateVideoFromImage(imagePath, content.text, {
+                    aspectRatio: '16:9',
+                    duration: 5,
+                    provider: 'grok',
+                });
+                console.log('✅ Premium i2v pipeline complete!');
+            } catch (error) {
+                console.error(`❌ i2v failed: ${error.message}`);
+                console.log('   Falling back to image post');
+            }
+        }
+    } else if (useVideo) {
+        // ── Standard: Text-to-Video (cheap) ──
+        try {
+            console.log(`\n🎬 Generating video (t2v, i2v limit reached: ${todayVideos}/${I2V_LIMIT})...`);
             cleanupCache();
-            videoPath = await generateVideoFromImage(imagePath, content.text, {
+            videoPath = await generateVideo(content.text, {
                 aspectRatio: '16:9',
                 duration: 5,
                 provider: 'grok',
             });
-            console.log('✅ Image-to-video pipeline complete!');
+            console.log('✅ Standard t2v complete!');
         } catch (error) {
-            console.error(`❌ Video generation failed: ${error.message}`);
-            console.log('   Falling back to image post');
+            console.error(`❌ t2v failed: ${error.message}`);
+            console.log('   Falling back to image');
+        }
+    }
+
+    // Generate image if we don't have one yet (t2v path or fallback)
+    if (!imagePath && !videoPath) {
+        try {
+            console.log('\n🎨 Generating branded image...');
+            cleanupImageCache();
+            imagePath = await generateImage(content.text, { style: 'bold', pillar: content.pillar });
+        } catch (error) {
+            console.warn(`⚠️ Image generation failed: ${error.message}`);
+            console.log('   Proceeding with text-only post');
         }
     }
 
