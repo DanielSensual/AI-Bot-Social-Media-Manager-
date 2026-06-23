@@ -148,6 +148,7 @@ async function autonomousPost() {
             videoPath = await generateVideoFromImage(imagePath, content.text, {
                 aspectRatio: '16:9',
                 duration: 5,
+                provider: 'grok',
             });
             console.log('✅ Image-to-video pipeline complete!');
         } catch (error) {
