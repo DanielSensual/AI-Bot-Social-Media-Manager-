@@ -47,43 +47,6 @@ export function record(post) {
 
     // Fire-and-forget sync to dashboard (non-blocking)
     syncToDashboard().catch(() => { });
-
-    // Durable, human-readable audit log of published posts (opt-in, non-blocking)
-    logPublishedPost(post).catch(() => { });
-}
-
-/**
- * Mirror every *published* post to a durable audit webhook (Discord-compatible).
- * Opt-in: no-ops unless POST_LOG_WEBHOOK is set, so it's safe to ship dark.
- * Only logs posts that actually went out to at least one platform.
- * @param {object} post - Post data (text, pillar, results, flags)
- */
-async function logPublishedPost(post) {
-    const url = (process.env.POST_LOG_WEBHOOK || '').trim();
-    if (!url) return; // not configured — skip silently
-
-    const platforms = ['x', 'linkedin', 'facebook', 'instagram'].filter((p) => post.results?.[p]);
-    if (platforms.length === 0) return; // nothing actually published — don't log drafts/failures
-
-    try {
-        const tags = [
-            post.pillar ? `\`${post.pillar}\`` : null,
-            post.aiGenerated ? 'AI' : 'template',
-            post.hasVideo ? '🎬 video' : (post.hasImage ? '🖼️ image' : null),
-        ].filter(Boolean).join(' · ');
-
-        const body = (post.text || '').replace(/`/g, "'").slice(0, 1700);
-        const content = `📡 **Posted → ${platforms.join(', ')}**  ${tags}\n>>> ${body}`;
-
-        await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: content.slice(0, 1990) }),
-            signal: AbortSignal.timeout(5000),
-        });
-    } catch {
-        // Non-blocking — never crash the bot over an audit log.
-    }
 }
 
 /**

@@ -631,6 +631,22 @@ module.exports = {
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
             env: { NODE_ENV: 'production', TZ: 'America/New_York' },
         },
+        // ── Daily Post Digest → SMS (added 2026-06-22) ──
+        // Texts a one-shot summary of the day's posts to the owner via Twilio.
+        // Reads ghostai.db post_history; needs TWILIO_* env vars on this service.
+        {
+            name: 'post-digest-sms',
+            script: 'scripts/post-digest-sms.js',
+            cwd: __dirname,
+            cron_restart: '0 23 * * *', // 11:00 PM EST — daily SMS digest
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/post-digest-error.log',
+            out_file: './logs/pm2/post-digest-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
 
         // ── Ghost Command Center — Orchestrator & Self-Healer ───────────
         // Always-on daemon that monitors, schedules, and heals the fleet.
