@@ -1,0 +1,73 @@
+{
+    "event": {
+        "name": "Bachata After Dark",
+        "subtitle": "Free Class by Daniel Sensual",
+        "date": "Wednesday, June 24, 2026",
+        "dateIso": "2026-06-24",
+        "time": "Free Bachata Class after 9 PM · Social until midnight",
+        "venue": "Eola Lounge",
+        "address": "100 S Eola Dr, Ste 104, Orlando, FL",
+        "price": "Free until 9 PM · $10 after",
+        "pricing": {
+            "freeRsvpUntil": "9 PM on event night",
+            "presale": 10,
+            "door": 10
+        },
+        "description": "Weekly Wednesday bachata night on Lake Eola. Free beginner-friendly class by Daniel Sensual at 9 PM, then social dancing until midnight. Sensual bachata, Dominican classics, and modern remixes. All levels welcome.",
+        "eventUrl": "https://danielsensual.com/bachata",
+        "flyerPath": null,
+        "hashtags": [
+            "BachataAfterDark",
+            "BachataOrlando",
+            "DanielSensual",
+            "OrlandoBachata",
+            "BachataNight",
+            "OrlandoDance",
+            "SocialDancing",
+            "FreeBachataClass",
+            "EolaLounge",
+            "OrlandoNightlife"
+        ],
+        "recurring": "weekly",
+        "recurringDay": "Wednesday",
+        "nightFlow": [
+            { "time": "After 9 PM", "label": "Free Bachata Class", "desc": "Daniel Sensual opens the night with a free, beginner-friendly bachata class." },
+            { "time": "10:00 PM", "label": "Social Opens", "desc": "The floor opens into social dancing as the room warms up." },
+            { "time": "11:00 PM", "label": "After Dark", "desc": "Deeper cuts, closer energy, and the after-dark mood fully lands." },
+            { "time": "12:00 AM", "label": "Last Dance", "desc": "One final round before the night closes on Lake Eola." }
+        ],
+        "vibes": [
+            "Sensual bachata",
+            "Dominican classics",
+            "Modern remixes",
+            "Intimate lounge setting",
+            "Lake Eola views",
+            "Community-focused"
+        ]
+    },
+    "post": {
+        "text": "🌙 BACHATA AFTER DARK — This Wednesday\n\nFree bachata class by Daniel Sensual at 9 PM\nSocial dancing until midnight\n\n📍 Eola Lounge · 100 S Eola Dr, Ste 104, Orlando\n💰 Free until 9 PM · $10 after\n\nSensual bachata, Dominican classics, modern remixes. All levels welcome.\n\nRSVP → danielsensual.com/bachata\n\n#BachataAfterDark #BachataOrlando #DanielSensual #OrlandoDance #FreeBachataClass",
+        "textShort": "🌙 Bachata After Dark — This Wednesday\n\nFree class at 9 PM · Social until midnight\n📍 Eola Lounge, Orlando\n💰 Free until 9 PM\n\nRSVP → danielsensual.com/bachata\n\n#BachataAfterDark #BachataOrlando #DanielSensual"
+    },
+    "groups": {
+        "local_priority": [
+            "Orlando Bachata Social Dancers",
+            "Central Florida Dancers",
+            "Central Florida Latin Dance",
+            "Orlando Latin Nights",
+            "BACHATA LOVERS IN FLORIDA"
+        ],
+        "regional": [
+            "Salsa & Bachata Nights South Florida",
+            "Salsa and Bachata Nights!",
+            "Salsa & Bachata Events"
+        ],
+        "national": [
+            "Bachata News",
+            "International Bachata Festivals",
+            "Bay Area Bachata Dancing",
+            "San Jose Bachata Nights",
+            "Bachata Social dancers in Chicago"
+        ]
+    }
+}
