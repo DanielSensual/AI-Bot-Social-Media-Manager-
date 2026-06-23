@@ -72,6 +72,10 @@ function normalizeIdentityMode(mode) {
     return String(mode || '').toLowerCase() === 'profile' ? 'profile' : 'page';
 }
 
+export function shouldAttemptPageIdentitySwitch(mode) {
+    return normalizeIdentityMode(mode) === 'page';
+}
+
 export function resolveShareRuntime(options = {}) {
     const identityMode = normalizeIdentityMode(options.identityMode || process.env.DS_SHARE_IDENTITY_MODE);
     const userDataDir = options.userDataDir || process.env.DANIELSENSUAL_SHARE_USER_DATA_DIR || DEFAULT_USER_DATA_DIR;
@@ -326,9 +330,8 @@ async function shareToGroup(page, {
     }
     if (!dialogReady) throw new Error('Composer dialog did not appear');
 
-    // ── Identity switch temporarily disabled — destroys the composer dialog DOM ──
-    // TODO: Fix identity switch to reopen composer after switching
-    if (identityMode === 'page' && false) {
+    // ── Switch from personal profile to page identity when available ──
+    if (shouldAttemptPageIdentitySwitch(identityMode)) {
         try {
             const PAGE_NAME = 'Daniel Sensual';
             const switchResult = await page.evaluate((pageName) => {

@@ -27,6 +27,8 @@ const __dirname = path.dirname(__filename);
 
 const DEFAULT_MAX_LENGTH = 1500;
 const EVENTS_DIR = path.join(__dirname, '..', 'events');
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
 
 // ─── Content Pillars ────────────────────────────────────────────
 
@@ -199,25 +201,90 @@ function normalizeCaption(text, maxLength = DEFAULT_MAX_LENGTH) {
 
 // ─── Event Loader ───────────────────────────────────────────────
 
-export function loadActiveEvents() {
-    const events = [];
-    if (!fs.existsSync(EVENTS_DIR)) return events;
+function parseEventDate(config) {
+    return new Date(config.event?.dateIso || config.event?.date || config.dateIso || config.date);
+}
 
-    for (const dir of fs.readdirSync(EVENTS_DIR)) {
-        const configPath = path.join(EVENTS_DIR, dir, 'config.json');
+function startOfUtcDay(date) {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function addDays(date, days) {
+    return new Date(date.getTime() + days * DAY_MS);
+}
+
+function formatEventDate(date) {
+    return date.toLocaleDateString('en-US', {
+        timeZone: 'UTC',
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
+
+function toDateIso(date) {
+    return date.toISOString().slice(0, 10);
+}
+
+function isWeeklyRecurring(config) {
+    return String(config.event?.recurring || config.recurring || '').toLowerCase() === 'weekly';
+}
+
+function resolveEventSchedule(config, now) {
+    const eventDate = parseEventDate(config);
+    if (Number.isNaN(eventDate.getTime())) return null;
+
+    if (!isWeeklyRecurring(config)) {
+        return {
+            date: config.event?.date || config.date || formatEventDate(eventDate),
+            dateIso: config.event?.dateIso || config.dateIso || toDateIso(eventDate),
+            eventDate,
+        };
+    }
+
+    const seed = startOfUtcDay(eventDate);
+    const today = startOfUtcDay(now);
+    const weeksUntilNext = Math.max(0, Math.ceil((today.getTime() - seed.getTime()) / WEEK_MS));
+    const nextOccurrence = addDays(seed, weeksUntilNext * 7);
+
+    return {
+        date: formatEventDate(nextOccurrence),
+        dateIso: toDateIso(nextOccurrence),
+        eventDate: nextOccurrence,
+    };
+}
+
+export function loadActiveEvents(options = {}) {
+    const events = [];
+    const eventsDir = options.eventsDir || EVENTS_DIR;
+    const now = options.now || new Date();
+    if (!fs.existsSync(eventsDir)) return events;
+
+    for (const dir of fs.readdirSync(eventsDir)) {
+        const configPath = path.join(eventsDir, dir, 'config.json');
         if (!fs.existsSync(configPath)) continue;
 
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-            const eventDate = new Date(config.event?.date || config.date);
-            const now = new Date();
+            const schedule = resolveEventSchedule(config, now);
+            if (!schedule) continue;
             const graceDays = 7; // still promote up to 7 days after event
 
-            if (eventDate >= new Date(now.getTime() - graceDays * 86400000)) {
+            if (schedule.eventDate >= new Date(now.getTime() - graceDays * DAY_MS)) {
+                const resolvedConfig = structuredClone(config);
+                if (resolvedConfig.event) {
+                    resolvedConfig.event.date = schedule.date;
+                    resolvedConfig.event.dateIso = schedule.dateIso;
+                } else {
+                    resolvedConfig.date = schedule.date;
+                    resolvedConfig.dateIso = schedule.dateIso;
+                }
+
                 events.push({
                     slug: dir,
-                    name: config.event?.name || config.name || dir,
-                    date: config.event?.date || config.date || 'TBA',
+                    name: resolvedConfig.event?.name || resolvedConfig.name || dir,
+                    date: schedule.date,
                     time: config.event?.time || config.time || 'TBA',
                     venue: typeof config.event?.venue === 'string'
                         ? `${config.event.venue}${config.event?.address ? ' — ' + config.event.address : ''}`
@@ -226,8 +293,8 @@ export function loadActiveEvents() {
                     description: config.event?.description || config.description || '',
                     hashtags: config.event?.hashtags?.map(h => `#${h}`).join(' ') || '',
                     eventUrl: config.event?.eventUrl || config.event?.url || config.url || '',
-                    flyerPath: config.event?.flyerPath ? path.join(EVENTS_DIR, dir, config.event.flyerPath) : null,
-                    config,
+                    flyerPath: config.event?.flyerPath ? path.join(eventsDir, dir, config.event.flyerPath) : null,
+                    config: resolvedConfig,
                 });
             }
         } catch (err) {
@@ -692,4 +759,3 @@ export default {
     CONTENT_ANGLES,
     getBrand,
 };
-

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveShareRuntime } from '../src/danielsensual-sharer.js';
+import { resolveShareRuntime, shouldAttemptPageIdentitySwitch } from '../src/danielsensual-sharer.js';
 
 function withEnv(entries, fn) {
     const previous = new Map();
@@ -58,4 +58,9 @@ test('resolveShareRuntime keeps page and personal lock files isolated', () => {
     });
 
     assert.notEqual(pageRuntime.lockFile, personalRuntime.lockFile);
+});
+
+test('shouldAttemptPageIdentitySwitch enables page identity switching', () => {
+    assert.equal(shouldAttemptPageIdentitySwitch('page'), true);
+    assert.equal(shouldAttemptPageIdentitySwitch('profile'), false);
 });

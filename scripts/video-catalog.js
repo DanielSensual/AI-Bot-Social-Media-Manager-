@@ -26,6 +26,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { loadActiveEvents } from '../src/danielsensual-content.js';
 
 dotenv.config();
 puppeteer.use(StealthPlugin());
@@ -37,6 +38,7 @@ const SHARE_URL_FILE = path.join(__dirname, '..', '.danielsensual-share-url.json
 
 function ensureDir(dir) { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); }
 function randomDelay(min, max) { return new Promise(r => setTimeout(r, Math.floor(Math.random() * (max - min + 1)) + min)); }
+function normalizeUrl(url) { return String(url || '').replace(/\/$/, '').split('?')[0]; }
 
 const args = process.argv.slice(2);
 function getFlag(name) {
@@ -251,6 +253,31 @@ function setShareUrl(video) {
     return data;
 }
 
+function readJsonFile(filePath) {
+    try {
+        if (!fs.existsSync(filePath)) return null;
+        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    } catch {
+        return null;
+    }
+}
+
+function getActiveEventShareUrl(options = {}) {
+    const shareUrlFile = options.shareUrlFile || SHARE_URL_FILE;
+    const currentShare = readJsonFile(shareUrlFile);
+    if (!currentShare?.url || currentShare.source !== 'event-config') return null;
+
+    const activeEvents = loadActiveEvents({
+        eventsDir: options.eventsDir,
+        now: options.now,
+    });
+    const protectedEvent = activeEvents.find((event) =>
+        event.eventUrl && normalizeUrl(event.eventUrl) === normalizeUrl(currentShare.url)
+    );
+
+    return protectedEvent ? currentShare : null;
+}
+
 /**
  * Record that a video was shared (called after successful share runs).
  */
@@ -360,6 +387,29 @@ async function main() {
 
     // ── Next (pick and set) ──
     if (flags.next) {
+        // Guard 1: Check if there are ANY active events — never overwrite during event windows
+        const activeEvents = loadActiveEvents();
+        if (activeEvents.length > 0) {
+            const event = activeEvents[0];
+            console.log('\n📅 Active event detected — skipping video rotation');
+            console.log('═'.repeat(55));
+            console.log(`   🎪 Event:  ${event.name}`);
+            console.log(`   📆 Date:   ${event.date}`);
+            console.log(`   🔗 URL:    ${event.eventUrl || '(no URL)'}`);
+            console.log('   ✅ Rotation skipped — event takes priority over music reels\n');
+            return;
+        }
+
+        // Guard 2: Check if current share URL was explicitly set by an event config
+        const activeEventShareUrl = getActiveEventShareUrl();
+        if (activeEventShareUrl) {
+            console.log('\n📅 Active event share URL is protected');
+            console.log('═'.repeat(55));
+            console.log(`   🔗 URL:    ${activeEventShareUrl.url}`);
+            console.log('   ✅ Skipping video rotation until the event URL is no longer active\n');
+            return;
+        }
+
         if (catalog.videos.length === 0) {
             console.log('\n❌ No videos in catalog. Run --scan or --add=<URL> first.\n');
             return;
@@ -390,10 +440,20 @@ async function main() {
     showHelp();
 }
 
-main().catch(err => {
-    console.error(`\n❌ Fatal: ${err.message}`);
-    process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch(err => {
+        console.error(`\n❌ Fatal: ${err.message}`);
+        process.exit(1);
+    });
+}
 
 // Export for use by other scripts
-export { loadCatalog, saveCatalog, addVideoToCatalog, pickNextVideo, recordVideoShare, setShareUrl };
+export {
+    loadCatalog,
+    saveCatalog,
+    addVideoToCatalog,
+    pickNextVideo,
+    recordVideoShare,
+    setShareUrl,
+    getActiveEventShareUrl,
+};
