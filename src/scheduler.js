@@ -11,7 +11,7 @@ import { postToFacebook, postToFacebookWithImage, postToFacebookWithVideo, testF
 import { postToInstagram, postInstagramReel, testInstagramConnection, uploadToTempHost } from './instagram-client.js';
 import { generateTweet, generateAITweet } from './content-library.js';
 import { adaptForAll } from './content-adapter.js';
-import { generateVideo, cleanupCache } from './video-generator.js';
+import { generateVideo, generateVideoFromImage, cleanupCache } from './video-generator.js';
 import { generateImage, cleanupImageCache } from './image-generator.js';
 import { isDuplicate, record } from './post-history.js';
 import { makePostKey, checkAndClaim, releaseKey } from './idempotency.js';
@@ -126,35 +126,36 @@ async function autonomousPost() {
         return;
     }
 
-    // Generate video if decided
+    // ═══ Image-to-Video Pipeline ═══
+    // Step 1: Always generate a quality image first
+    // Step 2: If video mode, animate the image with grok-imagine-video-1.5
     let videoPath = null;
     let imagePath = null;
 
-    if (useVideo) {
+    try {
+        console.log('\n🎨 Generating branded image...');
+        cleanupImageCache();
+        imagePath = await generateImage(content.text, { style: 'bold', pillar: content.pillar });
+    } catch (error) {
+        console.warn(`⚠️ Image generation failed: ${error.message}`);
+        console.log('   Proceeding with text-only post');
+    }
+
+    if (useVideo && imagePath) {
         try {
-            console.log('\n🎬 Generating AI video...');
+            console.log('\n🎬 Animating image → video (i2v pipeline)...');
             cleanupCache();
-            videoPath = await generateVideo(content.text, {
+            videoPath = await generateVideoFromImage(imagePath, content.text, {
                 aspectRatio: '16:9',
                 duration: 5,
             });
+            console.log('✅ Image-to-video pipeline complete!');
         } catch (error) {
             console.error(`❌ Video generation failed: ${error.message}`);
-            console.log('   Falling back to image generation...');
+            console.log('   Falling back to image post');
         }
     }
 
-    // Generate image if no video (ensures Instagram always has media)
-    if (!videoPath) {
-        try {
-            console.log('\n🎨 Generating branded image...');
-            cleanupImageCache();
-            imagePath = await generateImage(content.text, { style: 'bold', pillar: content.pillar });
-        } catch (error) {
-            console.warn(`⚠️ Image generation failed: ${error.message}`);
-            console.log('   Proceeding with text-only post');
-        }
-    }
 
     const results = { x: null, linkedin: null, facebook: null, instagram: null };
 

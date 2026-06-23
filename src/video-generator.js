@@ -380,8 +380,18 @@ async function startGrokGeneration({ prompt, imagePath = null, videoUrl = null, 
         throw new Error('XAI_API_KEY / GROK_API_KEY is not configured');
     }
 
+    // Auto-select model: video-1.5 for i2v (image input), base model for t2v (text only)
+    // grok-imagine-video-1.5 does NOT support text-to-video
+    const hasImageInput = !!(imagePath || options.imageUrl);
+    const defaultModel = hasImageInput ? 'grok-imagine-video-1.5' : 'grok-imagine-video';
+    const model = String(options.grokModel || process.env.GROK_VIDEO_MODEL_I2V && hasImageInput
+        ? process.env.GROK_VIDEO_MODEL_I2V
+        : options.grokModel || defaultModel);
+
+    console.log(`   Model: ${model} (${hasImageInput ? 'i2v' : 't2v'})`);
+
     const body = {
-        model: String(options.grokModel || GROK_VIDEO_MODEL),
+        model,
         prompt: normalizePrompt(prompt),
     };
 
