@@ -2,6 +2,7 @@
  * Content Library — Ghost AI Systems (X/Twitter)
  * Template-based + AI-powered tweet generation.
  * Powered by Brand Intelligence System with x-brain.md fallback.
+ * Phase 1: Smart Planner integration — Grok Build picks pillars strategically.
  */
 
 import fs from 'fs';
@@ -11,6 +12,7 @@ import { config } from './config.js';
 import dotenv from 'dotenv';
 import { generateText } from './llm-client.js';
 import { loadBrand, getBrandPrompt, getNeverSayList } from './brand-loader.js';
+import { smartPillarPick } from './smart-planner.js';
 
 dotenv.config();
 
@@ -474,11 +476,25 @@ export function generateTweet() {
  */
 export async function generateAITweet(options = {}) {
     const {
-        pillar = getWeightedPillar(),
         controversial = true,
         maxLength = 280,
         provider = 'auto',
     } = options;
+
+    // ═══ Phase 1: Smart Planner — Grok Build picks the pillar strategically ═══
+    let pillar = options.pillar;
+    let strategicAngle = null;
+
+    if (!pillar) {
+        try {
+            const plan = await smartPillarPick();
+            pillar = plan.pillar;
+            strategicAngle = plan.angle;
+        } catch (err) {
+            console.warn(`⚠️ Smart planner failed: ${err.message}, using weighted random`);
+            pillar = getWeightedPillar();
+        }
+    }
 
     const pillarDescriptions = {
         hotTakes: 'a controversial hot take that makes people want to argue or agree strongly. Challenge assumptions about AI, agencies, or tech.',
@@ -490,6 +506,12 @@ export async function generateAITweet(options = {}) {
         portfolio: 'showcase of client work and results',
         bts: 'behind-the-scenes look at building with AI',
     };
+
+    // Inject strategic angle from smart planner into the pillar description
+    const pillarDesc = pillarDescriptions[pillar] || pillarDescriptions.hotTakes;
+    const angleContext = strategicAngle
+        ? `\n\nSTRATEGIC ANGLE (from content planner): ${strategicAngle}\nUse this angle as inspiration but write naturally — don't force it.`
+        : '';
 
     // Priority 1: Brand Intelligence System
     let prompt;
@@ -514,17 +536,17 @@ export async function generateAITweet(options = {}) {
             ? 'Make this SPICY — the kind of tweet that gets quote-tweeted and argued about.'
             : 'Keep it punchy but not necessarily controversial.';
 
-        prompt = `${brandPrompt}\n\nPLATFORM: X (Twitter) — ${maxLength} char limit\n${neverSayBlock}\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${spice}\n${algoDirectives}\n\nRULES:\n- MUST be under ${maxLength} characters\n- NO hashtags ever\n- 1 emoji max\n- casual voice, lowercase ok\n- Use line breaks for visual structure\n- Output ONLY the tweet text, nothing else`;
+        prompt = `${brandPrompt}\n\nPLATFORM: X (Twitter) — ${maxLength} char limit\n${neverSayBlock}\n\nGenerate a tweet for: ${pillarDesc}${angleContext}\n\n${spice}\n${algoDirectives}\n\nRULES:\n- MUST be under ${maxLength} characters\n- NO hashtags ever\n- 1 emoji max\n- casual voice, lowercase ok\n- Use line breaks for visual structure\n- Output ONLY the tweet text, nothing else`;
     } catch {
         // Algorithm directives for fallback prompts too
         const algoFallback = '\n\n═══ X ALGORITHM OPTIMIZATION ═══\n1. HOOK FIRST 10 WORDS (banger classifier)\n2. PROVOKE REPLIES (highest positive weight)\n3. LINE BREAKS for dwell time\n4. BE SHARE-WORTHY (surprising data)\n5. NO hashtags, NO misleading claims';
         // Priority 2: x-brain.md
         const xBrain = loadXBrain();
         if (xBrain) {
-            prompt = `Here is your complete identity, voice, and strategy guide:\n\n${xBrain}\n\n---\n\nNow generate a tweet for the "${pillar}" content pillar: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make this SPICY.' : 'Keep it punchy.'}\n${algoFallback}\n\nRULES:\n- MUST be under ${maxLength} characters\n- Follow ALL the voice rules from the brain file above\n- Use line breaks for visual structure\n- Output ONLY the tweet text, nothing else`;
+            prompt = `Here is your complete identity, voice, and strategy guide:\n\n${xBrain}\n\n---\n\nNow generate a tweet for the "${pillar}" content pillar: ${pillarDesc}${angleContext}\n\n${controversial ? 'Make this SPICY.' : 'Keep it punchy.'}\n${algoFallback}\n\nRULES:\n- MUST be under ${maxLength} characters\n- Follow ALL the voice rules from the brain file above\n- Use line breaks for visual structure\n- Output ONLY the tweet text, nothing else`;
         } else {
             // Priority 3: inline fallback
-            prompt = `You are Daniel Castillo, founder of Ghost AI Systems. You build AI-powered websites in 72 hours, AI voice agents, and automation.\n\nYour voice on X: casual, spicy, builder energy. Lowercase ok. NO hashtags ever. 1 emoji max.\n\nGenerate a tweet for: ${pillarDescriptions[pillar] || pillarDescriptions.hotTakes}\n\n${controversial ? 'Make it controversial and engagement-baiting.' : 'Keep it punchy.'}\n${algoFallback}\n\nMust be under ${maxLength} characters. Use line breaks. Output ONLY the tweet text.`;
+            prompt = `You are Daniel Castillo, founder of Ghost AI Systems. You build AI-powered websites in 72 hours, AI voice agents, and automation.\n\nYour voice on X: casual, spicy, builder energy. Lowercase ok. NO hashtags ever. 1 emoji max.\n\nGenerate a tweet for: ${pillarDesc}${angleContext}\n\n${controversial ? 'Make it controversial and engagement-baiting.' : 'Keep it punchy.'}\n${algoFallback}\n\nMust be under ${maxLength} characters. Use line breaks. Output ONLY the tweet text.`;
         }
     }
 
