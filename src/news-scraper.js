@@ -236,8 +236,35 @@ async function fetchHackerNews(maxAge) {
     }
 }
 
+// ── Low-value / promo story filter ─────────────────────────────
+// RSS feeds (esp. TechCrunch) seed their AI category with the publisher's own
+// event/conference promos. Those aren't AI news — skip them so the bot doesn't
+// burn takes on "Founder Summit pass pricing" and similar fluff.
+// Target promo *intent* (ticket pricing, register-now), not event nouns —
+// so real news like "AI Safety Summit reaches deal" still passes through.
+const PROMO_PATTERNS = [
+    /\bpass rates?\b/i, /\b(ticket|pass)\s+(price|sale|deadline)/i,
+    /\bget (your )?(tickets?|passes?)\b/i, /\bbuy (your )?(tickets?|passes?)\b/i,
+    /\bearly bird\b/i, /\bsave the date\b/i, /\blast chance\b/i,
+    /\bdiscount code\b/i, /\bregister (now|today|here)\b/i, /\bbook your\b/i,
+    /\bapply (now|today)\b/i, /\bwebinar\b/i, /\b(prices?|pricing) (increase|jump|rise|go up)/i,
+    /\bfounder summit\b/i, /\btechcrunch (disrupt|sessions|summit|all stage)\b/i,
+];
+
+function isLowQualityStory(title = '', link = '') {
+    if (PROMO_PATTERNS.some((re) => re.test(title))) return true;
+    if (/\/events?\//i.test(link)) return true; // /event/ or /events/ promo URLs
+    return false;
+}
+
 // ── Dedup + Rank ───────────────────────────────────────────────
 function deduplicateAndRank(allItems) {
+    // Drop publisher event/promo items before ranking
+    const beforeCount = allItems.length;
+    allItems = allItems.filter((it) => !isLowQualityStory(it.title, it.link));
+    const dropped = beforeCount - allItems.length;
+    if (dropped > 0) console.log(`   🚫 Filtered ${dropped} promo/low-value stor${dropped === 1 ? 'y' : 'ies'}`);
+
     // Dedup by similar titles
     const seen = new Set();
     const unique = [];
