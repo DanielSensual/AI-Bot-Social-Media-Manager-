@@ -599,6 +599,38 @@ module.exports = {
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
             env: { NODE_ENV: 'production', TZ: 'America/New_York' },
         },
+        // ── X Outbound Engagement — "The Ambush" (enabled 2026-06-22) ──
+        // Replies to whales / trending AI posts via src/twitter-engagement.js.
+        // API-based, 30-day dedup, 4s pacing, dry-run-verified. Conservative
+        // volume to start — raise --limit (max 25) once you're comfortable.
+        {
+            name: 'x-engagement-morning',
+            script: 'scripts/engage-x.js',
+            args: '--limit 6',
+            cwd: __dirname,
+            cron_restart: '30 10 * * *', // 10:30 AM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/x-engagement-error.log',
+            out_file: './logs/pm2/x-engagement-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'x-engagement-evening',
+            script: 'scripts/engage-x.js',
+            args: '--limit 6',
+            cwd: __dirname,
+            cron_restart: '30 18 * * *', // 6:30 PM daily
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/x-engagement-error.log',
+            out_file: './logs/pm2/x-engagement-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
 
         // ── Ghost Command Center — Orchestrator & Self-Healer ───────────
         // Always-on daemon that monitors, schedules, and heals the fleet.
