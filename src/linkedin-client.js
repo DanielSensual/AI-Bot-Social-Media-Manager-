@@ -60,6 +60,17 @@ export function resolveRedirectUri(profileName = 'default', overrideUri = '') {
     return config.redirectUri || 'http://localhost:3000/callback';
 }
 
+// ═══════════════════════════════════════════════════════════
+//  IDENTITY GUARD — prevents posting to wrong LinkedIn account
+//  After the Bent Danholm incident (2026-06-22), this ensures
+//  the default token always belongs to Daniel Castillo.
+// ═══════════════════════════════════════════════════════════
+const EXPECTED_OWNERS = {
+    default: { sub: '5wg6gFr3st', name: 'Daniel Castillo' },
+    // Add client profiles here if needed:
+    // bent: { sub: 'Op-L-FIHf0', name: 'Bent Danholm' },
+};
+
 /**
  * Load stored access token
  */
@@ -67,7 +78,17 @@ function loadToken(profile = 'default') {
     const file = getTokenFile(profile);
     try {
         if (fs.existsSync(file)) {
-            return JSON.parse(fs.readFileSync(file, 'utf-8'));
+            const token = JSON.parse(fs.readFileSync(file, 'utf-8'));
+
+            // ── Identity Guard ──────────────────────────────────
+            const expected = EXPECTED_OWNERS[profile];
+            if (expected && token._owner_sub && token._owner_sub !== expected.sub) {
+                console.error(`🚨 IDENTITY MISMATCH: Token in ${file} belongs to "${token._owner}" (${token._owner_sub}) but profile "${profile}" expects "${expected.name}" (${expected.sub}). REFUSING TO LOAD.`);
+                return null;
+            }
+            // ────────────────────────────────────────────────────
+
+            return token;
         }
     } catch (e) {
         console.error(`Error loading LinkedIn token for ${profile}:`, e.message);

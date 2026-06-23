@@ -1,0 +1,12 @@
+{
+  "access_token": "AQUPj7ljM3wmG3l10Y7bXVVFRyRNIZFGIG70ywfgoepcYjuiwJGGG1bF2PJZRPbAYgvRV6mWOiPxgMNwg-Cj7NdE-f19TweQMHWmSSJwNIERicACmz_UEU_S7oXdKQB4Q5Nj05iJ4F2HcClRb1qvyIfne7kGXa6qIfr-mua_SjBPlajuGRTKzU7C0RB2VWmBdZUFgYKRiQTJn7KuQpCkDuOoSHSMXoW-u4Aj0ukwLypGIQPMNP7ratCfe0TTls6EL4SmijJ_pTK03dJSeMNTFvjecVvCd83MHfBlxf_32maVvtKu9doRVlOrf0_iZFiXgo_k4wEFNOQN82HKp66sAjSDnu-CxQ",
+  "expires_in": 5184000,
+  "scope": "email,openid,profile,w_member_social",
+  "token_type": "Bearer",
+  "_owner": "Bent Danholm",
+  "_owner_sub": "Op-L-FIHf0",
+  "_owner_email": "bent@maximrealtors.com",
+  "_brand": "DANHOLM COLLECTION",
+  "_warning": "This is BENT's token. Only use for bent-social-bot, NEVER for ghostai-x-bot.",
+  "expires_at": 1787321548480
+}
