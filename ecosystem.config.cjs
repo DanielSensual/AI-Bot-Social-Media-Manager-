@@ -42,6 +42,9 @@ module.exports = {
             },
         },
         */
+        // ── DISABLED: Ghost AI content was posting to DanielSensual page (2026-06-24) ──
+        // DanielSensual page should only get dance/bachata content via danielsensual-daily
+        /*
         {
             name: 'daniel-facebook-manager',
             script: 'scripts/danieldigital/facebook-manager.js',
@@ -59,6 +62,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        */
         {
             name: 'linkedin-responder-morning',
             script: 'scripts/respond-messages.js',
