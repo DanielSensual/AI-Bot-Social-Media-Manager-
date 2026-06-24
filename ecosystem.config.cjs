@@ -107,8 +107,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        // ── DISABLED: Bachata Exotica page paused (2026-04-06) ──────────
-        /*
+        // ── Bachata Exotica page — re-enabled 2026-06-24 ──────────────
         {
             name: 'facebook-responder-bachata-morning',
             script: 'scripts/respond-facebook.js',
@@ -135,9 +134,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        */
-        // ── DISABLED: Bachata Exotica daily post paused (2026-04-06) ─────
-        /*
+        // ── Bachata Exotica daily post — re-enabled 2026-06-24 ────────
         {
             name: 'facebook-bachata-daily-post',
             script: 'scripts/bachata-daily-post.js',
@@ -151,7 +148,6 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        */
         {
             name: 'facebook-comment-responder',
             script: 'scripts/respond-comments.js',
@@ -198,8 +194,7 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        // ── DISABLED: Bachata Exotica music post paused (2026-04-06) ─────
-        /*
+        // ── Bachata Exotica music post — re-enabled 2026-06-24 ────────
         {
             name: 'bachataexotica-music-daily',
             script: 'scripts/bachataexotica-music-post.js',
@@ -216,7 +211,6 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        */
         // ── LinkedIn Portfolio Engine — Daily Case Study Posts ──────────
         {
             name: 'linkedin-portfolio-daily',
