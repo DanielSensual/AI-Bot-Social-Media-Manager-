@@ -72,36 +72,36 @@ export async function generateImage(postText, options = {}) {
  * the feed never looks repetitive. Think: a photographer's diverse portfolio.
  */
 const VISUAL_CONCEPTS = [
-    // 0 — Coffee Shop Hustle
-    (topic) => `A Latino man working on a laptop at a cozy coffee shop, warm natural light streaming through the window. A cortadito and a notebook sit beside him. Focused but relaxed, candid iPhone photo. Golden hour window light, shallow depth of field. Topic: "${topic}". No text, no logos.`,
-    // 1 — Neon Rain Walk
-    (topic) => `A man walking alone on a rain-soaked city street at night, neon signs reflecting off wet pavement in purples and blues. He's wearing a dark jacket, hands in pockets, looking ahead with quiet determination. Shot from across the street — cinematic wide angle. Topic: "${topic}". Blade Runner mood, no text.`,
+    // 0 — AI Dashboard Glow
+    (topic) => `A sleek AI analytics dashboard glowing on a widescreen monitor in a dark room. Neon data visualizations — graphs, heatmaps, real-time metrics in electric blue and amber. The screen reflects on a polished desk surface. Topic: "${topic}". Tech product photography, no text, no people.`,
+    // 1 — Neon Rain City
+    (topic) => `A rain-soaked city street at night, neon signs reflecting off wet pavement in purples and blues. No people visible — just the empty street, glowing signage, and reflections. Shot from low angle — cinematic wide angle. Topic: "${topic}". Blade Runner mood, no text, no people.`,
     // 2 — Aerial Drone — Orlando Skyline
     (topic) => `Drone aerial photograph of downtown Orlando at twilight, city lights beginning to glow, Lake Eola visible below. The sky transitions from deep indigo to burnt orange at the horizon. Feels like an establishing shot from a documentary. Topic: "${topic}". Ultra-wide, architectural photography, no text.`,
-    // 3 — Dark Studio Portrait
-    (topic) => `Dramatic portrait of a man lit by a single strip light from the left, face half in shadow. He's wearing a simple black tee, looking directly at camera with intensity. Dark studio background, Rembrandt lighting. The mood is serious, powerful, editorial. Topic: "${topic}". Fashion photography, no text.`,
+    // 3 — AI Brain Visualization
+    (topic) => `A glowing digital brain made of interconnected nodes and light trails, floating in dark space. Electric blue synapses fire between golden neural pathways. Abstract, scientific, futuristic. Topic: "${topic}". AI concept art, no text, no people.`,
     // 4 — Abstract Tech Close-Up
     (topic) => `Extreme macro close-up of circuit board traces with shallow depth of field, tiny components glowing with warm amber light. Abstract, almost alien — feels like a landscape from another world. Topic: "${topic}". Macro photography, teal and copper tones, no text.`,
-    // 5 — Boardroom Power Shot
-    (topic) => `A man standing at the head of a modern glass conference table, floor-to-ceiling windows behind him showing a city view at golden hour. He's mid-gesture, presenting to an unseen audience. Confident, executive energy. Topic: "${topic}". Corporate editorial photography, no text.`,
-    // 6 — Beach Sunrise Meditation
-    (topic) => `Silhouette of a person sitting cross-legged on a Florida beach at sunrise, waves lapping gently. The sky is painted in coral, peach, and lavender. Peaceful, minimal, the kind of photo that stops the scroll. Shot from behind, wide composition. Topic: "${topic}". Mindfulness aesthetic, no text.`,
-    // 7 — Car Interior Night Drive
-    (topic) => `Interior of a car at night, dashboard lights casting a warm glow. Through the windshield, city highway lights streak by in a long exposure. A hand rests on the steering wheel. The vibe is late-night drive, introspective playlist energy. Topic: "${topic}". Automotive mood photography, no text.`,
+    // 5 — Holographic Interface
+    (topic) => `A holographic user interface floating in mid-air in a dark room — translucent panels showing AI metrics, voice waveforms, and conversation flows. Electric blue and soft white light. Feels like Tony Stark's lab. Topic: "${topic}". Sci-fi UI concept, no text, no people.`,
+    // 6 — Florida Sunrise Abstract
+    (topic) => `A Florida beach at sunrise with no people — waves lapping gently. The sky is painted in coral, peach, and lavender. A single pair of headphones sits on the sand. Peaceful, minimal, the kind of photo that stops the scroll. Wide composition. Topic: "${topic}". Mindfulness aesthetic, no text.`,
+    // 7 — Code on Screen
+    (topic) => `Close-up of elegant code on a dark terminal — syntax-highlighted JavaScript/Python in a modern IDE. Lines of code glow against a matte black background. Reflections of city lights in the screen glass. Topic: "${topic}". Developer aesthetic, moody lighting, no text, no people.`,
     // 8 — Whiteboard War Room
-    (topic) => `A massive whiteboard covered in hand-drawn system architecture diagrams, arrows, and sticky notes. Shot from an angle that makes it feel like a detective board. Warm office lighting, depth of field blur on edges. Topic: "${topic}". Documentary style, no readable text.`,
-    // 9 — Tropical Patio Work Session
-    (topic) => `A laptop open on a patio table surrounded by tropical plants — monstera, bird of paradise. A glass of cold brew sweats in the humidity. Dappled sunlight through palm fronds creates shadow patterns on the table. Topic: "${topic}". Lifestyle editorial, lush greens, no text.`,
+    (topic) => `A massive whiteboard covered in hand-drawn system architecture diagrams, arrows, and sticky notes. Shot from an angle that makes it feel like a detective board. Warm office lighting, depth of field blur on edges. Topic: "${topic}". Documentary style, no readable text, no people.`,
+    // 9 — Tropical Workspace
+    (topic) => `A laptop open on a patio table surrounded by tropical plants — monstera, bird of paradise. A glass of cold brew sweats in the humidity. Dappled sunlight through palm fronds creates shadow patterns on the table. No people visible. Topic: "${topic}". Lifestyle editorial, lush greens, no text.`,
     // 10 — Server Room Glow
-    (topic) => `Rows of server racks in a data center, blue and green LED lights creating geometric patterns in the darkness. A technician's silhouette stands between aisles. Cold, precise, futuristic atmosphere. Topic: "${topic}". Tech infrastructure photography, no text.`,
-    // 11 — Rooftop Golden Hour
-    (topic) => `A man standing on a rooftop at sunset overlooking a city skyline with palm trees. He's looking at his phone, backlit by warm orange and pink sky. Cinematic, contemplative, authentic. Wide shot with skyline context. Topic: "${topic}". No text.`,
-    // 12 — Late Night Code Session
-    (topic) => `Overhead flat-lay of a desk at 2AM — glowing laptop with code on screen, energy drink, mechanical keyboard, scattered sticky notes. The only light is the screen glow and a small desk lamp. Intimate, real. Topic: "${topic}". Cozy developer aesthetic, no text.`,
-    // 13 — Street Art Backdrop
-    (topic) => `A man leaning against a vibrant graffiti-covered wall in an urban alley, arms crossed, wearing clean streetwear. The mural behind him bursts with color — abstract shapes, neon pinks, electric blues. Topic: "${topic}". Urban portrait, high contrast, no text.`,
-    // 14 — Analog Film Texture
-    (topic) => `A candid moment shot on 35mm film — visible grain, warm color shift, light leak on the right edge. A man in a bookstore pulling a book off the shelf, natural overhead lighting. Nostalgic, authentic, imperfect beauty. Topic: "${topic}". Film photography aesthetic, no text.`,
+    (topic) => `Rows of server racks in a data center, blue and green LED lights creating geometric patterns in the darkness. Cold, precise, futuristic atmosphere. No people visible — just the infinite rows of blinking lights. Topic: "${topic}". Tech infrastructure photography, no text.`,
+    // 11 — Voice Waveform Art
+    (topic) => `An abstract audio waveform rendered as a 3D landscape — peaks and valleys of sound visualized in glowing neon gradients. Electric purple to warm gold. Feels like music made visible. Topic: "${topic}". Generative art, no text, no people.`,
+    // 12 — Late Night Desk
+    (topic) => `Overhead flat-lay of a desk at 2AM — glowing laptop with code on screen, energy drink, mechanical keyboard, scattered sticky notes. The only light is the screen glow and a small desk lamp. No people visible. Topic: "${topic}". Cozy developer aesthetic, no text.`,
+    // 13 — AI Chip Macro
+    (topic) => `Extreme close-up of an AI processor chip, golden pins and silicon die visible under dramatic studio lighting. The chip surface reflects rainbow diffractions. Feels premium, powerful, cutting-edge. Topic: "${topic}". Product photography, no text, no people.`,
+    // 14 — Digital Data Stream
+    (topic) => `Abstract visualization of data flowing through fiber optic cables — streams of light in blue, gold, and white racing through translucent glass tubes against a dark background. Feels like information moving at the speed of thought. Topic: "${topic}". Tech art, no text, no people.`,
     // 15 — AI Visualization Abstract
     (topic) => `Abstract visualization of a neural network — glowing nodes connected by luminous threads in deep space. Colors shift from electric blue at the core to warm gold at the edges. Feels like looking at a galaxy made of intelligence. Topic: "${topic}". Data art, generative aesthetic, no text.`,
 ];
