@@ -37,7 +37,7 @@ export async function generateSoraVideo(prompt, options = {}) {
     const apiKey = requireOpenAiApiKey();
     const client = new OpenAI({ apiKey });
 
-    const model = String(options.model || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1.5').trim();
+    const model = String(options.model || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2').trim();
     const seconds = String(options.seconds || process.env.SORA_SECONDS || '8').trim();
     const size = String(options.size || process.env.SORA_SIZE || '720x1280').trim();
     const pollIntervalMs = Number.parseInt(String(options.pollIntervalMs || process.env.SORA_POLL_INTERVAL_MS || '5000'), 10);

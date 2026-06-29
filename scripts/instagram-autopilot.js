@@ -260,7 +260,7 @@ async function generateAiReelFile(caption, provider) {
             tag: 'instagram-reel',
             seconds: process.env.SORA_SECONDS || '8',
             size: process.env.SORA_SIZE || '720x1280',
-            model: process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1.5',
+            model: process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2',
         });
     }
 
