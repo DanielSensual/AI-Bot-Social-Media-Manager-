@@ -556,7 +556,7 @@ export async function generateAITweet(options = {}) {
         prompt,
         provider,
         maxOutputTokens: 300,
-        openaiModel: 'gpt-5.4-mini',
+        openaiModel: 'gpt-5.5',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 

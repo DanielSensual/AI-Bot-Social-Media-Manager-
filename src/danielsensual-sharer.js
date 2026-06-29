@@ -18,7 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { generateGroupCaption, generateStreamingComment, detectLocale } from './share-caption-generator.js';
+import { generateGroupCaption, generateStreamingComment, generateEventComment, detectLocale } from './share-caption-generator.js';
 import { recordGroupFailure, recordGroupShare } from './danielsensual-groups.js';
 
 dotenv.config();
@@ -255,6 +255,7 @@ async function shareToGroup(page, {
     groupName,
     caption = '',
     commentText = '',
+    imagePath = '',
     dryRun = false,
     owned = false,
     identityMode = 'page',
@@ -536,6 +537,108 @@ async function shareToGroup(page, {
 
     await randomDelay(2000, 3000);
 
+    // ── Attach image if provided ──
+    if (imagePath && fs.existsSync(imagePath)) {
+        try {
+            console.log(`   🖼️  Attaching image: ${path.basename(imagePath)}`);
+
+            // Click the "Photo/Video" button in the composer dialog
+            const photoButtonClicked = await page.evaluate(() => {
+                const dialog = document.querySelector('div[role="dialog"]');
+                if (!dialog) return false;
+
+                // Look for the Photo/Video button by aria-label or icon
+                const buttons = Array.from(dialog.querySelectorAll('div[role="button"], div[aria-label]'));
+                const photoBtn = buttons.find(btn => {
+                    const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+                    const text = (btn.textContent || '').toLowerCase();
+                    return label.includes('photo') || label.includes('video') ||
+                           label.includes('foto') || label.includes('image') ||
+                           text.includes('photo/video') || text.includes('foto/video');
+                });
+
+                if (photoBtn) {
+                    photoBtn.click();
+                    return true;
+                }
+
+                // Fallback: look for the green camera/image icon area at bottom of composer
+                const iconBtns = Array.from(dialog.querySelectorAll('[role="button"]'));
+                for (const btn of iconBtns) {
+                    const svg = btn.querySelector('svg, img, i');
+                    if (svg) {
+                        const rect = btn.getBoundingClientRect();
+                        const dialogRect = dialog.getBoundingClientRect();
+                        // Photo button is typically at the bottom of the dialog
+                        if ((rect.top - dialogRect.top) > (dialogRect.height * 0.6)) {
+                            const style = window.getComputedStyle(btn);
+                            const color = style.color || '';
+                            // Green-ish icon (Facebook's photo button is green)
+                            if (color.includes('rgb(69') || color.includes('rgb(45') || btn.querySelector('[style*="color"]')) {
+                                btn.click();
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                return false;
+            });
+
+            if (photoButtonClicked) {
+                await randomDelay(1000, 2000);
+
+                // Wait for file chooser and accept the image file
+                const [fileChooser] = await Promise.all([
+                    page.waitForFileChooser({ timeout: 10000 }),
+                    // Some Facebook UIs auto-open the file dialog; if not, we already clicked the button
+                    page.evaluate(() => {
+                        // Try to find and click any file input that appeared
+                        const inputs = document.querySelectorAll('input[type="file"]');
+                        if (inputs.length > 0) {
+                            const lastInput = inputs[inputs.length - 1];
+                            lastInput.click();
+                        }
+                    }),
+                ]).catch(() => [null]);
+
+                if (fileChooser) {
+                    await fileChooser.accept([imagePath]);
+                    console.log('   📤 Image file selected, waiting for upload...');
+
+                    // Wait for the image preview/thumbnail to appear (upload complete)
+                    let uploadComplete = false;
+                    for (let poll = 0; poll < 20; poll++) {
+                        try {
+                            uploadComplete = await page.evaluate(() => {
+                                const dialog = document.querySelector('div[role="dialog"]');
+                                if (!dialog) return false;
+                                // Look for image preview elements (Facebook shows a thumbnail)
+                                const imgs = dialog.querySelectorAll('img[src*="blob:"], img[src*="scontent"], div[style*="background-image"]');
+                                return imgs.length > 0;
+                            });
+                            if (uploadComplete) break;
+                        } catch { /* frame may detach during upload */ }
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+
+                    if (uploadComplete) {
+                        console.log('   ✅ Image uploaded successfully');
+                    } else {
+                        console.log('   ⚠️ Image upload may not have completed — proceeding anyway');
+                    }
+                    await randomDelay(1500, 2500);
+                } else {
+                    console.log('   ⚠️ File chooser did not appear — posting without image');
+                }
+            } else {
+                console.log('   ⚠️ Photo/Video button not found — posting without image');
+            }
+        } catch (imgErr) {
+            console.log(`   ⚠️ Image attach failed: ${imgErr.message} — posting text-only`);
+        }
+    }
+
     // ── Click Post ──
     if (dryRun) {
         console.log('   🔒 DRY RUN — skipping Post button click');
@@ -667,6 +770,8 @@ export async function shareToAllGroups(options = {}) {
         batchSize = 14,
         dryRun = false,
         headless = true,
+        imagePath = '',
+        promotedEvent = null,
     } = options;
     const runtime = resolveShareRuntime(options);
 
@@ -693,8 +798,9 @@ export async function shareToAllGroups(options = {}) {
     console.log(`   Identity:  ${runtime.identityMode === 'profile' ? 'Personal profile' : 'Daniel Sensual page'}`);
     console.log(`   Video:     ${postUrl.substring(0, 70)}...`);
     console.log(`   Groups:    ${targetGroups.length}${batch ? ` (batch ${batch})` : ''}`);
-    console.log(`   Captions:  AI-generated (locale-aware)`);
-    console.log(`   Links:     In comments (Spotify + Apple Music)`);
+    console.log(`   Captions:  Grok 4.3 (locale-aware${promotedEvent ? `, event: ${promotedEvent.title}` : ''})`);
+    console.log(`   Image:     ${imagePath ? `✅ ${path.basename(imagePath)}` : '❌ text-only'}`);
+    console.log(`   Links:     In comments (${promotedEvent ? 'RSVP + venue' : 'Spotify + Apple Music'})`);
     console.log(`   Time:      ${timestamp()}`);
     console.log('');
 
@@ -733,12 +839,19 @@ export async function shareToAllGroups(options = {}) {
             console.log(`${label} 📌 ${group.name}`);
 
             try {
-                // V2: Generate unique AI caption per group
-                const captionResult = await generateGroupCaption({ groupName: group.name });
+                // V4: Generate unique AI caption per group (Grok 4.3 + event context)
+                const captionResult = await generateGroupCaption({
+                    groupName: group.name,
+                    event: promotedEvent || null,
+                });
                 const locale = detectLocale(group.name);
-                const streamingComment = `${postUrl}\n\n${generateStreamingComment(locale)}`;
 
-                console.log(`   🤖 Caption (${captionResult.locale}/${captionResult.source}): "${captionResult.caption.substring(0, 60)}..."`);
+                // Use event RSVP comment for event posts, streaming links for music posts
+                const commentText = promotedEvent
+                    ? generateEventComment(locale, promotedEvent)
+                    : `${postUrl}\n\n${generateStreamingComment(locale)}`;
+
+                console.log(`   🤖 Caption (${captionResult.locale}/${captionResult.source}${captionResult.isEvent ? '/event' : ''}): "${captionResult.caption.substring(0, 60)}..."`);
 
                 // Retry logic — 1 retry with 10s backoff for transient failures
                 let lastErr = null;
@@ -749,7 +862,8 @@ export async function shareToAllGroups(options = {}) {
                             groupUrl: group.url,
                             groupName: group.name,
                             caption: captionResult.caption,
-                            commentText: streamingComment,
+                            commentText,
+                            imagePath: imagePath || '',
                             dryRun,
                             owned: group.owned || false,
                             identityMode: runtime.identityMode,

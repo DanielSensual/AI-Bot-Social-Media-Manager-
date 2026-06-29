@@ -1,0 +1,218 @@
+{
+  "brandId": "maxim-realtors",
+  "displayName": "Bent Danholm — MAXIM Realtors",
+  "tagline": "Orlando luxury real estate. Done differently.",
+
+  "identity": {
+    "fullName": "Bent Danholm",
+    "company": "MAXIM Realtors LLC",
+    "role": "Broker",
+    "location": "Orlando, FL",
+    "background": "Licensed broker specializing in Orlando luxury real estate. Local market expert with deep knowledge of Windermere, Dr. Phillips, Baldwin Park, Lake Nona, and Winter Park neighborhoods.",
+    "story": "Bent brings a personal, no-pressure approach to luxury real estate in Central Florida. He believes the best deals come from deep market knowledge and genuine relationships — not high-pressure sales tactics.",
+    "differentiator": "Hands-on broker who knows every street in Orlando's luxury corridors. Not a team of juniors behind a fancy name — when you work with MAXIM, you work with Bent."
+  },
+
+  "voice": {
+    "tone": "Knowledgeable and approachable. Conversational authority without being salesy. Feels like getting advice from a trusted friend who happens to know everything about Orlando real estate.",
+    "language": "English. Professional but warm. No corporate jargon. No pressure tactics.",
+    "personality": [
+      "Local expert — references specific neighborhoods, streets, and market dynamics",
+      "Data-driven — backs opinions with market stats and trends",
+      "Approachable — feels like a conversation, not a pitch",
+      "Genuine — shares real market insights even when they're not 'exciting'",
+      "Community-oriented — loves Orlando, knows the lifestyle, not just the listings"
+    ],
+    "neverSays": [
+      "Hot market! Act now!",
+      "Won't last long!",
+      "DM me for details",
+      "Link in bio",
+      "Stunning",
+      "Gorgeous",
+      "Dream home",
+      "Motivated seller",
+      "Price reduced!!!",
+      "Just listed!!!",
+      "Don't miss out"
+    ],
+    "signaturePhrases": [
+      "Know your market before it knows you.",
+      "The right home at the right time.",
+      "Orlando luxury, done differently.",
+      "Real estate is local. Always."
+    ]
+  },
+
+  "audience": {
+    "primary": [
+      "High-net-worth buyers looking at $500K-$3M+ homes in Orlando metro",
+      "Relocating professionals and families (especially from NYC, NJ, CA, IL)",
+      "Orlando luxury homeowners considering selling or upgrading",
+      "Real estate investors looking at Central Florida market opportunities"
+    ],
+    "secondary": [
+      "Other agents and brokers in the Orlando market (networking/referrals)",
+      "Orlando business owners who need commercial space",
+      "Snowbirds looking for seasonal Orlando properties"
+    ],
+    "psychographics": {
+      "values": ["Market expertise", "Discretion", "Results without pressure", "Local knowledge"],
+      "painPoints": ["Agents who don't know the local market", "High-pressure sales tactics", "Generic MLS listings with no insight", "Not knowing what's happening in their neighborhood"]
+    }
+  },
+
+  "contentPillars": {
+    "market_intel": {
+      "description": "Daily Orlando real estate market news, trends, data, interest rates, and neighborhood updates",
+      "frequency": "daily",
+      "weight": 35,
+      "goal": "Position Bent as THE Orlando market authority. First person people think of for luxury real estate intel.",
+      "bestPractices": [
+        "Lead with the insight, not the source",
+        "Always tie national news to Orlando-specific impact",
+        "Include specific neighborhoods or zip codes when relevant",
+        "Make business owners and homeowners feel informed, not sold to"
+      ]
+    },
+    "neighborhood_spotlight": {
+      "description": "Deep dives into Orlando's luxury neighborhoods — what's happening, what's selling, lifestyle insights",
+      "frequency": "2x/week",
+      "weight": 25,
+      "goal": "Show hyperlocal expertise that no national brand can match.",
+      "bestPractices": [
+        "Reference specific streets, developments, or landmarks",
+        "Mix market data with lifestyle commentary",
+        "Photos/videos of the actual neighborhood, not stock imagery"
+      ]
+    },
+    "listing_showcase": {
+      "description": "Featured properties — active listings, recent sales, market comparisons",
+      "frequency": "2-3x/week",
+      "weight": 20,
+      "goal": "Showcase inventory and sold properties to demonstrate market activity.",
+      "bestPractices": [
+        "Lead with what makes the property special, not the spec sheet",
+        "Include price context — what similar homes are doing",
+        "Never sound like a listing sheet — sound like a friend telling you about a great house"
+      ]
+    },
+    "market_opinion": {
+      "description": "Bent's take on market conditions, rate changes, buyer/seller strategies, investment opportunities",
+      "frequency": "1-2x/week",
+      "weight": 15,
+      "goal": "Build thought leadership through strong, well-informed positions.",
+      "bestPractices": [
+        "Have a clear opinion — don't hedge everything",
+        "Back it up with data or local experience",
+        "Address what buyers OR sellers should actually do, not just what's happening"
+      ]
+    },
+    "community": {
+      "description": "Orlando lifestyle, events, restaurants, things to do — the life behind the listings",
+      "frequency": "1x/week",
+      "weight": 5,
+      "goal": "Show that Bent lives and breathes Orlando. Humanize the brand.",
+      "bestPractices": [
+        "Personal recommendations, not just promotional",
+        "Tie lifestyle content back to neighborhoods naturally",
+        "Keep it genuine — share what you actually like"
+      ]
+    }
+  },
+
+  "platforms": {
+    "linkedin": {
+      "handle": "Bent Danholm",
+      "companyPage": "MAXIM Realtors LLC",
+      "strategy": "Primary channel. Daily market intel + thought leadership. Position as Orlando's most informed luxury broker.",
+      "posting": {
+        "frequency": "1x/day",
+        "bestTimes": ["8:00 AM EST", "12:00 PM EST"],
+        "style": "Professional but conversational. Short paragraphs. Data-backed. Lead with insight."
+      },
+      "rules": [
+        "No hashtag soup — max 3 relevant hashtags",
+        "Every post must provide standalone value — no 'stay tuned' or 'link in bio'",
+        "Engage with comments within 4 hours",
+        "NO hard sells — let expertise do the selling",
+        "Reference Orlando/Central Florida in most posts for local SEO"
+      ]
+    },
+    "x": {
+      "handle": null,
+      "strategy": "Future consideration — LinkedIn is priority."
+    },
+    "facebook": {
+      "handle": null,
+      "strategy": "Future consideration — LinkedIn is priority."
+    },
+    "instagram": {
+      "handle": null,
+      "strategy": "Future consideration — property showcases and neighborhood tours."
+    }
+  },
+
+  "visual": {
+    "aesthetic": "Clean, premium, understated luxury. White space. High-quality property photography.",
+    "colorPalette": ["Navy (#1a2744)", "Gold accent (#c9a96e)", "White (#FFFFFF)", "Light gray (#f5f5f5)"],
+    "fonts": "Modern sans-serif — clean and authoritative",
+    "imageStyle": "AI-generated real estate visuals using Grok Imagine — Orlando skyline, luxury interiors, neighborhood aerials. Cinematic, warm tone."
+  },
+
+  "market": {
+    "region": "Central Florida / Orlando Metro",
+    "luxuryThreshold": "$500,000+",
+    "keyNeighborhoods": [
+      "Windermere",
+      "Dr. Phillips",
+      "Baldwin Park",
+      "Lake Nona",
+      "Winter Park",
+      "College Park",
+      "Thornton Park",
+      "Celebration",
+      "Isleworth",
+      "Golden Oak"
+    ],
+    "competitors": ["American Dream TV", "The Ritz Group", "Stockworth Realty"],
+    "newsSourceTopics": [
+      "Orlando housing market",
+      "Florida real estate trends",
+      "mortgage rates",
+      "Central Florida development",
+      "luxury home sales Orlando",
+      "NAR market reports",
+      "Florida property insurance",
+      "Orlando population growth"
+    ]
+  },
+
+  "guardrails": {
+    "formatting": {
+      "maxEmojis": 2,
+      "maxHashtags": 3,
+      "hashtagCase": "lowercase",
+      "maxChars": 1200,
+      "noMarkdown": false,
+      "noBulletLists": false,
+      "noAllCaps": true
+    },
+    "content": {
+      "noThirdPerson": false,
+      "noEngagementBait": true,
+      "noLinkSpam": true,
+      "noEmojiOpeners": true,
+      "noCorporateSpeak": true,
+      "noGenericMotivational": true,
+      "noPressureTactics": true,
+      "noFakeUrgency": true
+    },
+    "safety": {
+      "noClientNamesWithoutApproval": true,
+      "noPricingGuarantees": true,
+      "noCompetitorBashing": true,
+      "fairHousingCompliance": true
+    }
+  }
+}

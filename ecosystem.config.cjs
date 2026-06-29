@@ -598,6 +598,50 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+
+        // ── Bent Danholm — LinkedIn Content Engine ───────────────────────
+        // Client: Danholm Collection / MAXIM Realtors LLC
+        // Schedule: Mon/Wed/Fri at 8:30 AM (LinkedIn prime time)
+        // Uses bent-brain.md persona + weighted topic selection
+        {
+            name: 'bent-linkedin-monday',
+            script: 'scripts/bent-linkedin-daily.js',
+            cwd: __dirname,
+            cron_restart: '30 8 * * 1', // 8:30 AM Monday
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/bent-linkedin-error.log',
+            out_file: './logs/pm2/bent-linkedin-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'bent-linkedin-wednesday',
+            script: 'scripts/bent-linkedin-daily.js',
+            cwd: __dirname,
+            cron_restart: '30 8 * * 3', // 8:30 AM Wednesday
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/bent-linkedin-error.log',
+            out_file: './logs/pm2/bent-linkedin-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
+        {
+            name: 'bent-linkedin-friday',
+            script: 'scripts/bent-linkedin-daily.js',
+            cwd: __dirname,
+            cron_restart: '30 8 * * 5', // 8:30 AM Friday
+            watch: false,
+            autorestart: false,
+            error_file: './logs/pm2/bent-linkedin-error.log',
+            out_file: './logs/pm2/bent-linkedin-out.log',
+            merge_logs: true,
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            env: { NODE_ENV: 'production', TZ: 'America/New_York' },
+        },
     ],
 };
 

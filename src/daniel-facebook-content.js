@@ -325,7 +325,7 @@ export function createDanielFacebookContentBuilder(deps = {}) {
                     prompt,
                     provider,
                     maxOutputTokens: 800,
-                    openaiModel: 'gpt-5.4-mini',
+                    openaiModel: 'gpt-5.5',
                     geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
                 });
 

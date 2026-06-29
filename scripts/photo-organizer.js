@@ -143,7 +143,7 @@ async function classifyItem(item) {
 
     try {
         const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: 'gpt-5.5',
             max_tokens: 150,
             messages: [{
                 role: 'user',

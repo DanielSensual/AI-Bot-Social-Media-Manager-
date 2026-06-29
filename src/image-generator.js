@@ -212,7 +212,7 @@ function buildImagePrompt(postText, style, pillar) {
 }
 
 /**
- * Generate image using OpenAI DALL-E
+ * Generate image using OpenAI (gpt-image-2 or legacy DALL-E)
  */
 async function generateWithDallE(prompt, size) {
     console.log(`🎨 Generating image with OpenAI (${OPENAI_IMAGE_MODEL})...`);
@@ -224,21 +224,29 @@ async function generateWithDallE(prompt, size) {
         size,
     };
 
-    // gpt-image-1.5 doesn't use 'quality' param, dall-e-3 does
-    if (OPENAI_IMAGE_MODEL.includes('dall-e')) {
+    // gpt-image-2 uses low/medium/high quality tiers
+    if (OPENAI_IMAGE_MODEL.startsWith('gpt-image')) {
+        params.quality = 'medium';
+    } else if (OPENAI_IMAGE_MODEL.includes('dall-e')) {
         params.quality = 'standard';
     }
 
     const response = await openaiClient.images.generate(params);
 
-    const imageUrl = response.data[0]?.url;
-    if (!imageUrl) throw new Error('DALL-E returned no image URL');
-
-    // Download and save locally
     const imagePath = path.join(IMAGE_CACHE_DIR, `ghostai-${Date.now()}.png`);
-    const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(60_000) });
-    const buffer = Buffer.from(await imageResponse.arrayBuffer());
-    fs.writeFileSync(imagePath, buffer);
+
+    // gpt-image-2 returns b64_json by default; dall-e returns url
+    const imageData = response.data[0];
+    if (imageData?.b64_json) {
+        const buffer = Buffer.from(imageData.b64_json, 'base64');
+        fs.writeFileSync(imagePath, buffer);
+    } else if (imageData?.url) {
+        const imageResponse = await fetch(imageData.url, { signal: AbortSignal.timeout(60_000) });
+        const buffer = Buffer.from(await imageResponse.arrayBuffer());
+        fs.writeFileSync(imagePath, buffer);
+    } else {
+        throw new Error('OpenAI returned no image data');
+    }
 
     console.log(`✅ Image generated: ${imagePath}`);
     return imagePath;

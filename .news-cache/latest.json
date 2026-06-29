@@ -1,57 +1,59 @@
 {
-  "scrapedAt": "2026-05-01T21:45:01.710Z",
+  "scrapedAt": "2026-06-29T14:45:01.418Z",
   "count": 5,
   "items": [
     {
-      "title": "AI uses less water than the public thinks",
-      "link": "https://californiawaterblog.com/2026/04/26/ai-water-use-distractions-and-lessons-for-california/",
-      "pubDate": "2026-05-01T17:18:58.000Z",
-      "summary": "HN Score: 272 | 246 comments",
-      "source": "Hacker News",
-      "sourceWeight": 10,
-      "hnScore": 272,
-      "hnComments": 246,
-      "relevanceScore": 18.285636666666665
-    },
-    {
-      "title": "The Gay Jailbreak Technique",
-      "link": "https://github.com/Exocija/ZetaLib/blob/main/The%20Gay%20Jailbreak/The%20Gay%20Jailbreak.md",
-      "pubDate": "2026-05-01T16:59:35.000Z",
-      "summary": "HN Score: 246 | 82 comments",
-      "source": "Hacker News",
-      "sourceWeight": 9,
-      "hnScore": 246,
-      "hnComments": 82,
-      "relevanceScore": 16.70258111111111
-    },
-    {
-      "title": "Did you know you can&#8217;t steal a charity? Don&#8217;t worry. Elon Musk will remind you.",
-      "link": "https://techcrunch.com/podcast/did-you-know-you-cant-steal-a-charity-dont-worry-elon-musk-will-remind-you/",
-      "pubDate": "2026-05-01T17:44:29.000Z",
-      "summary": "Elon Musk spent the better part of three days on the witness stand this week in his lawsuit against OpenAI, and it&#8217;s already getting messy. Emails, texts, and his own tweets are surfacing in court, and there are plenty more witnesses to come. Musk&#8217;s argument against OpenAI? By converting the company to a for-profit model, Sam Altman betrayed the “nonprofit for the [&#8230;]",
+      "title": "Omen AI&#8217;s plan to optimize data centers is all wet",
+      "link": "https://techcrunch.com/2026/06/29/omen-ais-plan-to-optimize-data-centers-is-all-wet/",
+      "pubDate": "2026-06-29T13:00:00.000Z",
+      "summary": "Omen AI raised a $31 million Series A to monitor chip coolant and stop bacterial outbreaks in data centers.",
       "source": "TechCrunch AI",
       "sourceWeight": 10,
-      "relevanceScore": 15.990914444444446
+      "relevanceScore": 18.249608333333335
     },
     {
-      "title": "Ubuntu infrastructure has been down for more than a day",
-      "link": "https://arstechnica.com/security/2026/05/ubuntu-infrastructure-has-been-down-for-more-than-a-day/",
-      "pubDate": "2026-05-01T19:12:26.000Z",
-      "summary": "The outage has hampered communication concerning a critical vulnerability that gives root.",
-      "source": "Ars Technica AI",
-      "sourceWeight": 8,
-      "relevanceScore": 15.456747777777778
-    },
-    {
-      "title": "Spotify adds 'Verified' badges to distinguish human artists from AI",
-      "link": "https://www.bbc.com/news/articles/c5yerr4m1yno",
-      "pubDate": "2026-05-01T16:42:41.000Z",
-      "summary": "HN Score: 158 | 178 comments",
+      "title": "HackerRank open sourced its ATS. My resume scored 90/100. Oh wait 74. No – 88",
+      "link": "https://danunparsed.com/p/hackerrank-open-source-ats",
+      "pubDate": "2026-06-29T01:44:40.000Z",
+      "summary": "HN Score: 731 | 310 comments",
       "source": "Hacker News",
-      "sourceWeight": 8,
-      "hnScore": 158,
-      "hnComments": 178,
-      "relevanceScore": 14.540914444444445
+      "sourceWeight": 10,
+      "hnScore": 731,
+      "hnComments": 310,
+      "relevanceScore": 15
+    },
+    {
+      "title": "GLM 5.2 beats Claude in our benchmarks",
+      "link": "https://semgrep.dev/blog/2026/we-have-mythos-at-home-glm-52-beats-claude-in-our-cyber-benchmarks/",
+      "pubDate": "2026-06-28T17:50:47.000Z",
+      "summary": "HN Score: 991 | 461 comments",
+      "source": "Hacker News",
+      "sourceWeight": 10,
+      "hnScore": 991,
+      "hnComments": 461,
+      "relevanceScore": 15
+    },
+    {
+      "title": "I used Claude Code to get a second opinion on my MRI",
+      "link": "https://antoine.fi/mri-analysis-using-claude-code-opus",
+      "pubDate": "2026-06-28T16:35:19.000Z",
+      "summary": "HN Score: 510 | 637 comments",
+      "source": "Hacker News",
+      "sourceWeight": 10,
+      "hnScore": 510,
+      "hnComments": 637,
+      "relevanceScore": 15
+    },
+    {
+      "title": "Professor denounces mass AI fraud on an exam at Brown",
+      "link": "https://english.elpais.com/education/2026-06-28/ai-fraud-at-brown-university-academic-integrity-is-at-risk.html",
+      "pubDate": "2026-06-28T16:41:12.000Z",
+      "summary": "HN Score: 485 | 633 comments",
+      "source": "Hacker News",
+      "sourceWeight": 10,
+      "hnScore": 485,
+      "hnComments": 633,
+      "relevanceScore": 14.85
     }
   ]
 }

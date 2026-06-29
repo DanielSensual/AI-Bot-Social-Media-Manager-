@@ -31,6 +31,7 @@ function restoreTokensFromEnv() {
     const tokenEnvs = {
         'LINKEDIN_TOKEN_JSON': '.linkedin-token.json',
         'LINKEDIN_TOKEN_DANIEL_JSON': '.linkedin-token-daniel.json',
+        'LINKEDIN_TOKEN_BENT_JSON': '.linkedin-token-bent.json',
     };
 
     for (const [envKey, filename] of Object.entries(tokenEnvs)) {
@@ -77,6 +78,9 @@ function startHealthServer() {
 }
 
 // ── Bot process management ──────────────────────────────────────────────────
+const MAX_RESTARTS = 10;
+const restartCounts = {}; // Track restart attempts per bot
+
 const BOT_CONFIGS = [
     {
         name: 'ghostai-bot',
@@ -100,6 +104,11 @@ const BOT_CONFIGS = [
         name: 'danielsensual',
         script: 'scripts/danielsensual-scheduler.js',
         description: 'Bachata content — music/dance/events (6x daily)',
+    },
+    {
+        name: 'bent-linkedin',
+        script: 'scripts/bent-linkedin-scheduler.js',
+        description: 'Bent Danholm LinkedIn — luxury real estate (Mon/Wed/Fri 8:30 AM)',
     },
 ];
 
@@ -135,9 +144,17 @@ function startBot(config) {
         botStatus[config.name] = `exited (code=${code}, signal=${signal})`;
         console.warn(`⚠️ ${config.name} exited (code=${code}, signal=${signal})`);
 
-        // Auto-restart after 30 seconds if it crashes
+        // Auto-restart after 30 seconds if it crashes (up to MAX_RESTARTS)
         if (code !== 0 && !signal) {
-            console.log(`🔄 Restarting ${config.name} in 30s...`);
+            restartCounts[config.name] = (restartCounts[config.name] || 0) + 1;
+
+            if (restartCounts[config.name] > MAX_RESTARTS) {
+                console.error(`💀 FATAL: ${config.name} has crashed ${MAX_RESTARTS} times — giving up. Manual intervention required.`);
+                botStatus[config.name] = `FATAL: exceeded ${MAX_RESTARTS} restarts`;
+                return;
+            }
+
+            console.log(`🔄 Restarting ${config.name} in 30s... (attempt ${restartCounts[config.name]}/${MAX_RESTARTS})`);
             setTimeout(() => startBot(config), 30_000);
         }
     });

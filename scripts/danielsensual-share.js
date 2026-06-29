@@ -19,6 +19,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { saveSession, shareToAllGroups, acquireLock, resolveShareRuntime } from '../src/danielsensual-sharer.js';
 import { getShareGroups, getGroupShareStatus, getGroupHealth, resetGroupFailures } from '../src/danielsensual-groups.js';
+import { getPromotedEvent } from '../src/share-caption-generator.js';
+import { getPromotedEventImage } from '../src/share-image-manager.js';
 
 dotenv.config();
 
@@ -50,10 +52,12 @@ const flags = {
     prepare: args.includes('--prepare') || args.includes('--set-url-only'),
     dryRun: args.includes('--dry-run') || args.includes('-d'),
     help: args.includes('--help') || args.includes('-h'),
+    noEvent: args.includes('--no-event'),
     url: getFlag('url'),
     batch: parseInt(getFlag('batch') || '0', 10),
     max: parseInt(getFlag('max') || '0', 10),
     caption: getFlag('caption'),
+    image: getFlag('image'),
     identity: normalizeIdentityMode(getFlag('identity') || process.env.DS_SHARE_IDENTITY_MODE),
 };
 
@@ -124,6 +128,8 @@ function showHelp() {
     console.log('  --login                Open browser for one-time Facebook login');
     console.log('  --url=<FB_URL>         Set the video/reel URL to share');
     console.log('  --identity=page|profile Force posting identity (default from bot)');
+    console.log('  --image=/path/to/img   Attach a local image (flyer) to each post');
+    console.log('  --no-event             Skip auto event detection (music-only mode)');
     console.log('  --batch=1-7            Share to a specific batch of groups');
     console.log('  --max=N                Limit to N groups (overrides batch)');
     console.log('  --caption="text"       Optional caption to include');
@@ -302,6 +308,40 @@ async function main() {
         targetGroups = targetGroups.slice(0, flags.max);
     }
 
+    // ── Event Detection + Image Download ──
+    let imagePath = flags.image || '';
+    let promotedEvent = null;
+
+    if (!flags.noEvent) {
+        try {
+            const eventImage = await getPromotedEventImage({ imagePath: flags.image });
+            if (eventImage) {
+                promotedEvent = eventImage.event;
+                imagePath = eventImage.imagePath;
+
+                const urgency = promotedEvent.isToday ? 'TONIGHT'
+                    : promotedEvent.isTomorrow ? 'TOMORROW'
+                    : `this ${promotedEvent.day}`;
+
+                console.log('');
+                console.log(`🎭 Promoting: ${promotedEvent.title} (${urgency})`);
+                console.log(`   📍 ${promotedEvent.venue}, ${promotedEvent.city}`);
+                console.log(`   🖼️  Flyer: ${imagePath}`);
+
+                // Override postUrl to event page when promoting an event
+                postUrl = promotedEvent.pageUrl || postUrl;
+                console.log(`   🔗 Post URL overridden to: ${postUrl}`);
+                console.log('');
+            } else {
+                console.log('\n🎶 No active event to promote — sharing music\n');
+            }
+        } catch (eventErr) {
+            console.log(`⚠️ Event detection failed: ${eventErr.message} — continuing without event`);
+        }
+    } else {
+        console.log('\n⏭️  Event detection skipped (--no-event)\n');
+    }
+
     // Run the sharer — groups are already filtered, no batch slicing needed
     const result = await shareToAllGroups({
         postUrl,
@@ -311,6 +351,8 @@ async function main() {
         batchSize: targetGroups.length,
         dryRun: flags.dryRun,
         headless: true,
+        imagePath,
+        promotedEvent,
         identityMode: flags.identity,
         botLabel: DEFAULT_BOT_NAME,
         entryScript: DEFAULT_ENTRY_SCRIPT,

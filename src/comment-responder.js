@@ -130,7 +130,7 @@ Reply:`;
     const { text } = await generateText({
         prompt,
         maxOutputTokens: 200,
-        openaiModel: 'gpt-5.4-mini',
+        openaiModel: 'gpt-5.5',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 

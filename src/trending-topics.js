@@ -36,7 +36,7 @@ async function fetchTrendsViaGrok() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'grok-4-mini',
+                model: 'grok-4.3',
                 messages: [
                     {
                         role: 'system',

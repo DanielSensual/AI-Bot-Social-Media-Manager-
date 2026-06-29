@@ -127,7 +127,7 @@ export async function generateSelfReply(originalPost = '', brandId) {
         const { text } = await generateText({
             prompt,
             maxOutputTokens: 150,
-            openaiModel: 'gpt-5.4-mini',
+            openaiModel: 'gpt-5.5',
         });
         return truncate(parseAIResponse(text));
     } catch (err) {
@@ -152,7 +152,7 @@ export async function generateProactivePost(category = null, brandId) {
         const { text, provider, model } = await generateText({
             prompt,
             maxOutputTokens: 200,
-            openaiModel: 'gpt-5.4-mini',
+            openaiModel: 'gpt-5.5',
         });
         return {
             text: truncate(parseAIResponse(text)),
@@ -180,7 +180,7 @@ export async function generateEngagementReply(threadText, authorUsername = 'some
         const { text } = await generateText({
             prompt,
             maxOutputTokens: 120,
-            openaiModel: 'gpt-5.4-mini',
+            openaiModel: 'gpt-5.5',
         });
         return truncate(parseAIResponse(text), 500);
     } catch (err) {

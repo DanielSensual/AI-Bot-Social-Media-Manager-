@@ -27,6 +27,7 @@ export const GROUPS = [
         owned: true,
         priority: 1,
         pillars: ['music', 'dance', 'event'],
+        pending: true, // Group unavailable on Facebook as of 2026-06-29
     },
 
     // === Bachata & Dance Groups ===

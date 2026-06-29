@@ -356,7 +356,7 @@ Do not use markdown lists or signatures.${memoryContext ? '\n\nYou have memory o
                 messages: memoryHistory,
                 userMessage: latestMessage || conversationContext,
                 maxOutputTokens: 500,
-                openaiModel: 'gpt-5.4-mini',
+                openaiModel: 'gpt-5.5',
             });
 
             console.log(`   🧠 Memory-augmented response (${memoryHistory.length} prior messages)`);
@@ -372,7 +372,7 @@ Do not use markdown lists or signatures.${memoryContext ? '\n\nYou have memory o
     const { text } = await generateTextFn({
         prompt,
         maxOutputTokens: 500,
-        openaiModel: 'gpt-5.4-mini',
+        openaiModel: 'gpt-5.5',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 

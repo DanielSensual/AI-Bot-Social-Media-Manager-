@@ -382,7 +382,7 @@ OUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text
     const { text } = await generateText({
         prompt,
         maxOutputTokens: 600,
-        openaiModel: 'gpt-5.4-mini',
+        openaiModel: 'gpt-5.5',
         geminiModel: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
     });
 

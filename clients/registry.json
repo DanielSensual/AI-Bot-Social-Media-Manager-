@@ -1,0 +1,26 @@
+{
+  "clients": [
+    {
+      "id": "bent-danholm",
+      "name": "Bent Danholm",
+      "brand": "Danholm Collection",
+      "brokerage": "MAXIM Realtors LLC",
+      "platforms": {
+        "linkedin": {
+          "enabled": true,
+          "profile": "bent",
+          "schedule": {
+            "days": [1, 3, 5],
+            "time": "08:30",
+            "timezone": "America/New_York"
+          },
+          "brainFile": "bent-brain.md",
+          "script": "scripts/bent-linkedin-daily.js"
+        }
+      },
+      "status": "active",
+      "retainer": "$1,000/mo",
+      "startDate": "2026-05-16"
+    }
+  ]
+}

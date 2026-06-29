@@ -264,7 +264,7 @@ async function generateCaption(topic) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'gpt-5.5',
             messages: [{
                 role: 'user',
                 content: `Write an Instagram Reel caption for this AI news topic: "${topic}"

@@ -4,14 +4,14 @@
 # ==============================================================================
 
 # Stage 1: Install dependencies
-FROM node:20-slim AS deps
+FROM node:22-slim AS deps
 
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Stage 2: Production image
-FROM node:20-slim
+FROM node:22-slim
 
 # System deps for better-sqlite3 native addon + puppeteer (chromium)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -31,6 +31,8 @@ COPY package.json ./
 COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY brands/ ./brands/
+COPY bent-brain.md ./
+COPY clients/ ./clients/
 
 # Create data directory for SQLite (mountable volume)
 RUN mkdir -p /app/data /app/logs && chown -R ghostai:ghostai /app
