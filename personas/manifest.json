@@ -279,8 +279,9 @@
         }
       },
       "character": {
-        "description": "Nordic woman, platinum-blonde voluminous wavy bob, bright blue eyes, glam. Canon = HeyGen groups (confirmed 2026-07-05). Site portrait OUTDATED.",
-        "file": "GhostAIWebsite/_agents/workflows/ai-influencer-reel/characters/valkyra.md"
+        "description": "Nordic woman, blonde wavy bob, bright blue eyes, glam. LOCKED LOOK (Daniel 2026-07-05): \"Pink Glamour Queen\" — blush-pink satin bustier dress (HeyGen Valkyra Model 4). Anchors: GhostAIWebsite/_agents/workflows/ai-influencer-reel/characters/refs/valkyra-anchor-01..04.jpg",
+        "file": "GhostAIWebsite/_agents/workflows/ai-influencer-reel/characters/valkyra.md",
+        "lane": "pink-glam (confirmed)"
       }
     },
     "jordan": {
