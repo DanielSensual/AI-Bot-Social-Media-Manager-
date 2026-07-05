@@ -15,6 +15,8 @@ import { loadBrand, getBrandPrompt, getNeverSayList } from './brand-loader.js';
 import { smartPillarPick } from './smart-planner.js';
 import { formatProofBlock, getVerifiedEntries } from './proof-bank.js';
 import { getRecent } from './post-history.js';
+import { getEngagementByPostId } from './engagement-pull.js';
+import { getTopPerformingExamples } from './content-feedback.js';
 
 dotenv.config();
 
@@ -46,14 +48,34 @@ function buildBrainContext() {
     try {
         const recent = getRecent(15);
         if (recent.length > 0) {
+            let engagement = new Map();
+            try {
+                engagement = getEngagementByPostId();
+            } catch { /* engagement log not built yet */ }
+
             const lines = recent
                 .slice(-15)
                 .reverse()
-                .map(p => `- ${String(p.text || '').split('\n')[0].slice(0, 90)}`);
-            recentBlock = `═══ RECENT POSTS (do NOT reuse these openers/framings) ═══\n${lines.join('\n')}`;
+                .map(p => {
+                    const opener = String(p.text || '').split('\n')[0].slice(0, 90);
+                    const e = p.id != null ? engagement.get(p.id) : null;
+                    const perf = e ? ` (${e.likes}❤ ${e.comments}💬 ${e.shares}🔁)` : '';
+                    return `- ${opener}${perf}`;
+                });
+            recentBlock = `═══ RECENT POSTS (do NOT reuse these openers/framings; engagement shown where measured) ═══\n${lines.join('\n')}`;
         }
     } catch {
         // post history unavailable (fresh install) — proceed without it
+    }
+
+    let topBlock = '';
+    try {
+        const top = getTopPerformingExamples(3);
+        if (top.length > 0) {
+            topBlock = `═══ TOP PERFORMERS (emulate the ENERGY and structure, never the words) ═══\n${top.map(t => `- ${String(t).replace(/\n/g, ' ').slice(0, 120)}`).join('\n')}`;
+        }
+    } catch {
+        // no performance data yet
     }
 
     let bannedBlock = '';
@@ -67,7 +89,7 @@ function buildBrainContext() {
         // no banned list — brain's own retired list still applies
     }
 
-    return [proofBlock, recentBlock, bannedBlock].filter(Boolean).join('\n\n');
+    return [proofBlock, recentBlock, topBlock, bannedBlock].filter(Boolean).join('\n\n');
 }
 
 /**

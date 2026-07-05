@@ -18,6 +18,7 @@ import { makePostKey, checkAndClaim, releaseKey } from './idempotency.js';
 import { alertPostFailure, alertHealthCheckFailure, recordFailure, clearFailure } from './alerting.js';
 import { getTopPerformingExamples } from './content-feedback.js';
 import { reviewPost, formatViolations } from './qc-gate.js';
+import { runEngagementPull } from './engagement-pull.js';
 
 /**
  * Decide whether to use a feature based on configured ratio (0-100)
@@ -427,6 +428,13 @@ export function startScheduler() {
 
         console.log(`  ✓ Scheduled: ${time} (${cronExpression})`);
     });
+
+    // Nightly engagement pull — feeds real metrics back into pillar weights,
+    // top-post examples, and the brain's RECENT POSTS context
+    cron.schedule('30 2 * * *', () => {
+        runEngagementPull().catch(err => console.warn(`⚠️ Nightly engagement pull failed: ${err.message}`));
+    }, { timezone });
+    console.log('  ✓ Scheduled: 02:30 nightly engagement pull');
 
     console.log('\n👻 Autonomous bot is running. Press Ctrl+C to stop.\n');
 }

@@ -17,14 +17,24 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const X_BRAIN_PATH = path.join(__dirname, '..', 'x-brain.md');
+const BRAIN_V2_PATH = path.join(__dirname, '..', 'ghost-brain-v2.md');
 
 /**
- * Load x-brain.md for brand context (truncated to save tokens)
+ * Load brand context for the planner (truncated to save tokens).
+ * Prefers ghost-brain-v2.md — the single source of voice.
  */
 function loadBrainSummary() {
     try {
+        const brain = fs.readFileSync(BRAIN_V2_PATH, 'utf-8');
+        // Identity through hard rules — enough for strategic planning
+        const lines = brain.split('\n');
+        const cutoff = lines.findIndex((l, i) => i > 20 && l.startsWith('## Platform overlays'));
+        return lines.slice(0, cutoff > 0 ? cutoff : 80).join('\n');
+    } catch {
+        // legacy fallback
+    }
+    try {
         const brain = fs.readFileSync(X_BRAIN_PATH, 'utf-8');
-        // Only take the identity + voice + pillars sections (first ~100 lines)
         const lines = brain.split('\n');
         const cutoff = lines.findIndex((l, i) => i > 20 && l.startsWith('## Engagement Rules'));
         return lines.slice(0, cutoff > 0 ? cutoff : 80).join('\n');
@@ -133,6 +143,8 @@ Pick the BEST content pillar for the next post. Consider:
 2. What time of day is it? Morning = sharp takes, Midday = builder logs, Evening = engagement bait.
 3. What hasn't been posted in a while? Surprise the audience.
 4. Don't repeat the same pillar as the most recent post.
+5. NEVER suggest angles that invent client results, metrics, or numbers — results exist only in the verified proof bank, and the writer will be blocked if your angle demands fabricated stats. Suggest the STORY shape, not the numbers.
+6. Never suggest retired hooks: "72 hours", "as someone shipping AI daily", or anything from the brand's banned list.
 
 Respond with ONLY valid JSON, no markdown, no explanation:
 {"pillar": "one of: builderLogs, hotTakes, portfolio, industryCommentary, cta", "angle": "2-sentence description of the specific angle/hook to take", "reasoning": "1-sentence why this is the strategic pick"}`;

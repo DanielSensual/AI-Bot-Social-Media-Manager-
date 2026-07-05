@@ -76,6 +76,14 @@ test('money and multipliers require proof', () => {
     assert.ok(metricHits.length >= 2, formatViolations(r.violations));
 });
 
+test('AI-disclosure percent is allowed (GIA caption)', () => {
+    const r = reviewPost(
+        "She's not real. The missed calls are. 👻\n\nGia is 100% AI-generated — built with the same tech that answers our clients' phones 24/7, in English y en español.\n\nGhost AI Systems → ghostaisystems.com",
+        { platform: 'instagram', ...NO_PROOF },
+    );
+    assert.equal(r.pass, true, formatViolations(r.violations));
+});
+
 test('rhetorical pricing talk is allowed (not a result claim)', () => {
     const r = reviewPost(
         'agencies charge $15k for a wordpress template and call it custom.\nyour $50k website should not lose to a $5k one. speed wins.',

@@ -1,7 +1,7 @@
 {
   "name": "ghostai-x-bot",
   "version": "3.0.0",
-  "description": "Trident — Autonomous 4-platform social media engine for GhostAI Systems",
+  "description": "Trident \u2014 Autonomous 4-platform social media engine for GhostAI Systems",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
@@ -91,7 +91,10 @@
     "ds:pipeline": "node scripts/danielsensual-pipeline.js",
     "ds:pipeline:dry": "node scripts/danielsensual-pipeline.js --dry-run",
     "ds:pipeline:status": "node scripts/danielsensual-pipeline.js --status",
-    "caption": "node scripts/ghost-captions.cjs"
+    "caption": "node scripts/ghost-captions.cjs",
+    "engagement:pull": "node scripts/engagement-pull.js --report",
+    "gia:publish": "node scripts/gia-publish.js",
+    "gia:publish:live": "node scripts/gia-publish.js --live"
   },
   "keywords": [
     "twitter",

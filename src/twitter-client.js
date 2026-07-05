@@ -301,6 +301,32 @@ export async function postThread(tweets) {
 }
 
 /**
+ * Batch-fetch public metrics for up to 100 tweets (1 API read per batch)
+ * @param {string[]} tweetIds
+ * @returns {Promise<Map<string, object>>} tweetId → { likes, comments, shares, impressions }
+ */
+export async function getTweetsMetrics(tweetIds) {
+    const ids = [...new Set(tweetIds)].filter(Boolean).slice(0, 100);
+    const metrics = new Map();
+    if (ids.length === 0) return metrics;
+
+    const res = await withBreaker('tweet metrics lookup', () => rwClient.v2.tweets(ids, {
+        'tweet.fields': ['public_metrics'],
+    }));
+
+    for (const tweet of res.data || []) {
+        const m = tweet.public_metrics || {};
+        metrics.set(tweet.id, {
+            likes: m.like_count || 0,
+            comments: m.reply_count || 0,
+            shares: (m.retweet_count || 0) + (m.quote_count || 0),
+            impressions: m.impression_count || 0,
+        });
+    }
+    return metrics;
+}
+
+/**
  * Get account metrics
  * @returns {Promise<object>} Account metrics
  */

@@ -118,15 +118,18 @@ export function getOptimizedWeights() {
 }
 
 /**
- * Get top-performing posts for use as style examples in AI prompts
+ * Get top-performing posts for use as style examples in AI prompts.
+ * Zero-score posts are excluded — a post nobody engaged with is not
+ * an example, and with a cold-start dataset everything scores 0.
  * @param {number} count - Number of examples to return
+ * @param {number} minScore - Minimum engagement score to qualify
  * @returns {string[]} Array of post texts
  */
-export function getTopPerformingExamples(count = 3) {
+export function getTopPerformingExamples(count = 3, minScore = 1) {
     const db = getDb();
     const rows = db.prepare(
-        'SELECT text FROM top_posts ORDER BY score DESC LIMIT ?'
-    ).all(count);
+        'SELECT text FROM top_posts WHERE score >= ? ORDER BY score DESC LIMIT ?'
+    ).all(minScore, count);
 
     return rows.map(r => r.text);
 }

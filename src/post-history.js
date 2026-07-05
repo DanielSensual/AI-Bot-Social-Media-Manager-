@@ -62,6 +62,7 @@ export function getRecent(n = 10) {
 
     // Map to original JSON format for backward compat
     return rows.map(row => ({
+        id: row.id,
         text: row.text,
         pillar: row.pillar,
         aiGenerated: !!row.ai_generated,

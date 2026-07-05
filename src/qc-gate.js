@@ -25,7 +25,8 @@ const METRIC_PATTERNS = [
     /(?:made|earned|generated|saved|added|closed|booked|brought in)[^.!?\n]{0,40}\$[\d,]+(?:\.\d+)?k?\b/gi,
     /\$[\d,]+(?:\.\d+)?k?\b[^.!?\n]{0,40}(?:revenue|profit|in sales|made|earned|generated|saved|booked)/gi,
     /\b\d+(?:\.\d+)?x\b/gi,                                       // multipliers (3x)
-    /\b\d+(?:\.\d+)?\s*%/gi,                                      // percents
+    // percents — except AI-disclosure statements ("100% AI-generated")
+    /\b\d+(?:\.\d+)?\s*%(?!\s*ai[\s-])/gi,
     // count + result noun ("41 leads", "29 calls", "12 bookings")
     /\b\d[\d,]*\s+(?:qualified\s+)?(?:leads?|calls?|bookings?|appointments?|clients?|customers?|conversions?|deals?|sales?|signups?|sign-ups|demos?|inquiries|messages?)\b/gi,
 ];
