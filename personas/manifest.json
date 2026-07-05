@@ -27,7 +27,14 @@
       "heygen": {
         "avatarId": "e96754721eb04a69b9bef04d21ce54f0",
         "voiceId": "e6fbafc43e8447708e03307d2996517e",
-        "voiceNote": "Cloned Daniel voice"
+        "voiceNote": "Cloned Daniel voice",
+        "photoAvatarGroups": {
+          "Malik": "24a6b1d072dd44f0939a56b4e3fc527f",
+          "Daniel Flyer Animation": "33e86bbc954d4164978448947c0b7006",
+          "Daniel Clone 2": "54cb634596294cf1a2c650364f007d45",
+          "Daniel Clone 3": "1bb09fb4a88f4f89b1a77a59d07b1f5c"
+        },
+        "note": "HeyGen group 'Malik' IS Daniel (confirmed 2026-07-05)"
       },
       "social": {
         "facebook": {
@@ -81,7 +88,15 @@
       "heygen": {
         "avatarId": null,
         "voiceId": "vdY8O7DAlGoHVOAVoPUK",
-        "voiceNote": "Ghost V3 — needs avatar assigned"
+        "voiceNote": "Ghost V3 — needs avatar assigned",
+        "photoAvatarGroups": {
+          "Ghost V7 (latest)": "5a4d76b66e554eec99d13fd7fef1a7b0",
+          "Ghost V6": "cafa124bd81c4fac88dd9312bc64be7d",
+          "Ghost 20s (50 looks)": "f4854163c04d47dd9c3c0a5734e00087",
+          "Chill Ghost": "a55ac4f9e5254306a9cfba0c366f98f5",
+          "Ghost Smile": "7f900d13565146acb17205c2d50ea16a",
+          "Jordan (MISLABELED — actually Ghost, podcast look)": "f107751ed7be4a2e8ac510f3537eb727"
+        }
       },
       "character": {
         "description": "Black man, late 30s, tapered fade, trimmed beard. ARRI Alexa documentary aesthetic.",
@@ -150,7 +165,10 @@
       "heygen": {
         "avatarId": null,
         "voiceId": "c9674bba39674231acd401adf6c6720e",
-        "voiceNote": "Ghos V3 — needs avatar assigned"
+        "voiceNote": "Ghos V3 — needs avatar assigned",
+        "photoAvatarGroups": {
+          "Tyrion": "868f6871e6504010abe3573efda074a6"
+        }
       },
       "social": {
         "facebook": {
@@ -169,7 +187,7 @@
       },
       "aka": "Therion",
       "character": {
-        "description": "White American man, late 30s, brown swept-back hair, full trimmed beard. Modern jet-setter (Tom Cruise / Tony Stark energy). Canonical face: GhostAIWebsite/public/team/tyrion.jpg",
+        "description": "White American man, late 30s, short dark tousled hair, light stubble, green-hazel eyes. Jet-setter (private-jet tarmac canon look, confirmed 2026-07-05). Site portrait OUTDATED.",
         "file": "GhostAIWebsite/_agents/workflows/ai-influencer-reel/characters/tyrion.md"
       }
     },
@@ -239,7 +257,11 @@
       "heygen": {
         "avatarId": null,
         "voiceId": "6tUIYzIoB6WWDSMbaL5v",
-        "voiceNote": "Trinity female — needs avatar assigned"
+        "voiceNote": "Trinity female — needs avatar assigned",
+        "photoAvatarGroups": {
+          "Valkyra (main, 53 looks)": "e14e89ff04874121b587e214917a3826",
+          "Valkyra Model 4": "54e838b7a6054023afeec6bfdb78666a"
+        }
       },
       "social": {
         "facebook": {
@@ -257,7 +279,7 @@
         }
       },
       "character": {
-        "description": "Nordic woman, early 30s, long blonde waved hair, ice-blue eyes, white blazer. Canonical face: GhostAIWebsite/public/team/valkyra.jpg",
+        "description": "Nordic woman, platinum-blonde voluminous wavy bob, bright blue eyes, glam. Canon = HeyGen groups (confirmed 2026-07-05). Site portrait OUTDATED.",
         "file": "GhostAIWebsite/_agents/workflows/ai-influencer-reel/characters/valkyra.md"
       }
     },
@@ -301,6 +323,10 @@
           "accountId": null,
           "status": "not_created"
         }
+      },
+      "character": {
+        "description": "NO confirmed visual — the HeyGen group named 'Jordan' is actually Ghost. Site jordan.jpg outdated.",
+        "file": null
       }
     },
     "maximus": {
@@ -440,10 +466,10 @@
       "brain": {
         "provider": null,
         "model": null,
-        "note": "New cast member (Daniel, 2026-07-05). Identity proposal awaiting approval."
+        "note": "Face canon confirmed in HeyGen 2026-07-05. Outfit lane + voice + pages pending."
       },
       "character": {
-        "description": "White American woman, early 30s, chocolate-brown shoulder-length hair, deep emerald blazer. PROPOSED — see bible.",
+        "description": "White American woman, early 30s, long dark-brown side-parted wavy hair, blue-grey eyes. Canon = HeyGen group (confirmed 2026-07-05).",
         "file": "GhostAIWebsite/_agents/workflows/ai-influencer-reel/characters/trinity.md"
       },
       "social": {
@@ -458,7 +484,12 @@
           "status": "not_created"
         }
       },
-      "status": "proposed"
+      "status": "avatar_ready_no_pages",
+      "heygen": {
+        "photoAvatarGroups": {
+          "Trinity (10 looks)": "d80ea000402c4f7087711a9ce1dfe094"
+        }
+      }
     }
   },
   "infrastructure": {
