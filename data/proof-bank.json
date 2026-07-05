@@ -1,0 +1,60 @@
+{
+  "_readme": [
+    "PROOF BANK — the only source of client names, results, and numbers the bots may publish.",
+    "Every entry starts verified:false. Daniel flips verified:true after confirming the number is real",
+    "(or edits it to the real one). The QC gate blocks any result-metric that is not in a verified entry.",
+    "approvedNumbers are derived from verified entries at load time — do not hand-edit that list."
+  ],
+  "entries": [
+    {
+      "id": "reelestate-bookings",
+      "client": "ReelEstate Orlando",
+      "niche": "Real Estate Video",
+      "claim": "12 bookings in the first week after launch",
+      "numbers": ["12 bookings", "first week"],
+      "verified": false,
+      "source": "legacy config.js portfolio — UNCONFIRMED, Daniel to verify",
+      "added": "2026-07-05"
+    },
+    {
+      "id": "elan-leadflow",
+      "client": "ÉLAN Aesthetics",
+      "niche": "Medical Spa",
+      "claim": "3x lead flow after launch",
+      "numbers": ["3x lead flow"],
+      "verified": false,
+      "source": "legacy config.js portfolio — UNCONFIRMED, Daniel to verify",
+      "added": "2026-07-05"
+    },
+    {
+      "id": "prime-bookings",
+      "client": "PRIME Steakhouse",
+      "niche": "Fine Dining",
+      "claim": "Full booking calendar",
+      "numbers": [],
+      "verified": false,
+      "source": "legacy config.js portfolio — UNCONFIRMED, Daniel to verify",
+      "added": "2026-07-05"
+    },
+    {
+      "id": "obsidian-calls",
+      "client": "OBSIDIAN Detailing",
+      "niche": "Auto Detailing",
+      "claim": "47 voice calls handled per month by the AI agent",
+      "numbers": ["47 voice calls", "47 calls"],
+      "verified": false,
+      "source": "legacy config.js portfolio — UNCONFIRMED, Daniel to verify",
+      "added": "2026-07-05"
+    },
+    {
+      "id": "lumiere-booking",
+      "client": "LUMIÈRE Barbershop",
+      "niche": "Barbershop",
+      "claim": "Online booking live 24/7",
+      "numbers": [],
+      "verified": false,
+      "source": "legacy config.js portfolio — UNCONFIRMED, Daniel to verify",
+      "added": "2026-07-05"
+    }
+  ]
+}

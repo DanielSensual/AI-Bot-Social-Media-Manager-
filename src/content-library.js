@@ -13,11 +13,62 @@ import dotenv from 'dotenv';
 import { generateText } from './llm-client.js';
 import { loadBrand, getBrandPrompt, getNeverSayList } from './brand-loader.js';
 import { smartPillarPick } from './smart-planner.js';
+import { formatProofBlock, getVerifiedEntries } from './proof-bank.js';
+import { getRecent } from './post-history.js';
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const X_BRAIN_PATH = path.join(__dirname, '..', 'x-brain.md');
+const BRAIN_V2_PATH = path.join(__dirname, '..', 'ghost-brain-v2.md');
+const BANNED_PHRASES_PATH = path.join(__dirname, '..', 'data', 'banned-phrases.json');
+
+/**
+ * Load ghost-brain-v2.md — the single source of voice.
+ * When present it takes priority over the brand system and x-brain.md.
+ */
+function loadBrainV2() {
+    try {
+        return fs.readFileSync(BRAIN_V2_PATH, 'utf-8');
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Build the injected context the brain contract expects:
+ * PROOF BANK + RECENT POSTS + BANNED PHRASES.
+ */
+function buildBrainContext() {
+    const proofBlock = formatProofBlock();
+
+    let recentBlock = '═══ RECENT POSTS (do NOT reuse these openers/framings) ═══\n(none)';
+    try {
+        const recent = getRecent(15);
+        if (recent.length > 0) {
+            const lines = recent
+                .slice(-15)
+                .reverse()
+                .map(p => `- ${String(p.text || '').split('\n')[0].slice(0, 90)}`);
+            recentBlock = `═══ RECENT POSTS (do NOT reuse these openers/framings) ═══\n${lines.join('\n')}`;
+        }
+    } catch {
+        // post history unavailable (fresh install) — proceed without it
+    }
+
+    let bannedBlock = '';
+    try {
+        const rules = JSON.parse(fs.readFileSync(BANNED_PHRASES_PATH, 'utf-8'));
+        const all = [...(rules.banned || []), ...(rules.protectedMarks || [])];
+        if (all.length > 0) {
+            bannedBlock = `═══ BANNED PHRASES (never use, in any casing) ═══\n${all.join(' · ')}`;
+        }
+    } catch {
+        // no banned list — brain's own retired list still applies
+    }
+
+    return [proofBlock, recentBlock, bannedBlock].filter(Boolean).join('\n\n');
+}
 
 /**
  * Load the x-brain.md memory file for AI prompt context
@@ -53,7 +104,7 @@ Your site should:
 → Load in under 2 seconds
 → Have an AI that never sleeps
 
-That's what we ship in 72 hours.
+That's what we ship.
 
 ${config.brand.website}`,
 
@@ -64,11 +115,9 @@ ${config.brand.website}`,
 ❌ Don't track user behavior
 ❌ Can't answer questions at 2am
 
-Fix all 4 = 3x more conversions.
+Fix all 4 and stop the bleeding.`,
 
-${getHashtags(2)}`,
-
-    () => `The 72-hour website formula:
+    () => `The no-meetings website formula:
 
 Day 1: Strategy + Copy + Architecture
 Day 2: Full build + Analytics + Security
@@ -93,9 +142,7 @@ That's the difference between a site and a system.`,
 2. "Contact Us" instead of specific CTAs
 3. No social proof above the fold
 
-Fix these today. Thank me tomorrow.
-
-${getHashtags(2)}`,
+Fix these today. Thank me tomorrow.`,
 
     () => `Hot take: Most "AI websites" are just chatbots.
 
@@ -138,7 +185,7 @@ They charge $15k for a WordPress template.
 Take 6 weeks to deliver.
 Then hit you with "maintenance fees."
 
-We ship custom sites in 72 hours.
+We ship custom sites in days, not quarters.
 No templates. No BS.
 
 The industry hates us for this. 👻`,
@@ -150,7 +197,7 @@ The industry hates us for this. 👻`,
 "The design is almost done" = Haven't started
 
 We don't play those games.
-72 hours. Done. Period.`,
+Fixed scope. Days, not months. Done.`,
 
     () => `Hot take: AI will replace 80% of web developers by 2027.
 
@@ -241,51 +288,15 @@ Results don't need egos.`,
 
 /**
  * PORTFOLIO - Client work showcases
+ * Results come ONLY from verified proof-bank entries. With nothing verified,
+ * these fall back to the process template — no numbers, no invented wins.
  */
-export const portfolioTemplates = [
-    () => {
-        const p = pick(config.portfolio);
-        return `Just shipped ${p.name} ✨
+const pickVerifiedProof = () => {
+    const entries = getVerifiedEntries();
+    return entries.length ? pick(entries) : null;
+};
 
-72 hours from kickoff to live:
-• Full booking system
-• AI voice agent (24/7)
-• Conversion tracking
-• Mobile-first design
-
-Result: ${p.result}
-
-See it live → ${config.brand.website}`;
-    },
-
-    () => {
-        const p = pick(config.portfolio);
-        return `Client win: ${p.name} 🏆
-
-The brief: "${p.niche} site that converts"
-The timeline: 72 hours
-The result: ${p.result}
-
-No templates. Custom-built. Production-ready.
-
-${getHashtags(2)}`;
-    },
-
-    () => {
-        const p = pick(config.portfolio);
-        return `Before Ghost AI: "Our website just sits there"
-After Ghost AI: "${p.result}"
-
-${p.name} launched in 72 hours with:
-→ AI receptionist
-→ Online booking
-→ Lead tracking
-→ Performance analytics
-
-Your move. ${config.brand.website}`;
-    },
-
-    () => `What ships in 72 hours:
+const processShipTemplate = () => `What ships in a Ghost AI build:
 
 ✓ Strategy & information architecture
 ✓ Full development build
@@ -298,7 +309,52 @@ Your move. ${config.brand.website}`;
 
 Not a prototype. A system.
 
-${config.brand.website}`,
+${config.brand.website}`;
+
+export const portfolioTemplates = [
+    () => {
+        const p = pickVerifiedProof();
+        if (!p) return processShipTemplate();
+        return `Just shipped ${p.client} ✨
+
+From kickoff to live:
+• Full booking system
+• AI voice agent (24/7)
+• Conversion tracking
+• Mobile-first design
+
+Result: ${p.claim}
+
+See it live → ${config.brand.website}`;
+    },
+
+    () => {
+        const p = pickVerifiedProof();
+        if (!p) return processShipTemplate();
+        return `Client win: ${p.client} 🏆
+
+The brief: "${p.niche} site that converts"
+The result: ${p.claim}
+
+No templates. Custom-built. Production-ready.`;
+    },
+
+    () => {
+        const p = pickVerifiedProof();
+        if (!p) return processShipTemplate();
+        return `Before Ghost AI: "Our website just sits there"
+After Ghost AI: "${p.claim}"
+
+${p.client} launched with:
+→ AI receptionist
+→ Online booking
+→ Lead tracking
+→ Performance analytics
+
+Your move. ${config.brand.website}`;
+    },
+
+    processShipTemplate,
 ];
 
 /**
@@ -307,12 +363,12 @@ ${config.brand.website}`,
 export const btsTemplates = [
     () => {
         const agent = pick(Object.values(config.agents));
-        return `Our AI agent "${agent.name}" just handled her 1000th call 🎉
+        return `Our AI agent "${agent.name}" just wrapped another full day of calls.
 
 She:
 • Books appointments
 • Answers FAQs
-• Speaks 4 languages
+• Speaks multiple languages
 • Never takes a day off
 
 Want one for your business?
@@ -320,14 +376,14 @@ Want one for your business?
 DM me "${agent.name.toUpperCase()}" 👻`;
     },
 
-    () => `Building in public: Ghost AI stats this month
+    () => `2am. Everyone's asleep.
 
-📞 ${Math.floor(Math.random() * 200 + 100)} AI voice calls handled
-🌐 ${Math.floor(Math.random() * 10 + 3)} sites shipped
-⚡ Average build time: 68 hours
-📈 Client conversion lift: 2.4x average
+The voice agent picks up, answers three pricing questions,
+and books the appointment.
 
-The AI never sleeps. Neither do the results.`,
+No hold music. No "call back during business hours."
+
+That's the whole pitch.`,
 
     () => `Just watched our AI handle a 3am call.
 
@@ -356,9 +412,7 @@ Our AI can. Every time.`,
 Outcome: 3 new site architectures optimized.
 
 We don't just build websites.
-We build systems that evolve.
-
-${getHashtags(2)}`,
+We build systems that evolve.`,
 ];
 
 /**
@@ -374,7 +428,7 @@ ${offer.description} for your business
 I'll show you:
 → What's killing your conversions
 → Where you're losing mobile users
-→ How AI can 3x your lead flow
+→ How AI can multiply your lead flow
 
 DM "${offer.keyword}" to claim yours 👻`;
     },
@@ -397,8 +451,8 @@ If not, we should talk.
 
 • AI voice agents
 • Conversion tracking
-• 72-hour delivery
-• Results guaranteed
+• Days-not-months delivery
+• Results you can watch live
 
 DM "AUDIT" for a free breakdown 👻`,
 
@@ -479,6 +533,7 @@ export async function generateAITweet(options = {}) {
         controversial = true,
         maxLength = 280,
         provider = 'auto',
+        qcFeedback = null,
     } = options;
 
     // ═══ Phase 1: Smart Planner — Grok Build picks the pillar strategically ═══
@@ -513,9 +568,23 @@ export async function generateAITweet(options = {}) {
         ? `\n\nSTRATEGIC ANGLE (from content planner): ${strategicAngle}\nUse this angle as inspiration but write naturally — don't force it.`
         : '';
 
-    // Priority 1: Brand Intelligence System
+    const qcFeedbackBlock = qcFeedback
+        ? `\n\n═══ QC REJECTION — your previous attempt was blocked ═══\n${qcFeedback}\nWrite a NEW post that avoids every violation above. Do not lightly rephrase the rejected post.`
+        : '';
+
+    // Priority 0: ghost-brain-v2.md — single source of voice + proof contract
     let prompt;
-    try {
+    const brainV2 = loadBrainV2();
+    if (brainV2) {
+        const context = buildBrainContext();
+        const spiceV2 = controversial
+            ? 'Make this SPICY — the kind of tweet that gets quote-tweeted and argued about.'
+            : 'Keep it punchy but not necessarily controversial.';
+        prompt = `${brainV2}\n\n${context}\n\n---\n\nGenerate ONE post for X for the "${pillar}" pillar: ${pillarDesc}${angleContext}${qcFeedbackBlock}\n\n${spiceV2}\n\nRULES:\n- MUST be under ${maxLength} characters\n- Follow the contract and hard rules from the brain above — especially: numbers ONLY from the proof bank\n- Use line breaks for visual structure\n- Output ONLY the post text, nothing else`;
+    }
+
+    // Priority 1: Brand Intelligence System (fallback when brain v2 is absent)
+    if (!prompt) try {
         const brand = loadBrand('ghost-ai');
         const brandPrompt = getBrandPrompt(brand, 'x');
         const neverSay = getNeverSayList(brand);

@@ -1,0 +1,30 @@
+{
+  "_readme": "Phrases the QC gate rejects (case-insensitive substring match). Rotate: when a hook stops being overused for ~30 days, it can come off the list. protectedMarks are legal, not stylistic — they stay through 2026-07-19 (tournament end) at minimum.",
+  "banned": [
+    "72 hours",
+    "72-hour",
+    "in 72hrs",
+    "as someone shipping",
+    "as someone who ships",
+    "as someone deploying",
+    "as someone who deploys",
+    "agencies still sell 6-month",
+    "6-month roadmaps",
+    "hey everyone",
+    "excited to share",
+    "thrilled to announce",
+    "game-changer",
+    "in today's fast-paced world"
+  ],
+  "protectedMarks": [
+    "world cup",
+    "fifa",
+    "wc26",
+    "usa 2026",
+    "mexico 2026",
+    "canada 2026",
+    "copa mundial",
+    "official sponsor",
+    "official partner"
+  ]
+}

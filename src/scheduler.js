@@ -17,6 +17,7 @@ import { isDuplicate, record, getRecent } from './post-history.js';
 import { makePostKey, checkAndClaim, releaseKey } from './idempotency.js';
 import { alertPostFailure, alertHealthCheckFailure, recordFailure, clearFailure } from './alerting.js';
 import { getTopPerformingExamples } from './content-feedback.js';
+import { reviewPost, formatViolations } from './qc-gate.js';
 
 /**
  * Decide whether to use a feature based on configured ratio (0-100)
@@ -84,15 +85,18 @@ async function autonomousPost() {
 
     console.log(`\n📋 Strategy: ${useAI ? '🧠 AI' : '📝 Template'} | ${useVideo ? '🎬 Video' : '📄 Text-only'}`);
 
-    // Generate content (with dedup retry)
+    // Generate content (with dedup + QC-gate retry)
     let content;
     let attempts = 0;
     const maxAttempts = 5;
+    let qc = { pass: false, violations: [] };
+    let qcFeedback = null;
+    let forceAI = false;
 
     do {
         try {
-            if (useAI) {
-                content = await generateAITweet({ controversial: true });
+            if (useAI || forceAI) {
+                content = await generateAITweet({ controversial: true, qcFeedback });
                 console.log(`🧠 AI Generated [${content.pillar.toUpperCase()}] content`);
             } else {
                 content = generateTweet();
@@ -103,7 +107,20 @@ async function autonomousPost() {
             content = generateTweet();
         }
         attempts++;
-    } while (isDuplicate(content.text) && attempts < maxAttempts);
+
+        qc = reviewPost(content.text, { platform: 'x' });
+        if (!qc.pass) {
+            qcFeedback = formatViolations(qc.violations);
+            forceAI = true; // templates can't self-correct — regenerate via AI with feedback
+            console.warn(`   🚧 QC gate rejected attempt ${attempts}: ${qcFeedback}`);
+        }
+    } while ((!qc.pass || isDuplicate(content.text)) && attempts < maxAttempts);
+
+    if (!qc.pass) {
+        console.error(`🛑 QC gate: no compliant content after ${maxAttempts} attempts — SKIPPING this slot (better silent than wrong)`);
+        alertPostFailure('QC-Gate', new Error(`Slot skipped: ${qcFeedback}`)).catch(() => { });
+        return;
+    }
 
     if (isDuplicate(content.text)) {
         console.warn('⚠️ Could not generate unique content after 5 attempts, posting anyway');
@@ -207,6 +224,19 @@ async function autonomousPost() {
             console.log('   ✅ Content adapted for all platforms');
         } catch (error) {
             console.warn(`   ⚠️ Adaptation failed, using original: ${error.message}`);
+        }
+    }
+
+    // QC each platform adaptation — a variant that fails falls back to the
+    // already-approved base text instead of publishing unreviewed content
+    if (adapted) {
+        for (const [platformKey, adaptedText] of Object.entries(adapted)) {
+            if (!adaptedText) continue;
+            const check = reviewPost(adaptedText, { platform: platformKey });
+            if (!check.pass) {
+                console.warn(`   🚧 QC rejected ${platformKey} adaptation (${formatViolations(check.violations)}) — using base text`);
+                adapted[platformKey] = null;
+            }
         }
     }
 
