@@ -30,7 +30,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 dotenv.config();
 
-const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY || 'sk_V2_hgu_kv2EYU8oOIo_KfCnPLYvky7qNrf0zUH9YQgTXxHoB4Yk';
+const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+if (!HEYGEN_API_KEY) {
+    console.error('❌ HEYGEN_API_KEY missing from .env');
+    process.exit(1);
+}
 const HEYGEN_API = 'https://api.heygen.com';
 const OUTPUT_DIR = path.join(__dirname, '..', 'output', 'heygen');
 

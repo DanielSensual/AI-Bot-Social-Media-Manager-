@@ -19,6 +19,7 @@ import { postTweet } from '../src/twitter-client.js';
 import { scrapeLatestNews, getTopUnpostedStory, markPosted } from '../src/news-scraper.js';
 import { generateNewsTweet } from '../src/news-commentator.js';
 import { record, isDuplicate } from '../src/post-history.js';
+import { reviewPost, formatViolations } from '../src/qc-gate.js';
 import { log } from '../src/logger.js';
 
 dotenv.config();
@@ -95,6 +96,16 @@ async function main() {
             // Dedup check
             if (isDuplicate(tweet.text)) {
                 console.warn(`   ⚠️ Attempt ${attempt}: Duplicate content, retrying...`);
+                tweet = null;
+                continue;
+            }
+
+            // QC gate — same contract as the main scheduler (no banned hooks,
+            // no unverified metrics, no protected marks)
+            const qc = reviewPost(tweet.text, { platform: 'x' });
+            if (!qc.pass) {
+                console.warn(`   🚧 Attempt ${attempt}: QC rejected — ${formatViolations(qc.violations)}`);
+                tweet = null;
                 continue;
             }
 
@@ -136,16 +147,13 @@ async function main() {
 
         // Record in post history
         record({
-            id: result.id,
             text: tweet.text,
             pillar: `news:${tweet.angle}`,
             aiGenerated: true,
-            platforms: { x: true },
-            metadata: {
-                newsSource: newsItem.source,
-                newsTitle: newsItem.title,
-                newsUrl: newsItem.link,
-            },
+            // results (not platforms) is the shape post-history stores —
+            // the old shape silently dropped the URL, hiding news posts
+            // from the engagement pull
+            results: { x: `https://x.com/i/status/${result.id}` },
         });
 
         log.info('Ghost News post published', {
