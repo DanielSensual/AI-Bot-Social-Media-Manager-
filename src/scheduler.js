@@ -80,6 +80,11 @@ async function autonomousPost() {
         }
     }
 
+    // Refresh real engagement data BEFORE generating — the pull is cheap
+    // (≤1 batched API read) and feeds this very post's RECENT POSTS context.
+    // Also the reliable path: the 02:30 cron proved flaky (2026-07-06).
+    await runEngagementPull().catch(err => console.warn(`⚠️ Engagement pull failed: ${err.message}`));
+
     // Decide content strategy
     const useAI = shouldUse(autonomy.aiRatio);
     const useVideo = shouldUse(autonomy.videoRatio);
