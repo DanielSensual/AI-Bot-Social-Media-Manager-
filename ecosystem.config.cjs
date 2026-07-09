@@ -22,8 +22,9 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        // ── KILLED 2026-04-27 — Rogue MediaGeekz auto-poster removed ──
-        /*
+        // ── RE-ENABLED 2026-07-09 — killed 2026-04-27 as "Rogue MediaGeekz" but audit showed it was
+        // always the Ghost AI FB poster (fb-brain.md → FACEBOOK_PAGE_ID); now QC-gated before publish.
+        // Cadence/behavior via env: FACEBOOK_AGENT_ENABLED/TIMES/AI_RATIO/REEL_RATIO.
         {
             name: 'facebook-agent',
             script: 'scripts/facebook-agent.js',
@@ -41,7 +42,6 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
-        */
         // ── DISABLED: Ghost AI content was posting to DanielSensual page (2026-06-24) ──
         // DanielSensual page should only get dance/bachata content via danielsensual-daily
         /*

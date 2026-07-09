@@ -13,6 +13,7 @@ import { generateVideo, cleanupCache } from './video-generator.js';
 import { isDuplicate, record } from './post-history.js';
 import { hasLLMProvider, generateText } from './llm-client.js';
 import { humanizeCaption } from './caption-utils.js';
+import { reviewPost, formatViolations } from './qc-gate.js';
 
 dotenv.config();
 
@@ -474,14 +475,27 @@ async function runScheduledCycle(options = {}) {
 
         let creative = null;
         let attempts = 0;
+        let qc = null;
+        let forceAI = false;
         const maxAttempts = 4;
 
         do {
-            creative = await buildCreativePlan({ strategy, useAI, useReel });
+            creative = await buildCreativePlan({ strategy, useAI: useAI || forceAI, useReel });
             attempts += 1;
+            qc = reviewPost(creative.caption, { platform: 'facebook' });
+            if (!qc.pass) {
+                forceAI = true; // templates can't self-correct — regenerate via AI with feedback
+                console.warn(`   🚧 QC gate rejected attempt ${attempts}/${maxAttempts}: ${formatViolations(qc.violations)}`);
+                continue;
+            }
             if (!isDuplicate(creative.caption)) break;
             console.warn(`   Duplicate content detected (attempt ${attempts}/${maxAttempts}). Regenerating...`);
         } while (attempts < maxAttempts);
+
+        if (!qc?.pass || isDuplicate(creative.caption)) {
+            console.error(`🛑 QC gate: no compliant Facebook content after ${maxAttempts} attempts — SKIPPING this slot (better silent than wrong)`);
+            return { skipped: true, reason: qc?.pass ? 'duplicate' : 'qc-gate' };
+        }
 
         console.log('\nCaption Preview:');
         console.log('-'.repeat(58));
