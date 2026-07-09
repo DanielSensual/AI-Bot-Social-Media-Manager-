@@ -23,7 +23,7 @@ const DEFAULT_TIMES = ['09:30', '13:00', '18:30', '21:00'];
 const WEBSITE = 'https://ghostaisystems.com';
 const CTA_LINKS = [
     { url: `${WEBSITE}`, label: 'See what we build' },
-    { url: `${WEBSITE}/buy`, label: 'Get a site shipped in 72 hours' },
+    { url: `${WEBSITE}/buy`, label: 'Get a production site shipped in days' },
     { url: `${WEBSITE}/intake`, label: 'Ask us anything' },
     { url: `${WEBSITE}/consulting`, label: 'Book a strategy call' },
     { url: `${WEBSITE}/ai`, label: 'See our AI stack' },
@@ -165,7 +165,7 @@ Comment "BLUEPRINT" if you want the exact structure.`,
     {
         id: 'website-showcase',
         theme: 'portfolio',
-        angle: 'Showcase what Ghost AI Systems ships in 72 hours — a production-ready website with AI integrations, analytics, and security. Make it aspirational.',
+        angle: 'Showcase what Ghost AI Systems ships in days, not months — a production-ready website with AI integrations, analytics, and security. Make it aspirational.',
         cta: `Direct link to ${WEBSITE}/buy to purchase SiteDrop.`,
         fallbackCaption: `What you get when we build your website:
 
@@ -177,7 +177,7 @@ Comment "BLUEPRINT" if you want the exact structure.`,
 ✓ Cross-device testing
 ✓ Production deploy
 
-All in 72 hours. Not a prototype — a system.
+Live in days, not months. Not a prototype — a system.
 
 🔗 Get started: ${WEBSITE}/buy`,
         fallbackVideoPrompt: 'Vertical 9:16 rapid-fire montage of beautiful websites being designed, coded, and deployed — screens lighting up with analytics dashboards, phones ringing with AI voice agents, all set to dynamic electronic music pace.',
@@ -355,19 +355,23 @@ function safeJsonParse(content) {
     }
 }
 
-async function generateAICreative(strategy, useReel) {
+async function generateAICreative(strategy, useReel, qcFeedback = '') {
     if (!hasLLMProvider()) return null;
 
     // Load fb-brain.md for full persona context
     const fbBrain = loadFBBrain();
     const dayTheme = getDayTheme();
 
+    const feedbackBlock = qcFeedback
+        ? `\n\n═══ COMPLIANCE FEEDBACK (HIGHEST PRIORITY) ═══\n\nYour previous draft was REJECTED by the QC gate: ${qcFeedback}\n\nFix every violation. You have ZERO verified client results — NEVER include specific client numbers, counts, or percentages (no "X calls", "X appointments", "X leads", "X%"). Tell the story without inventing metrics.`
+        : '';
+
     let prompt;
     if (fbBrain) {
-        prompt = `Here is your complete identity, voice, and content strategy:\n\n${fbBrain}\n\n---\n\nToday is ${dayTheme.label} day (theme: ${dayTheme.id}).\n\nSTRATEGY:\n${strategy.angle}\n\nENGAGEMENT CTA:\n${strategy.cta}\n\nOUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}\n\n═══ ANTI-BOT FORMATTING (OVERRIDE ALL OTHER STYLE RULES) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. You MUST write like a real human.\n\n1. Write like you're texting a friend. NOT writing marketing copy.\n2. SHORT paragraphs (1-3 sentences). One blank line between them.\n3. VARY sentence length — mix "That's it." with longer flowing thoughts.\n4. Do NOT start with an emoji. Max 1-2 emojis total, placed naturally.\n5. Do NOT use bullet lists, arrow lists (→ • ✓), or numbered lists. Natural paragraphs only.\n6. Do NOT use markdown (no **bold**, no _italic_).\n7. Max 2 hashtags, only if absolutely necessary.\n8. Vary your hook type — don't always start with "Hot take:" or a statistic.\n9. End with either a question OR a closing line. Not both.\n\nBAD (robotic):\n"🚀 AI is revolutionizing business!\n→ Voice agents\n→ Lead gen\n→ Automation\nComment below! 👇🔥"\n\nGOOD (human):\n"I shipped a client site at 11pm last night.\n\nBy midnight their AI receptionist had booked 3 calls.\n\nThis is what 'always on' actually means.\n\nWhat did you ship this week?"\n\nuseReel=${useReel ? 'true' : 'false'}`;
+        prompt = `Here is your complete identity, voice, and content strategy:\n\n${fbBrain}\n\n---\n\nToday is ${dayTheme.label} day (theme: ${dayTheme.id}).\n\nSTRATEGY:\n${strategy.angle}\n\nENGAGEMENT CTA:\n${strategy.cta}\n\nOUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}\n\n═══ ANTI-BOT FORMATTING (OVERRIDE ALL OTHER STYLE RULES) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. You MUST write like a real human.\n\n1. Write like you're texting a friend. NOT writing marketing copy.\n2. SHORT paragraphs (1-3 sentences). One blank line between them.\n3. VARY sentence length — mix "That's it." with longer flowing thoughts.\n4. Do NOT start with an emoji. Max 1-2 emojis total, placed naturally.\n5. Do NOT use bullet lists, arrow lists (→ • ✓), or numbered lists. Natural paragraphs only.\n6. Do NOT use markdown (no **bold**, no _italic_).\n7. Max 2 hashtags, only if absolutely necessary.\n8. Vary your hook type — don't always start with "Hot take:" or a statistic.\n9. End with either a question OR a closing line. Not both.\n\nBAD (robotic):\n"🚀 AI is revolutionizing business!\n→ Voice agents\n→ Lead gen\n→ Automation\nComment below! 👇🔥"\n\nGOOD (human):\n"I shipped a client site at 11pm last night.\n\nBy the time I woke up, their AI receptionist had already been answering calls for hours.\n\nThis is what 'always on' actually means.\n\nWhat did you ship this week?"\n\nuseReel=${useReel ? 'true' : 'false'}${feedbackBlock}`;
     } else {
         prompt = `You create high-performing Facebook Page content for "Artificial Intelligence Knowledge".
-This page is run by Ghost AI Systems (${WEBSITE}) — an AI agency that ships production-ready websites in 72 hours with AI voice agents, analytics, and automation.
+This page is run by Ghost AI Systems (${WEBSITE}) — an AI agency that ships production-ready websites in days with AI voice agents, analytics, and automation.
 
 TODAY'S THEME: ${dayTheme.label} (${dayTheme.id})
 
@@ -377,7 +381,7 @@ ENGAGEMENT CTA:\n${strategy.cta}
 
 OUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}
 
-═══ FORMATTING RULES (CRITICAL — FOLLOW EXACTLY) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. Your caption MUST look like a real person wrote it on their phone.\n\n1. Write like you're texting — not presenting at a conference, not writing a LinkedIn post.\n2. SHORT paragraphs (1-3 sentences max per block). One blank line between blocks.\n3. VARY sentence length — mix short punchy lines with longer flowing thoughts.\n4. Do NOT start with an emoji. Do NOT start every line with an emoji.\n5. Max 1-2 emojis TOTAL in the caption, placed naturally mid-sentence or at the end.\n6. Do NOT use bullet lists, numbered lists, or arrow lists (→ • ✓ 1. 2. 3.). Write flowing paragraphs.\n7. No markdown (**bold**, _italic_, headers). Plain text only.\n8. No hashtags unless absolutely necessary (max 2).\n9. First line = scroll-stopper. Vary the type: question, bold claim, mid-story opener.\n10. Keep caption between 200 and 600 characters.\n11. If the strategy CTA mentions a link, INCLUDE the exact URL naturally in the text.\n12. End with a question or a powerful closer — NOT both.\n13. Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.\n\nBAD (robotic, will get flagged):\n"🚀 5 ways AI is changing business in 2026!\n\n1. Voice agents\n2. Lead generation\n3. Content automation\n4. Customer support\n5. Analytics\n\nAre you ready? Drop a comment! 👇🔥💯"\n\nGOOD (human, natural):\n"The hidden cost in most businesses is response speed.\n\nEvery missed call leaks revenue. Every slow follow-up loses trust.\n\nWe built an AI system that answers in under 2 seconds, qualifies the lead, and books the call. All while the owner sleeps.\n\nWhat's the first thing you'd automate?"\n\nuseReel=${useReel ? 'true' : 'false'}`;
+═══ FORMATTING RULES (CRITICAL — FOLLOW EXACTLY) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. Your caption MUST look like a real person wrote it on their phone.\n\n1. Write like you're texting — not presenting at a conference, not writing a LinkedIn post.\n2. SHORT paragraphs (1-3 sentences max per block). One blank line between blocks.\n3. VARY sentence length — mix short punchy lines with longer flowing thoughts.\n4. Do NOT start with an emoji. Do NOT start every line with an emoji.\n5. Max 1-2 emojis TOTAL in the caption, placed naturally mid-sentence or at the end.\n6. Do NOT use bullet lists, numbered lists, or arrow lists (→ • ✓ 1. 2. 3.). Write flowing paragraphs.\n7. No markdown (**bold**, _italic_, headers). Plain text only.\n8. No hashtags unless absolutely necessary (max 2).\n9. First line = scroll-stopper. Vary the type: question, bold claim, mid-story opener.\n10. Keep caption between 200 and 600 characters.\n11. If the strategy CTA mentions a link, INCLUDE the exact URL naturally in the text.\n12. End with a question or a powerful closer — NOT both.\n13. Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.\n\nBAD (robotic, will get flagged):\n"🚀 5 ways AI is changing business in 2026!\n\n1. Voice agents\n2. Lead generation\n3. Content automation\n4. Customer support\n5. Analytics\n\nAre you ready? Drop a comment! 👇🔥💯"\n\nGOOD (human, natural):\n"The hidden cost in most businesses is response speed.\n\nEvery missed call leaks revenue. Every slow follow-up loses trust.\n\nWe built an AI system that answers in under 2 seconds, qualifies the lead, and books the call. All while the owner sleeps.\n\nWhat's the first thing you'd automate?"\n\nuseReel=${useReel ? 'true' : 'false'}${feedbackBlock}`;
     }
 
     const { text } = await generateText({
@@ -426,10 +430,10 @@ function saveAgenticVideo(videoPath) {
     return targetPath;
 }
 
-async function buildCreativePlan({ strategy, useAI, useReel }) {
+async function buildCreativePlan({ strategy, useAI, useReel, qcFeedback }) {
     if (useAI) {
         try {
-            const aiCreative = await generateAICreative(strategy, useReel);
+            const aiCreative = await generateAICreative(strategy, useReel, qcFeedback);
             if (aiCreative?.caption) {
                 return aiCreative;
             }
@@ -469,7 +473,7 @@ async function runScheduledCycle(options = {}) {
 
         const useReel = shouldUse(config.reelRatio);
         const useAI = shouldUse(config.aiRatio) && hasLLMProvider();
-        const strategy = pickStrategy(config.timezone);
+        let strategy = pickStrategy(config.timezone);
 
         console.log(`Strategy: ${strategy.id} | ${useReel ? 'reel' : 'text'} | ${useAI ? 'ai' : 'template'}`);
 
@@ -477,15 +481,27 @@ async function runScheduledCycle(options = {}) {
         let attempts = 0;
         let qc = null;
         let forceAI = false;
+        let strategySwapped = false;
+        let qcFeedback = '';
         const maxAttempts = 4;
 
         do {
-            creative = await buildCreativePlan({ strategy, useAI: useAI || forceAI, useReel });
+            creative = await buildCreativePlan({ strategy, useAI: useAI || forceAI, useReel, qcFeedback });
             attempts += 1;
             qc = reviewPost(creative.caption, { platform: 'facebook' });
             if (!qc.pass) {
                 forceAI = true; // templates can't self-correct — regenerate via AI with feedback
-                console.warn(`   🚧 QC gate rejected attempt ${attempts}/${maxAttempts}: ${formatViolations(qc.violations)}`);
+                qcFeedback = formatViolations(qc.violations);
+                console.warn(`   🚧 QC gate rejected attempt ${attempts}/${maxAttempts}: ${qcFeedback}`);
+                // If a strategy keeps steering generation into violations (unverified metrics
+                // while the proof bank is empty, banned phrases baked into its angle), swap
+                // once to a different non-portfolio strategy instead of skipping the slot.
+                if (attempts >= 2 && !strategySwapped) {
+                    strategySwapped = true;
+                    const safe = STRATEGIES.filter((s) => s.theme !== 'portfolio' && s.id !== strategy.id);
+                    strategy = safe[Math.floor(Math.random() * safe.length)];
+                    console.warn(`   🔁 Strategy can't clear QC — swapping to: ${strategy.id}`);
+                }
                 continue;
             }
             if (!isDuplicate(creative.caption)) break;
