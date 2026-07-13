@@ -19,6 +19,7 @@ import {
 } from './facebook-client.js';
 import { isDuplicate, record } from './post-history.js';
 import { generateImage, cleanupImageCache } from './image-generator.js';
+import { downloadEventFlyer } from './share-image-manager.js';
 
 dotenv.config({ quiet: true });
 
@@ -63,6 +64,15 @@ function normalizeText(value) {
     return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function normalizeCaption(value) {
+    return String(value || '')
+        .replace(/\r\n?/g, '\n')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/ *\n */g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
 function parseBoolean(value, fallback = false) {
     if (value == null || value === '') return fallback;
     return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
@@ -77,6 +87,23 @@ function parseDate(value) {
 
 function formatDateIso(date) {
     return date.toISOString().slice(0, 10);
+}
+
+function daysUntilEvent(eventDateRaw, now) {
+    const eventDate = parseDate(eventDateRaw);
+    if (!eventDate) return null;
+    const eventDay = new Date(eventDate);
+    const currentDay = new Date(now);
+    eventDay.setHours(0, 0, 0, 0);
+    currentDay.setHours(0, 0, 0, 0);
+    return Math.round((eventDay.getTime() - currentDay.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function adaptEventCaption(caption, eventDateRaw, now) {
+    const offset = daysUntilEvent(eventDateRaw, now);
+    if (offset === 0) return caption.replace(/this wednesday/gi, 'TONIGHT');
+    if (offset === 1) return caption.replace(/this wednesday/gi, 'TOMORROW NIGHT');
+    return caption;
 }
 
 function ensureFilePath(rawPath, label) {
@@ -119,7 +146,7 @@ export function parseSongLinks(rawSongLinks) {
 
 export function buildBachataCandidates(options = {}) {
     const now = options.now || new Date();
-    const explicitCaption = normalizeText(options.caption);
+    const explicitCaption = normalizeCaption(options.caption);
     const explicitImagePath = options.imagePath ? ensureFilePath(options.imagePath, 'Image') : null;
     const explicitVideoPath = options.videoPath ? ensureFilePath(options.videoPath, 'Video') : null;
 
@@ -131,8 +158,12 @@ export function buildBachataCandidates(options = {}) {
     const eventConfig = options.eventConfig || loadJsonFile(eventConfigPath);
     const songLinks = options.songLinks || parseSongLinks(process.env.BACHATA_DANIEL_SENSUAL_SONG_URLS || '');
 
-    const eventCaption = normalizeText(eventConfig?.post?.textShort || eventConfig?.post?.text);
     const eventDateRaw = eventConfig?.event?.date;
+    const eventCaption = adaptEventCaption(
+        normalizeCaption(eventConfig?.post?.textShort || eventConfig?.post?.text),
+        eventDateRaw,
+        now,
+    );
     const flyerRelative = eventConfig?.event?.flyerPath;
     const flyerPath = flyerRelative
         ? path.resolve(path.dirname(eventConfigPath), flyerRelative)
@@ -253,13 +284,28 @@ export async function runBachataDailyPost(options = {}, dependencies = {}) {
         throw new Error('Missing page ID. Set --page-id or BACHATA_PAGE_ID.');
     }
 
+    const eventConfigPath = options.eventConfigPath || process.env.BACHATA_EVENT_CONFIG || DEFAULT_EVENT_CONFIG;
+    const eventConfig = options.eventConfig || loadJsonFile(eventConfigPath);
+    let effectiveImagePath = options.imagePath;
+    let effectiveCaption = options.caption;
+    const remoteFlyerUrl = eventConfig?.event?.flyerPath;
+
+    if (
+        !effectiveImagePath &&
+        /^https:\/\//i.test(remoteFlyerUrl || '') &&
+        isCurrentEventDate(eventConfig?.event?.date, now)
+    ) {
+        const downloadEventFlyerFn = dependencies.downloadEventFlyerFn || downloadEventFlyer;
+        effectiveImagePath = await downloadEventFlyerFn(remoteFlyerUrl);
+    }
+
     const candidates = buildBachataCandidates({
         now,
-        caption: options.caption,
-        imagePath: options.imagePath,
+        caption: effectiveCaption,
+        imagePath: effectiveImagePath,
         videoPath: options.videoPath,
-        eventConfigPath: options.eventConfigPath,
-        eventConfig: options.eventConfig,
+        eventConfigPath,
+        eventConfig,
         songLinks: options.songLinks,
     });
     const candidate = pickCandidate(candidates, now, isDuplicateFn);

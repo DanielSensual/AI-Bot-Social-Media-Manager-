@@ -103,6 +103,64 @@ describe('bachata daily runner', () => {
         assert.equal(result.hasImage, true);
     });
 
+    it('adapts a current event caption for tomorrow and tonight', () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bachata-timing-'));
+        const flyerPath = path.join(tmpDir, 'flyer.png');
+        fs.writeFileSync(flyerPath, 'flyer');
+        const eventConfig = {
+            event: {
+                date: 'July 15, 2026',
+            },
+            post: {
+                textShort: 'Bachata After Dark — This Wednesday',
+            },
+        };
+
+        const tomorrow = buildBachataCandidates({
+            now: new Date('2026-07-14T14:00:00.000Z'),
+            eventConfig,
+            imagePath: flyerPath,
+        });
+        const tonight = buildBachataCandidates({
+            now: new Date('2026-07-15T14:00:00.000Z'),
+            eventConfig,
+            imagePath: flyerPath,
+        });
+
+        assert.equal(tomorrow[0].caption, 'Bachata After Dark — TOMORROW NIGHT');
+        assert.equal(tonight[0].caption, 'Bachata After Dark — TONIGHT');
+    });
+
+    it('downloads a current remote event flyer and preserves caption paragraphs', async () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bachata-remote-'));
+        const flyerPath = path.join(tmpDir, 'flyer.png');
+        fs.writeFileSync(flyerPath, 'remote-flyer');
+        const caption = 'Bachata After Dark\n\nThis Wednesday at 9:30 PM';
+
+        const result = await runBachataDailyPost(
+            {
+                dryRun: true,
+                pageId: '266552527115323',
+                eventConfig: {
+                    event: {
+                        date: 'July 15, 2026',
+                        flyerPath: 'https://danielsensual.com/flyer.png',
+                    },
+                    post: { textShort: caption },
+                },
+            },
+            {
+                nowFn: () => new Date('2026-07-13T14:00:00.000Z'),
+                downloadEventFlyerFn: async () => flyerPath,
+                isDuplicateFn: () => false,
+            },
+        );
+
+        assert.equal(result.selectedType, 'provided_image');
+        assert.equal(result.caption, caption);
+        assert.equal(result.hasImage, true);
+    });
+
     it('runBachataDailyPost restores env after live run', async () => {
         const previousPageId = process.env.FACEBOOK_PAGE_ID;
         const previousPageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
