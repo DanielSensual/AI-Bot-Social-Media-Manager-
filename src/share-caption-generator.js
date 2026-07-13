@@ -98,17 +98,17 @@ function extractCity(groupName) {
  */
 const BACHATA_AFTER_DARK = {
     title: 'Bachata After Dark',
-    subtitle: 'Free Class by Daniel Sensual',
+    subtitle: "Lola's Goodbye Party · Bachata with Daniel Sensual",
     day: 'Wednesday',
     recurring: true,
-    timeLabel: 'Free Bachata Class 9 PM · Social until midnight',
+    timeLabel: 'Bachata with Daniel Sensual 9:30 PM · Social dancing after class',
     venue: 'Eola Lounge',
     address: '100 S Eola Dr, Ste 104, Orlando, FL',
     city: 'Orlando',
-    priceLabel: 'Free until 9 PM · $10 after',
+    priceLabel: 'Free until 9:30 PM · $10 after',
     rsvpUrl: 'https://danielsensual.com/bachata#register',
     pageUrl: 'https://danielsensual.com/bachata',
-    image: '/img/bachata/bachata-after-dark-weekly-flyer.jpg',
+    image: '/img/bachata/bachata-after-dark-daniel-july15-v1.png',
     tags: ['weekly', 'social', 'class', 'orlando'],
 };
 
@@ -267,15 +267,15 @@ const TEMPLATE_CAPTIONS = {
 
 const EVENT_TEMPLATE_CAPTIONS = {
     en: [
-        "Free bachata class this Wednesday at Eola Lounge, Orlando 💃 Come dance!",
-        "Bachata After Dark — free class 9 PM, social until midnight. See you there 🌙",
-        "Orlando dancers — free bachata class this Wednesday. Bring a friend 💃",
-        "This Wednesday: Bachata After Dark at Eola Lounge. Free class at 9, $10 after. Let's dance 🎶",
+        "Lola's goodbye party is this Wednesday at Eola Lounge, Orlando. Bachata with Daniel at 9:30 PM 🖤",
+        "Bachata After Dark — class at 9:30 PM, then social dancing. Free until 9:30, $10 after 🌙",
+        "Orlando dancers — Bachata After Dark this Wednesday at Eola Lounge. Bring a friend 💃",
+        "This Wednesday: Bachata with Daniel at 9:30 PM, then social dancing at Eola Lounge 🎶",
     ],
     es: [
-        "Clase gratis de bachata este miércoles en Eola Lounge, Orlando 💃 Ven a bailar!",
-        "Bachata After Dark — clase gratis a las 9 PM, social hasta medianoche 🌙",
-        "Bailadores de Orlando — clase gratis este miércoles. Trae a un amigo 💃",
+        "La despedida de Lola es este miércoles en Eola Lounge. Bachata con Daniel a las 9:30 PM 🖤",
+        "Bachata After Dark — clase a las 9:30 PM y después baile social. Gratis hasta las 9:30 🌙",
+        "Bailadores de Orlando — Bachata After Dark este miércoles. Trae a un amigo 💃",
     ],
 };
 
@@ -356,13 +356,13 @@ ${city ? `GROUP CITY: ${city}` : ''}
 ═══ RULES ═══
 1. Write in ${langName}. Spanglish is natural if writing in English
 2. Keep it SHORT — 2-3 sentences max. Sound like you're texting a friend about your event
-3. Include the key info naturally: what night, venue name, free class detail
+3. Include the key info naturally: what night, venue name, 9:30 PM class, and admission timing
 4. ${event.isToday ? 'This is TONIGHT — convey urgency without being pushy' : event.isTomorrow ? 'This is TOMORROW — build anticipation' : 'Mention it\'s this Wednesday'}
 5. 0-1 emojis max. No hashtags, no links (the flyer image is attached separately)
 6. Sound like the host inviting people — NOT like an ad or a flyer
 7. Don't start with "Hey everyone" or "@everyone"
 8. ${city === 'Orlando' || city === 'Central Florida' ? 'This is a local group — reference the local scene naturally' : city ? `The group is in ${city} — acknowledge the distance or say "if you\'re ever in Orlando"` : 'This is an international/general group — mention it\'s in Orlando, FL'}
-9. Vary the angle: sometimes lead with the free class, sometimes the social, sometimes the vibe
+9. Vary the angle: sometimes lead with Lola's goodbye party, sometimes the class, sometimes the social or vibe
 ${neverSayRules}
 
 Return ONLY the caption text. No quotes, no JSON, no links.`;
