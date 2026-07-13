@@ -152,6 +152,20 @@ module.exports = {
                 TZ: 'America/New_York',
             },
         },
+        // ── Bachata After Dark — FB page + IG @bachatafterdark, 2x/day (2026-07-13) ──
+        {
+            name: 'bachata-afterdark',
+            script: 'scripts/bachata-afterdark.js',
+            args: '--once',
+            cwd: __dirname,
+            cron_restart: '30 12,21 * * *', // 12:30 PM + 9:30 PM ET
+            watch: false,
+            autorestart: false,
+            env: {
+                NODE_ENV: 'production',
+                TZ: 'America/New_York',
+            },
+        },
         {
             name: 'facebook-comment-responder',
             script: 'scripts/respond-comments.js',

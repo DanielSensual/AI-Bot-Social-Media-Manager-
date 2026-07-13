@@ -1,0 +1,10 @@
+[
+  {
+    "_comment": "Add real events here \u2014 name, date (YYYY-MM-DD), time, venue, details. The agent ONLY promotes events from this file (within 21 days) and never invents any.",
+    "name": "EXAMPLE \u2014 Bachata After Dark Social",
+    "date": "2099-01-01",
+    "time": "10 PM - 2 AM",
+    "venue": "TBD, Orlando",
+    "details": "Replace me with a real event"
+  }
+]
