@@ -41,12 +41,14 @@ export async function generateImage(postText, options = {}) {
         style = 'bold',
         size = '1024x1024',
         pillar,
+        provider = null,   // 'openai' | 'grok' | null (null = grok first, openai fallback)
+        rawPrompt = null,  // bypass buildImagePrompt with a fully art-directed prompt
     } = options;
 
-    const prompt = buildImagePrompt(postText, style, pillar);
+    const prompt = rawPrompt || buildImagePrompt(postText, style, pillar);
 
-    // Try Grok first (cheaper, reliably working)
-    if (GROK_API_KEY) {
+    // Try Grok first (cheaper, reliably working) unless caller pinned openai
+    if (GROK_API_KEY && provider !== 'openai') {
         try {
             return await generateWithGrok(prompt);
         } catch (err) {
@@ -54,8 +56,7 @@ export async function generateImage(postText, options = {}) {
         }
     }
 
-    // Fallback to OpenAI
-    if (openaiClient) {
+    if (openaiClient && provider !== 'grok') {
         try {
             return await generateWithDallE(prompt, size);
         } catch (err) {

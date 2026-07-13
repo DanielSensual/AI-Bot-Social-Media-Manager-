@@ -131,6 +131,31 @@ function pickPillar(state, override = null) {
     return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// ── Visual direction ────────────────────────────────────────────────────────
+// Detailed cinematic scenes — never "two people dancing" centered on a plain
+// background. Used when the LLM doesn't supply a matched imagePrompt.
+const SCENE_POOL = [
+    'Overhead wide shot of a packed bachata social at 1am — dozens of couples mid-turn on a worn wooden floor, warm amber uplights against exposed brick, a haze of atmosphere catching red and gold beams, motion blur on the spinning dresses at the edges of frame. Documentary event photography, 24mm, shallow grain.',
+    'Extreme close-up of a Dominican guitar\'s strings mid-strum, fingertips catching warm stage light, deep bokeh behind resolving into blurred string lights and silhouetted dancers on a patio social. Macro lens, cinematic shallow depth of field, amber and teal palette.',
+    'A DJ booth at a late-night Latin social seen from the dance floor — vinyl controller glowing, the DJ leaning into one headphone, red neon wash and floating dust in the beam of a single moving head light, crowd hands raised in soft-focus foreground. Concert photography, high contrast.',
+    'Low angle across a dance floor at shoe level — a pair of suede dance heels and leather dress shoes frozen mid basic-step, wooden floorboards reflecting strings of Edison bulbs above, other feet blurred with motion around them. 35mm, f/1.8, warm nostalgic tone.',
+    'A courtyard social under a canopy of string lights after midnight — long exposure leaving light trails from dancers in motion, palm silhouettes against a deep indigo sky, one couple sharp in the center of the blur. Fine-art night photography, rich shadows.',
+    'Backlit silhouettes of dancers against a wall of deep red club light, atmospheric haze, one dramatic shaft of white light cutting the frame diagonally, sweat and motion frozen at 1/25 shutter. Moody editorial photography, cinematic composition, nearly abstract.',
+];
+
+const IMAGE_QUALITY_SUFFIX = 'Photorealistic, cinematic color grade, editorial quality, no text or words in the image, no watermarks, no distorted faces or hands.';
+
+function fallbackScene() {
+    return SCENE_POOL[Math.floor(Math.random() * SCENE_POOL.length)];
+}
+
+async function generateAfterDarkImage(imagePrompt) {
+    return generateImage('', {
+        rawPrompt: `${imagePrompt} ${IMAGE_QUALITY_SUFFIX}`,
+        provider: 'openai', // gpt-image-2 — pinned after grok images came out generic (2026-07-13)
+    });
+}
+
 // ── Caption generation (LLM + QC gate, template fallback) ───────────────────
 
 function safeJsonParse(content) {
@@ -159,33 +184,39 @@ async function generateCaption(pillar, context = '', qcFeedback = '') {
     }[pillar];
 
     const { text } = await generateText({
-        prompt: `${BRAIN}\n\n---\n\n${ask}\n\nReturn ONLY the caption text, no quotes, no preamble.${feedback}`,
-        maxOutputTokens: 400,
+        prompt: `${BRAIN}\n\n---\n\n${ask}\n\nAlso art-direct the photo that accompanies this post. NOT a generic "couple dancing" shot — a specific, detailed cinematic scene: name the setting, camera angle, lens/framing, lighting, palette, and mood. Late-night Latin social world (floors, DJ booths, guitars, string-light patios, silhouettes, shoes, hands — pick what fits the caption). No text in the image.\n\nReturn strict JSON only:\n{\n  "caption": "the post caption",\n  "imagePrompt": "the detailed scene description"\n}${feedback}`,
+        maxOutputTokens: 700,
     });
 
-    const caption = String(text || '').trim().replace(/^["']|["']$/g, '');
-    return caption.length >= 40 ? caption : null;
+    const parsed = safeJsonParse(text);
+    const caption = String(parsed?.caption || '').trim();
+    if (caption.length < 40) return null;
+    return {
+        caption,
+        imagePrompt: String(parsed?.imagePrompt || '').trim() || fallbackScene(),
+    };
 }
 
 async function qcApprovedCaption(pillar, context = '') {
     let feedback = '';
     for (let attempt = 1; attempt <= 3; attempt++) {
-        const caption = (await generateCaption(pillar, context, feedback))
-            || FALLBACKS[pillar]?.[Math.floor(Math.random() * (FALLBACKS[pillar]?.length || 1))];
-        if (!caption) return null;
+        const generated = await generateCaption(pillar, context, feedback);
+        const fallbackCaption = FALLBACKS[pillar]?.[Math.floor(Math.random() * (FALLBACKS[pillar]?.length || 1))];
+        const candidate = generated || (fallbackCaption ? { caption: fallbackCaption, imagePrompt: fallbackScene() } : null);
+        if (!candidate) return null;
 
-        const qc = reviewPost(caption, { platform: 'facebook' });
+        const qc = reviewPost(candidate.caption, { platform: 'facebook' });
         if (!qc.pass) {
             feedback = formatViolations(qc.violations);
             console.warn(`   🚧 QC rejected attempt ${attempt}/3: ${feedback}`);
             continue;
         }
-        if (isDuplicate(caption)) {
+        if (isDuplicate(candidate.caption)) {
             feedback = 'Caption too similar to a recent post — take a completely different angle.';
             console.warn(`   Duplicate detected (attempt ${attempt}/3), regenerating...`);
             continue;
         }
-        return caption;
+        return candidate;
     }
     return null;
 }
@@ -236,7 +267,7 @@ export async function runAfterDarkCycle(options = {}) {
 
     if (pillar === 'recap') {
         const video = nextRecapVideo();
-        const caption = (await qcApprovedCaption('recap'))
+        const caption = (await qcApprovedCaption('recap'))?.caption
             || FALLBACKS.recap[Math.floor(Math.random() * FALLBACKS.recap.length)];
         console.log(`\nCaption:\n${caption}\n\nVideo: ${path.basename(video)}`);
         if (dryRun) return { dryRun: true, pillar, caption };
@@ -280,8 +311,11 @@ export async function runAfterDarkCycle(options = {}) {
         if (dryRun) return { dryRun: true, pillar, plan };
 
         const slidePaths = [];
-        for (const slide of plan.slides) {
-            slidePaths.push(await generateImage(`${slide.heading}. ${slide.body}`, { style: 'bachata' }));
+        for (let i = 0; i < plan.slides.length; i++) {
+            const slide = plan.slides[i];
+            // Designed typographic cards — gpt-image-2 renders short headings reliably
+            const slidePrompt = `Elegant square social media slide design, slide ${i + 1} of ${plan.slides.length} for a bachata dance mini-lesson. Deep charcoal-black background with a subtle out-of-focus late-night dance floor scene (warm amber string lights, faint silhouettes). The exact heading text "${slide.heading}" rendered large in a refined modern serif, warm gold-on-dark, perfectly spelled. A thin amber underline accent. Premium editorial layout, generous margins, consistent visual system across slides. No other text besides the heading.`;
+            slidePaths.push(await generateImage('', { rawPrompt: slidePrompt, provider: 'openai' }));
         }
         const mediaItems = [];
         for (const p of slidePaths) {
@@ -310,16 +344,18 @@ export async function runAfterDarkCycle(options = {}) {
             .join('\n');
     }
 
-    const caption = await qcApprovedCaption(pillar, context);
-    if (!caption) {
+    const approved = await qcApprovedCaption(pillar, context);
+    if (!approved) {
         console.error('🛑 No compliant caption after retries — skipping slot (better silent than wrong).');
         return { skipped: true, pillar };
     }
+    const { caption, imagePrompt } = approved;
 
     console.log(`\nCaption:\n${'-'.repeat(58)}\n${caption}\n${'-'.repeat(58)}`);
-    if (dryRun) return { dryRun: true, pillar, caption };
+    console.log(`\n🎨 Scene: ${imagePrompt.slice(0, 140)}...`);
+    if (dryRun) return { dryRun: true, pillar, caption, imagePrompt };
 
-    const imagePath = await generateImage(caption, { style: 'bachata' });
+    const imagePath = await generateAfterDarkImage(imagePrompt);
     const fbResult = await onAfterDarkPage(() => postToFacebookWithImage(caption, imagePath))
         .catch((e) => { console.error(`   FB post failed: ${e.message}`); return null; });
     const igResult = await uploadToTempHost(imagePath)
