@@ -8,7 +8,7 @@ import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { testFacebookConnection, postToFacebook, postToFacebookWithVideo } from './facebook-client.js';
+import { testFacebookConnection, postToFacebook, postToFacebookWithVideo, getRecentFacebookPosts } from './facebook-client.js';
 import { generateVideo, cleanupCache } from './video-generator.js';
 import { isDuplicate, record } from './post-history.js';
 import { hasLLMProvider, generateText } from './llm-client.js';
@@ -299,8 +299,18 @@ function getDayTheme(timezone = 'America/New_York') {
     return DAY_THEMES[dayNum] || DAY_THEMES[0];
 }
 
+// Last few strategy ids used — random pick with no memory posted the same
+// angle 4x in one day (2026-07-10) when the day-theme pool was small
+const recentStrategyIds = [];
+
+function rememberStrategy(id) {
+    recentStrategyIds.push(id);
+    if (recentStrategyIds.length > 3) recentStrategyIds.shift();
+}
+
 /**
- * Pick a strategy matching today's day-of-week theme.
+ * Pick a strategy matching today's day-of-week theme, avoiding the last
+ * few strategies used so consecutive slots don't rerun the same angle.
  * Falls back to random if no matching strategy is found.
  */
 function pickStrategy(timezone = 'America/New_York') {
@@ -309,14 +319,19 @@ function pickStrategy(timezone = 'America/New_York') {
 
     // Filter strategies that match today's theme
     const matching = STRATEGIES.filter((s) => s.theme === dayTheme.id);
+    const pool = matching.length > 0 ? matching : STRATEGIES;
 
-    if (matching.length > 0) {
-        return matching[Math.floor(Math.random() * matching.length)];
+    if (matching.length === 0) {
+        console.warn(`   ⚠️ No strategies for theme "${dayTheme.id}", picking random`);
     }
 
-    // Fallback: random strategy if no match (shouldn't happen with full coverage)
-    console.warn(`   ⚠️ No strategies for theme "${dayTheme.id}", picking random`);
-    return STRATEGIES[Math.floor(Math.random() * STRATEGIES.length)];
+    // Prefer strategies not used in the last few slots (only if that leaves options)
+    const fresh = pool.filter((s) => !recentStrategyIds.includes(s.id));
+    const candidates = fresh.length > 0 ? fresh : pool;
+
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    rememberStrategy(pick.id);
+    return pick;
 }
 
 function getFacebookAgentConfig() {
@@ -355,7 +370,7 @@ function safeJsonParse(content) {
     }
 }
 
-async function generateAICreative(strategy, useReel, qcFeedback = '') {
+async function generateAICreative(strategy, useReel, qcFeedback = '', recentPosts = []) {
     if (!hasLLMProvider()) return null;
 
     // Load fb-brain.md for full persona context
@@ -366,9 +381,17 @@ async function generateAICreative(strategy, useReel, qcFeedback = '') {
         ? `\n\n═══ COMPLIANCE FEEDBACK (HIGHEST PRIORITY) ═══\n\nYour previous draft was REJECTED by the QC gate: ${qcFeedback}\n\nFix every violation. You have ZERO verified client results — NEVER include specific client numbers, counts, or percentages (no "X calls", "X appointments", "X leads", "X%"). Tell the story without inventing metrics.`
         : '';
 
+    // Live page feed context — without this the model rewrote the same angle
+    // several times a day (near-dupes that exact-text isDuplicate can't catch)
+    const recentBlock = recentPosts.length
+        ? `\n\n═══ ALREADY ON THE PAGE (most recent ${recentPosts.length} posts) ═══\n\n${recentPosts
+              .map((post) => `- ${String(post.message).replace(/\s+/g, ' ').slice(0, 160)}`)
+              .join('\n')}\n\nYour post must take a CLEARLY different topic, hook, and angle from every post above. If the strategy steers you toward one of these, find a different entry point into it.`
+        : '';
+
     let prompt;
     if (fbBrain) {
-        prompt = `Here is your complete identity, voice, and content strategy:\n\n${fbBrain}\n\n---\n\nToday is ${dayTheme.label} day (theme: ${dayTheme.id}).\n\nSTRATEGY:\n${strategy.angle}\n\nENGAGEMENT CTA:\n${strategy.cta}\n\nOUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}\n\n═══ ANTI-BOT FORMATTING (OVERRIDE ALL OTHER STYLE RULES) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. You MUST write like a real human.\n\n1. Write like you're texting a friend. NOT writing marketing copy.\n2. SHORT paragraphs (1-3 sentences). One blank line between them.\n3. VARY sentence length — mix "That's it." with longer flowing thoughts.\n4. Do NOT start with an emoji. Max 1-2 emojis total, placed naturally.\n5. Do NOT use bullet lists, arrow lists (→ • ✓), or numbered lists. Natural paragraphs only.\n6. Do NOT use markdown (no **bold**, no _italic_).\n7. Max 2 hashtags, only if absolutely necessary.\n8. Vary your hook type — don't always start with "Hot take:" or a statistic.\n9. End with either a question OR a closing line. Not both.\n\nBAD (robotic):\n"🚀 AI is revolutionizing business!\n→ Voice agents\n→ Lead gen\n→ Automation\nComment below! 👇🔥"\n\nGOOD (human):\n"I shipped a client site at 11pm last night.\n\nBy the time I woke up, their AI receptionist had already been answering calls for hours.\n\nThis is what 'always on' actually means.\n\nWhat did you ship this week?"\n\nuseReel=${useReel ? 'true' : 'false'}${feedbackBlock}`;
+        prompt = `Here is your complete identity, voice, and content strategy:\n\n${fbBrain}\n\n---\n\nToday is ${dayTheme.label} day (theme: ${dayTheme.id}).\n\nSTRATEGY:\n${strategy.angle}\n\nENGAGEMENT CTA:\n${strategy.cta}\n\nOUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}\n\n═══ ANTI-BOT FORMATTING (OVERRIDE ALL OTHER STYLE RULES) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. You MUST write like a real human.\n\n1. Write like you're texting a friend. NOT writing marketing copy.\n2. SHORT paragraphs (1-3 sentences). One blank line between them.\n3. VARY sentence length — mix "That's it." with longer flowing thoughts.\n4. Do NOT start with an emoji. Max 1-2 emojis total, placed naturally.\n5. Do NOT use bullet lists, arrow lists (→ • ✓), or numbered lists. Natural paragraphs only.\n6. Do NOT use markdown (no **bold**, no _italic_).\n7. Max 2 hashtags, only if absolutely necessary.\n8. Vary your hook type — don't always start with "Hot take:" or a statistic.\n9. End with either a question OR a closing line. Not both.\n\nBAD (robotic):\n"🚀 AI is revolutionizing business!\n→ Voice agents\n→ Lead gen\n→ Automation\nComment below! 👇🔥"\n\nGOOD (human):\n"I shipped a client site at 11pm last night.\n\nBy the time I woke up, their AI receptionist had already been answering calls for hours.\n\nThis is what 'always on' actually means.\n\nWhat did you ship this week?"\n\nuseReel=${useReel ? 'true' : 'false'}${feedbackBlock}${recentBlock}`;
     } else {
         prompt = `You create high-performing Facebook Page content for "Artificial Intelligence Knowledge".
 This page is run by Ghost AI Systems (${WEBSITE}) — an AI agency that ships production-ready websites in days with AI voice agents, analytics, and automation.
@@ -381,7 +404,7 @@ ENGAGEMENT CTA:\n${strategy.cta}
 
 OUTPUT FORMAT:\nReturn strict JSON only:\n{\n  "caption": "facebook caption text",\n  "videoPrompt": "only if useReel=true, otherwise empty string"\n}
 
-═══ FORMATTING RULES (CRITICAL — FOLLOW EXACTLY) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. Your caption MUST look like a real person wrote it on their phone.\n\n1. Write like you're texting — not presenting at a conference, not writing a LinkedIn post.\n2. SHORT paragraphs (1-3 sentences max per block). One blank line between blocks.\n3. VARY sentence length — mix short punchy lines with longer flowing thoughts.\n4. Do NOT start with an emoji. Do NOT start every line with an emoji.\n5. Max 1-2 emojis TOTAL in the caption, placed naturally mid-sentence or at the end.\n6. Do NOT use bullet lists, numbered lists, or arrow lists (→ • ✓ 1. 2. 3.). Write flowing paragraphs.\n7. No markdown (**bold**, _italic_, headers). Plain text only.\n8. No hashtags unless absolutely necessary (max 2).\n9. First line = scroll-stopper. Vary the type: question, bold claim, mid-story opener.\n10. Keep caption between 200 and 600 characters.\n11. If the strategy CTA mentions a link, INCLUDE the exact URL naturally in the text.\n12. End with a question or a powerful closer — NOT both.\n13. Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.\n\nBAD (robotic, will get flagged):\n"🚀 5 ways AI is changing business in 2026!\n\n1. Voice agents\n2. Lead generation\n3. Content automation\n4. Customer support\n5. Analytics\n\nAre you ready? Drop a comment! 👇🔥💯"\n\nGOOD (human, natural):\n"The hidden cost in most businesses is response speed.\n\nEvery missed call leaks revenue. Every slow follow-up loses trust.\n\nWe built an AI system that answers in under 2 seconds, qualifies the lead, and books the call. All while the owner sleeps.\n\nWhat's the first thing you'd automate?"\n\nuseReel=${useReel ? 'true' : 'false'}${feedbackBlock}`;
+═══ FORMATTING RULES (CRITICAL — FOLLOW EXACTLY) ═══\n\nFacebook's algorithm buries and flags robotic-looking posts. Your caption MUST look like a real person wrote it on their phone.\n\n1. Write like you're texting — not presenting at a conference, not writing a LinkedIn post.\n2. SHORT paragraphs (1-3 sentences max per block). One blank line between blocks.\n3. VARY sentence length — mix short punchy lines with longer flowing thoughts.\n4. Do NOT start with an emoji. Do NOT start every line with an emoji.\n5. Max 1-2 emojis TOTAL in the caption, placed naturally mid-sentence or at the end.\n6. Do NOT use bullet lists, numbered lists, or arrow lists (→ • ✓ 1. 2. 3.). Write flowing paragraphs.\n7. No markdown (**bold**, _italic_, headers). Plain text only.\n8. No hashtags unless absolutely necessary (max 2).\n9. First line = scroll-stopper. Vary the type: question, bold claim, mid-story opener.\n10. Keep caption between 200 and 600 characters.\n11. If the strategy CTA mentions a link, INCLUDE the exact URL naturally in the text.\n12. End with a question or a powerful closer — NOT both.\n13. Write for a broad audience: business owners, marketers, tech enthusiasts — not just developers.\n\nBAD (robotic, will get flagged):\n"🚀 5 ways AI is changing business in 2026!\n\n1. Voice agents\n2. Lead generation\n3. Content automation\n4. Customer support\n5. Analytics\n\nAre you ready? Drop a comment! 👇🔥💯"\n\nGOOD (human, natural):\n"The hidden cost in most businesses is response speed.\n\nEvery missed call leaks revenue. Every slow follow-up loses trust.\n\nWe built an AI system that answers in under 2 seconds, qualifies the lead, and books the call. All while the owner sleeps.\n\nWhat's the first thing you'd automate?"\n\nuseReel=${useReel ? 'true' : 'false'}${feedbackBlock}${recentBlock}`;
     }
 
     const { text } = await generateText({
@@ -430,10 +453,10 @@ function saveAgenticVideo(videoPath) {
     return targetPath;
 }
 
-async function buildCreativePlan({ strategy, useAI, useReel, qcFeedback }) {
+async function buildCreativePlan({ strategy, useAI, useReel, qcFeedback, recentPosts }) {
     if (useAI) {
         try {
-            const aiCreative = await generateAICreative(strategy, useReel, qcFeedback);
+            const aiCreative = await generateAICreative(strategy, useReel, qcFeedback, recentPosts);
             if (aiCreative?.caption) {
                 return aiCreative;
             }
@@ -477,6 +500,14 @@ async function runScheduledCycle(options = {}) {
 
         console.log(`Strategy: ${strategy.id} | ${useReel ? 'reel' : 'text'} | ${useAI ? 'ai' : 'template'}`);
 
+        // Live page context for anti-repetition — fail open, never block the slot
+        let recentPosts = [];
+        try {
+            recentPosts = await getRecentFacebookPosts(8);
+        } catch (feedError) {
+            console.warn(`   Recent-posts fetch failed (continuing without): ${feedError.message}`);
+        }
+
         let creative = null;
         let attempts = 0;
         let qc = null;
@@ -486,7 +517,7 @@ async function runScheduledCycle(options = {}) {
         const maxAttempts = 4;
 
         do {
-            creative = await buildCreativePlan({ strategy, useAI: useAI || forceAI, useReel, qcFeedback });
+            creative = await buildCreativePlan({ strategy, useAI: useAI || forceAI, useReel, qcFeedback, recentPosts });
             attempts += 1;
             qc = reviewPost(creative.caption, { platform: 'facebook' });
             if (!qc.pass) {
@@ -500,6 +531,7 @@ async function runScheduledCycle(options = {}) {
                     strategySwapped = true;
                     const safe = STRATEGIES.filter((s) => s.theme !== 'portfolio' && s.id !== strategy.id);
                     strategy = safe[Math.floor(Math.random() * safe.length)];
+                    rememberStrategy(strategy.id);
                     console.warn(`   🔁 Strategy can't clear QC — swapping to: ${strategy.id}`);
                 }
                 continue;

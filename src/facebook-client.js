@@ -139,6 +139,27 @@ export async function postToFacebook(text) {
 }
 
 /**
+ * Fetch the page's most recent posts (any source, not just this bot's) —
+ * fed back into generation so new posts don't repeat angles already live
+ * @param {number} limit - Number of posts to fetch
+ * @returns {Promise<Array<{message: string, created_time: string}>>}
+ */
+export async function getRecentFacebookPosts(limit = 8) {
+    const { pageId, pageToken } = await resolvePageCredentials();
+
+    const response = await fetch(
+        `${GRAPH_API_BASE}/${pageId}/posts?fields=message,created_time&limit=${limit}&access_token=${pageToken}`
+    );
+    const data = await response.json();
+
+    if (data.error) {
+        throw new Error(`Facebook recent posts fetch failed: ${data.error.message}`);
+    }
+
+    return (data.data || []).filter((post) => post.message);
+}
+
+/**
  * Post with an image to Facebook Page
  * @param {string} text - Post content
  * @param {string} imagePath - Path to image file
@@ -412,6 +433,7 @@ export async function setFacebookCoverPhoto(imagePath, offsetY = 0) {
 export default {
     testFacebookConnection,
     postToFacebook,
+    getRecentFacebookPosts,
     postToFacebookWithImage,
     postToFacebookWithVideo,
     setFacebookProfilePicture,
